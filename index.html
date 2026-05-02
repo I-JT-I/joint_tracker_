@@ -43,8 +43,8 @@
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    background: #000000;
+    color: #ffffff; /* Testo principale bianco */
     padding-bottom: 90px; /* Spazio per la bottom navbar */
 }
 
@@ -97,9 +97,9 @@ header h1 {
 
 h3 {
     margin-top: 0;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--text-sec);
+    color: #ffffff !important;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 15px;
@@ -107,11 +107,12 @@ h3 {
 
 /* Form e Input */
 label {
+    margin-bottom: 5px;
     display: block;
     margin-top: 15px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
-    color: var(--text-sec);
+    color: #e5e5ea !important; /* Bianco sporco per i label */
     margin-left: 5px;
 }
 
@@ -126,7 +127,7 @@ input, select, .action-btn, .secondary-btn {
     color: white;
 }
 
-input::placeholder { color: #555; }
+input::placeholder { color: #8e8e93 !important; }
 
 /* Bottoni */
 button.main-btn, button.action-btn {
@@ -239,39 +240,48 @@ button.secondary-btn {
     border-bottom: 0.5px solid rgba(255,255,255,0.05);
 }
 
-/* Bottom Navigation (Tab Bar iOS) */
+/* NAVBAR INFERIORE - FISSA IN BASSO */
 .menu-content {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: auto;
-    width: 100%;
-    display: flex !important; /* Forza la visualizzazione orizzontale */
-    background: var(--glass);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
-    padding: 10px 10px 30px 10px; /* Spazio extra per iPhone */
-    border-top: 0.5px solid var(--border);
-    justify-content: space-around;
-    z-index: 1001;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    background: #1c1c1e !important; /* Grigio scuro Apple */
+    border-top: 1px solid #333 !important;
+    padding: 10px 0 25px 0 !important; /* Spazio per la home bar di iPhone */
+    z-index: 9999 !important;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.5) !important;
 }
 
 .menu-content button {
     background: none !important;
     border: none !important;
-    color: var(--text-sec);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-size: 10px;
-    font-weight: 500;
-    width: auto;
-    padding: 5px;
+    color: #ffffff !important; /* Testo Bianco per visibilità */
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    flex: 1 !important;
+    font-size: 24px !important; /* Dimensione EMOJI (Icona) */
+    padding: 5px !important;
+    cursor: pointer !important;
 }
 
-.menu-content button span { margin-top: 4px; }
-.menu-content button:active { color: var(--primary); }
+.menu-content button span {
+    font-size: 11px !important; /* Dimensione testo sotto icona */
+    margin-top: 4px !important;
+    font-weight: 500 !important;
+    color: #8e8e93 !important; /* Grigio chiaro iOS per le scritte */
+}
+
+/* Evidenzia il tasto attivo */
+.menu-content button:active span {
+    color: var(--primary) !important;
+}
 
 /* Notifiche Toast */
 #notif {
@@ -317,11 +327,11 @@ button.secondary-btn {
 	<h1>🌿 JointTracker</h1>
 	<button class="menu-btn" onclick="toggleMenu()">☰</button>
 	<div class="menu-content" id="menu">
-    <button onclick="showPage('add')">➕ <span>Aggiungi</span></button>
-    <button onclick="showPage('history')">📜 <span>Registro</span></button>
-    <button onclick="showPage('stats')">📊 <span>Stats</span></button>
-    <button onclick="showPage('charts')">📈 <span>Grafici</span></button>
-    <button onclick="showPage('settings')">⚙️ <span>Info</span></button>
+    <button onclick="showPage('add')">➕<span>Aggiungi</span></button>
+    <button onclick="showPage('history')">📜<span>Registro</span></button>
+    <button onclick="showPage('stats')">📊<span>Stats</span></button>
+    <button onclick="showPage('charts')">📈<span>Grafici</span></button>
+    <button onclick="showPage('settings')">⚙️<span>Info</span></button>
 </div>
 </header>
 
