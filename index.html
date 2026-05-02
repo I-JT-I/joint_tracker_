@@ -869,23 +869,30 @@
 	}
 
 	async function saveData() {
-		if (!currentUser) return;
+		console.log('saveData() chiamato');
+		if (!currentUser) { console.log('STOP: currentUser è null'); return; }
+
+		console.log('selectedGrams:', selectedGrams, '| selectedType:', selectedType);
 		const grams = selectedGrams === 'custom'
 			? parseFloat(document.getElementById('customGrams').value)
 			: parseFloat(selectedGrams);
 
-		if (!grams || grams <= 0) { showNotif('⚠ Inserisci un peso valido'); return; }
+		console.log('grams calcolati:', grams);
+		if (!grams || grams <= 0) { showNotif('⚠ Inserisci un peso valido'); console.log('STOP: grams non validi'); return; }
 
 		const now = new Date();
 		const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
 		const date = document.getElementById('date').value;
 		const ts = Date.now();
 
-		const { error } = await supabaseClient.from('smokes').insert({
-			type: selectedType, grams, date, time, ts, user_id: currentUser.id
-		});
+		const payload = { type: selectedType, grams, date, time, ts, user_id: currentUser.id };
+		console.log('Payload da inserire:', payload);
 
-		if (error) { showNotif('⚠ Errore nel salvataggio'); console.error(error); return; }
+		const { data, error } = await supabaseClient.from('smokes').insert(payload).select();
+
+		console.log('Risposta Supabase → data:', data, '| error:', error);
+
+		if (error) { showNotif('⚠ Errore nel salvataggio'); console.error('ERRORE:', error); return; }
 		showNotif('✓ Sessione salvata');
 		await loadData();
 	}
