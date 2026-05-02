@@ -92,8 +92,28 @@
     border: none;
     background: none;
     flex: 1;
+	border-right: 1px solid #eee; 
+    cursor: pointer;
+    transition: background 0.2s;
     border-bottom: none; /* Rimuove il bordo grigio tra i tasti */
 }
+/* Rimuoviamo il bordo dall'ultimo tasto per estetica */
+.menu-content button:last-child {
+    border-right: none;
+}
+
+/* Feedback visivo quando si preme */
+.menu-content button:active {
+    background: #e8f5e9; /* Un leggero verde che richiama il tema */
+}
+		
+/* Classe che aggiungeremo via Javascript */
+.menu-content button.active-tab {
+    background: #e8f5e9;
+    color: var(--primary);
+    font-weight: bold;
+}
+		
 
 /* Effetto al tocco */
 .menu-content button:active {
@@ -734,10 +754,23 @@ body {
 	}
 
 	function showPage(p) {
+    // Nascondi tutte le pagine e mostra quella selezionata
     document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
     document.getElementById("page-" + p).classList.add("active");
+
+    // Rimuovi la classe active da tutti i bottoni del menu
+    document.querySelectorAll(".menu-content button").forEach(btn => {
+        btn.classList.remove("active-tab");
+    });
+
+    // Aggiungi la classe al bottone cliccato (usiamo l'indice o un selettore specifico)
+    // Se i bottoni sono nell'ordine: add, history, stats, charts, settings
+    const btnIndex = { 'add': 0, 'history': 1, 'stats': 2, 'charts': 3, 'settings': 4 };
+    document.querySelectorAll(".menu-content button")[btnIndex[p]].classList.add("active-tab");
+
     update();
 }
+	
 	function toggleAccordion(el) {
 		const content = el.nextElementSibling;
 		const isVisible = content.style.display === "block";
