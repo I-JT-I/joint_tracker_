@@ -15,6 +15,9 @@
 	<link rel="manifest" href="/manifest.json">
 	<link rel="icon" type="image/png" href="/icon-192.png">
 	
+	<!-- Supabase -->
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	
 	<!-- Chart.js -->
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	
@@ -23,6 +26,7 @@
 			--primary: #2e7d32;
 			--bg: #f4f7f6;
 			--white: #ffffff;
+			--danger: #ff5252;
 		}
 
 		* {
@@ -73,7 +77,7 @@
 			overflow: hidden;
 			display: none;
 			z-index: 1001;
-			width: 180px;
+			width: 200px;
 		}
 
 		.menu-content button {
@@ -95,6 +99,11 @@
 			background: #f5f5f5;
 		}
 
+		.menu-content .logout-btn {
+			color: var(--danger);
+			font-weight: bold;
+		}
+
 		.page {
 			display: none;
 			padding: 15px;
@@ -108,14 +117,8 @@
 		}
 
 		@keyframes fadeIn {
-			from {
-				opacity: 0;
-				transform: translateY(5px);
-			}
-			to {
-				opacity: 1;
-				transform: translateY(0);
-			}
+			from { opacity: 0; transform: translateY(5px); }
+			to { opacity: 1; transform: translateY(0); }
 		}
 
 		.card {
@@ -131,7 +134,6 @@
 			color: var(--primary);
 		}
 
-		/* Form Elements */
 		label {
 			display: block;
 			margin-top: 15px;
@@ -153,15 +155,6 @@
 			outline: none;
 			border-color: var(--primary);
 			box-shadow: 0 0 0 3px rgba(46,125,50,0.1);
-		}
-
-		.data {
-			width: 95%;
-			font-size: 16px;
-			padding: 12px;
-			margin-top: 8px;
-			border-radius: 12px;
-			border: 1px solid #ddd;
 		}
 
 		.grams-row {
@@ -197,7 +190,7 @@
 			display: none;
 		}
 
-		button.main-btn {
+		button.main-btn, button.action-btn {
 			background: var(--primary);
 			color: white;
 			border: none;
@@ -206,8 +199,82 @@
 			cursor: pointer;
 		}
 
-		button.main-btn:hover {
+		button.main-btn:hover, button.action-btn:hover {
 			background: #1b5e20;
+		}
+
+		button.secondary-btn {
+			background: #666;
+			color: white;
+			border: none;
+			padding: 12px;
+			margin-top: 10px;
+			font-weight: bold;
+			cursor: pointer;
+			border-radius: 12px;
+			width: 100%;
+		}
+
+		button.secondary-btn:hover {
+			background: #333;
+		}
+
+		/* Auth Pages */
+		.auth-container {
+			max-width: 400px;
+			margin: 50px auto;
+			padding: 20px;
+		}
+
+		.auth-box {
+			background: white;
+			border-radius: 16px;
+			padding: 30px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+
+		.auth-box h2 {
+			text-align: center;
+			margin-bottom: 30px;
+		}
+
+		.loading {
+			text-align: center;
+			color: #999;
+			padding: 20px;
+		}
+
+		.spinner {
+			border: 4px solid #f3f3f3;
+			border-top: 4px solid var(--primary);
+			border-radius: 50%;
+			width: 30px;
+			height: 30px;
+			animation: spin 1s linear infinite;
+			margin: 0 auto;
+		}
+
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+
+		.error {
+			background: #ffebee;
+			color: var(--danger);
+			padding: 12px;
+			border-radius: 8px;
+			margin-bottom: 15px;
+			font-size: 14px;
+		}
+
+		.success {
+			background: #e8f5e9;
+			color: var(--primary);
+			padding: 12px;
+			border-radius: 8px;
+			margin-bottom: 15px;
+			font-size: 14px;
 		}
 
 		/* Cronologia */
@@ -216,7 +283,6 @@
 			border: 1px solid #eee;
 			border-radius: 12px;
 			overflow: hidden;
-			background: #fff;
 		}
 
 		.month-header {
@@ -227,31 +293,12 @@
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			border-bottom: 1px solid #eee;
 		}
 
-		.day-group {
-			border-bottom: 1px solid #f0f0f0;
-		}
-
-		.day-header {
-			padding: 10px 15px;
-			background: #fff;
-			cursor: pointer;
-			font-size: 14px;
-			display: flex;
-			justify-content: space-between;
-			color: #555;
-		}
-
-		.day-content {
-			display: none;
-			background: #fafafa;
-		}
-
-		.month-content {
-			display: none;
-		}
+		.day-group { border-bottom: 1px solid #f0f0f0; }
+		.day-header { padding: 10px 15px; background: #fff; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; color: #555; }
+		.day-content { display: none; background: #fafafa; }
+		.month-content { display: none; }
 
 		.history-item {
 			display: flex;
@@ -263,19 +310,15 @@
 		}
 
 		.del-btn {
-			color: #ff5252;
+			color: var(--danger);
 			background: none;
 			border: none;
 			font-size: 18px;
 			padding: 5px;
 			cursor: pointer;
-			margin-left: 10px;
 		}
 
-		.chevron::after {
-			content: ' ▾';
-			color: #bbb;
-		}
+		.chevron::after { content: ' ▾'; color: #bbb; }
 
 		/* Stats */
 		.stat-grid {
@@ -324,25 +367,29 @@
 			margin-top: 10px;
 		}
 
-		textarea {
-			width: 100%;
-			font-size: 14px;
-			padding: 12px;
-			border-radius: 12px;
-			border: 1px solid #ddd;
-			font-family: monospace;
-		}
+		hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+		p { font-size: 11px; color: #999; text-align: center; }
 
-		hr {
-			border: 0;
-			border-top: 1px solid #eee;
-			margin: 20px 0;
-		}
-
-		p {
-			font-size: 11px;
-			color: #999;
+		.user-info {
 			text-align: center;
+			padding: 10px;
+			background: #f0f0f0;
+			border-radius: 8px;
+			margin-bottom: 15px;
+			font-size: 14px;
+		}
+
+		.user-info strong { color: var(--primary); }
+
+		a {
+			color: var(--primary);
+			text-decoration: none;
+			font-weight: bold;
+			cursor: pointer;
+		}
+
+		a:hover {
+			text-decoration: underline;
 		}
 	</style>
 </head>
@@ -350,7 +397,18 @@
 
 <div id="notif">Registrato! ✅</div>
 
-<header>
+<!-- PAGINA LOGIN -->
+<div id="page-auth" class="page active">
+	<div class="auth-container">
+		<div class="auth-box">
+			<h2>🌿 JointTracker</h2>
+			<div id="authContent"></div>
+		</div>
+	</div>
+</div>
+
+<!-- PAGINA PRINCIPALE (quando loggato) -->
+<header id="header" style="display:none;">
 	<h1>🌿 JointTracker</h1>
 	<button class="menu-btn" onclick="toggleMenu()">☰</button>
 	<div class="menu-content" id="menu">
@@ -359,11 +417,13 @@
 		<button onclick="showPage('stats')">📊 Statistiche</button>
 		<button onclick="showPage('charts')">📈 Dashboard</button>
 		<button onclick="showPage('settings')">⚙️ Settings</button>
+		<button class="logout-btn" onclick="logout()">🚪 Logout</button>
 	</div>
 </header>
 
-<div id="page-add" class="page active">
+<div id="page-add" class="page">
 	<div class="card">
+		<div class="user-info">Loggato come <strong id="emailDisplay"></strong></div>
 		<h3>Nuovo Inserimento</h3>
 
 		<label for="type">Cosa fumi?</label>
@@ -392,24 +452,6 @@
 	<div class="card">
 		<h3>📜 Registro Storico</h3>
 		<div id="historyList"></div>
-	</div>
-</div>
-
-<div id="page-settings" class="page">
-	<div class="card">
-		<h3>⚙️ Impostazioni</h3>
-		<button class="main-btn" onclick="exportData()">📤 Esporta Dati</button>
-
-		<div style="margin-top: 20px;">
-			<h3>📥 Importa Dati</h3>
-			<label for="importArea">Incolla qui il backup JSON</label>
-			<textarea id="importArea" placeholder="Incolla qui il backup JSON"></textarea>
-			<button class="main-btn" onclick="importData()">Importa</button>
-		</div>
-
-		<div style="margin-top: 20px;">
-			<button onclick="resetAll()" style="background:none; border:none; color:red; width:100%; padding:12px; font-size:14px; cursor:pointer;">⚠️ Reset completo dati</button>
-		</div>
 	</div>
 </div>
 
@@ -472,57 +514,204 @@
 	</div>
 </div>
 
+<div id="page-settings" class="page">
+	<div class="card">
+		<h3>⚙️ Impostazioni</h3>
+		<button class="secondary-btn" onclick="logout()">🚪 Logout</button>
+	</div>
+</div>
+
 <script>
-	// Carica dati nuovi (v3) o migra vecchi da "smokes"
-	let smokes = JSON.parse(localStorage.getItem("smokes_v3")) || [];
+	// Inizializza Supabase
+	const SUPABASE_URL = 'https://afkxmbxcavwhurmdelfr.supabase.co';
+	const SUPABASE_KEY = 'sb_publishable_1rc0ueZL6Y03qhk5jp_34w_ObCOCpCP';
+	
+	const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-	// Migrazione dai dati vecchi "smokes" se v3 è vuoto
-	function migrate() {
-		let oldData = JSON.parse(localStorage.getItem("smokes"));
-		if (oldData && smokes.length === 0) {
-			smokes = oldData.map(i => ({
-				...i,
-				ts: i.ts || new Date(i.date).getTime() + Math.random(),
-				time: i.time || "12:00"
-			}));
-			localStorage.setItem("smokes_v3", JSON.stringify(smokes));
-			console.log("Dati migrati da smokes a smokes_v3");
+	let currentUser = null;
+	let smokes = [];
+
+	// Controlla se loggato all'avvio
+	async function checkAuth() {
+		const { data: { session } } = await supabaseClient.auth.getSession();
+		if (session) {
+			currentUser = session.user;
+			showApp();
+			await loadData();
+		} else {
+			showLoginPage();
 		}
 	}
 
-	// Pulizia vecchie fumate con time "12:00" prima di una certa data
-	const ORARIO_INTRODOTTO_IL = new Date("2026-02-08").getTime();
-	function fixOldFakeTimes() {
-		let changed = false;
+	function showLoginPage() {
+		document.getElementById('page-auth').classList.add('active');
+		document.getElementById('header').style.display = 'none';
+		document.querySelectorAll('.page:not(#page-auth)').forEach(p => p.classList.remove('active'));
+		
+		const content = document.getElementById('authContent');
+		content.innerHTML = `
+			<form onsubmit="handleAuth(event, 'login')">
+				<label for="email">Email</label>
+				<input type="email" id="email" placeholder="tua-email@gmail.com" required>
+				
+				<label for="password">Password</label>
+				<input type="password" id="password" placeholder="Password (min 6 caratteri)" required>
+				
+				<button type="submit" class="main-btn">🔓 Accedi</button>
+			</form>
+			
+			<p style="text-align: center; margin-top: 20px; color: #666;">
+				Non hai un account? <a onclick="toggleAuthMode(); return false;">Registrati</a>
+			</p>
+		`;
+	}
 
-		smokes = smokes.map(s => {
-			if (s.ts < ORARIO_INTRODOTTO_IL && s.time === "12:00") {
-				const { time, ...rest } = s;
-				changed = true;
-				return rest;
+	function toggleAuthMode() {
+		const content = document.getElementById('authContent');
+		if (content.innerHTML.includes('Registrati')) {
+			// Mostra form registrazione
+			content.innerHTML = `
+				<form onsubmit="handleAuth(event, 'signup')">
+					<label for="email">Email</label>
+					<input type="email" id="email" placeholder="tua-email@gmail.com" required>
+					
+					<label for="password">Password</label>
+					<input type="password" id="password" placeholder="Password (min 6 caratteri)" required>
+					
+					<label for="confirm">Conferma Password</label>
+					<input type="password" id="confirm" placeholder="Ripeti password" required>
+					
+					<button type="submit" class="main-btn">📝 Registrati</button>
+				</form>
+				
+				<p style="text-align: center; margin-top: 20px; color: #666;">
+					Hai già un account? <a onclick="toggleAuthMode(); return false;">Accedi</a>
+				</p>
+			`;
+		} else {
+			showLoginPage();
+		}
+	}
+
+	async function handleAuth(e, mode) {
+		e.preventDefault();
+		const email = document.getElementById('email').value;
+		const password = document.getElementById('password').value;
+		const confirm = document.getElementById('confirm')?.value;
+
+		if (mode === 'signup' && password !== confirm) {
+			showError('Le password non corrispondono!');
+			return;
+		}
+
+		const content = document.getElementById('authContent');
+		content.innerHTML = '<div class="loading"><div class="spinner"></div><p>Un momento...</p></div>';
+
+		try {
+			let result;
+			if (mode === 'login') {
+				result = await supabaseClient.auth.signInWithPassword({ email, password });
+			} else {
+				result = await supabaseClient.auth.signUp({ email, password });
 			}
-			return s;
-		});
 
-		if (changed) {
-			localStorage.setItem("smokes_v3", JSON.stringify(smokes));
-			console.log("Pulizia completata.");
+			if (result.error) {
+				showError(result.error.message);
+				if (mode === 'login') showLoginPage();
+				else toggleAuthMode();
+				return;
+			}
+
+			currentUser = result.data.user;
+			showApp();
+			await loadData();
+			showMessage('Benvenuto! 🎉');
+		} catch (err) {
+			showError(err.message);
 		}
 	}
 
-	migrate();
-	fixOldFakeTimes();
+	function showApp() {
+		document.getElementById('page-auth').classList.remove('active');
+		document.getElementById('header').style.display = 'flex';
+		document.getElementById('page-add').classList.add('active');
+		document.getElementById('emailDisplay').textContent = currentUser.email;
+	}
 
-	document.getElementById("date").value = new Date().toISOString().split("T")[0];
+	function showError(msg) {
+		const content = document.getElementById('authContent');
+		const errorDiv = document.createElement('div');
+		errorDiv.className = 'error';
+		errorDiv.textContent = msg;
+		content.insertBefore(errorDiv, content.firstChild);
+	}
 
-	// Gestione UI Radio
-	document.querySelectorAll('input[name="g"]').forEach(r => {
-		r.addEventListener("change", e => {
-			document.querySelectorAll(".grams-row label").forEach(l => l.classList.remove("selected"));
-			e.target.parentElement.classList.add("selected");
-			document.getElementById("customGrams").style.display = e.target.value === "custom" ? "block" : "none";
+	function showMessage(msg) {
+		document.getElementById('notif').textContent = msg;
+		document.getElementById('notif').style.display = 'block';
+		setTimeout(() => document.getElementById('notif').style.display = 'none', 2000);
+	}
+
+	async function logout() {
+		await supabaseClient.auth.signOut();
+		currentUser = null;
+		smokes = [];
+		showLoginPage();
+	}
+
+	async function loadData() {
+		const { data, error } = await supabaseClient
+			.from('smokes')
+			.select('*')
+			.order('ts', { ascending: false });
+
+		if (error) {
+			console.error('Errore caricamento dati:', error);
+			return;
+		}
+
+		smokes = data || [];
+		update();
+	}
+
+	async function saveData() {
+		const type = document.getElementById("type").value;
+		const gVal = document.querySelector('input[name="g"]:checked').value;
+		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
+
+		if(!grams || grams <= 0) return alert("Inserisci un peso valido");
+
+		const now = new Date();
+		const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+		const date = document.getElementById("date").value;
+		const ts = Date.now();
+
+		const { error } = await supabaseClient.from('smokes').insert({
+			type, grams, date, time, ts, user_id: currentUser.id
 		});
-	});
+
+		if (error) {
+			console.error('Errore salvataggio:', error);
+			alert('Errore nel salvataggio. Riprova.');
+			return;
+		}
+
+		showMessage('Sessione salvata! ✅');
+		await loadData();
+	}
+
+	async function deleteItem(ts) {
+		if(!confirm("Vuoi eliminare questo inserimento?")) return;
+
+		const { error } = await supabaseClient.from('smokes').delete().eq('ts', ts);
+
+		if (error) {
+			console.error('Errore eliminazione:', error);
+			return;
+		}
+
+		await loadData();
+	}
 
 	function toggleMenu() {
 		const m = document.getElementById("menu");
@@ -534,38 +723,6 @@
 		document.getElementById("page-" + p).classList.add("active");
 		document.getElementById("menu").style.display = "none";
 		update();
-	}
-
-	function saveData() {
-		const type = document.getElementById("type").value;
-		const gVal = document.querySelector('input[name="g"]:checked').value;
-		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
-
-		if(!grams || grams <= 0) return alert("Inserisci un peso valido");
-
-		const now = new Date();
-		const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
-
-		smokes.push({
-			type,
-			grams,
-			date: document.getElementById("date").value,
-			time,
-			ts: Date.now()
-		});
-
-		localStorage.setItem("smokes_v3", JSON.stringify(smokes));
-		document.getElementById("notif").style.display = "block";
-		setTimeout(() => document.getElementById("notif").style.display = "none", 2000);
-		update();
-	}
-
-	function deleteItem(ts) {
-		if(confirm("Vuoi eliminare questo inserimento?")) {
-			smokes = smokes.filter(s => s.ts !== ts);
-			localStorage.setItem("smokes_v3", JSON.stringify(smokes));
-			update();
-		}
 	}
 
 	function toggleAccordion(el) {
@@ -600,18 +757,21 @@
 		return streak;
 	}
 
-	function updateBestStreak(currentStreak) {
-		let best = parseInt(localStorage.getItem("bestStreak")) || 0;
+	async function updateBestStreak(currentStreak) {
+		const { data } = await supabaseClient.from('user_stats').select('best_streak').eq('user_id', currentUser.id).single();
+		
+		let best = data?.best_streak || 0;
 		if (currentStreak > best) {
+			await supabaseClient.from('user_stats').upsert({
+				user_id: currentUser.id,
+				best_streak: currentStreak
+			});
 			best = currentStreak;
-			localStorage.setItem("bestStreak", best);
 		}
 		return best;
 	}
 
 	function update() {
-		smokes.sort((a,b) => b.ts - a.ts);
-
 		const hList = document.getElementById("historyList");
 		hList.innerHTML = "";
 
@@ -668,18 +828,7 @@
 			}
 		}
 
-		const streak = calculateStreak();
-		const box = document.getElementById("streakBox");
-
-		if (streak >= 3) {
-			document.getElementById("streakDays").innerText = streak;
-			document.getElementById("bestStreak").innerText = updateBestStreak(streak);
-			box.style.display = "block";
-		} else {
-			box.style.display = "none";
-		}
-
-		// Statistiche Grammi
+		// Statistiche
 		let totF = 0, totE = 0;
 		smokes.forEach(s => { s.type === 'fumo' ? totF += s.grams : totE += s.grams; });
 
@@ -688,10 +837,9 @@
 		document.getElementById("sJTot").innerText = smokes.length;
 		document.getElementById("sGTot").innerText = (totF + totE).toFixed(2);
 
-		// Calcolo Medie Reali - FIXATO
 		let diffDays = 1;
 		if (smokes.length > 0) {
-			const sortedSmokes = [...smokes].sort((a,b) => a.ts - b.ts);
+			const sortedSmokes = [...smokes].sort((a,b) => new Date(a.date) - new Date(b.date));
 			const firstJ = new Date(sortedSmokes[0].date);
 			const today = new Date();
 			diffDays = Math.ceil(Math.abs(today - firstJ) / (1000 * 60 * 60 * 24)) || 1;
@@ -702,6 +850,18 @@
 		document.getElementById("avgMonthly").innerText = ((smokes.length / diffDays) * 30.44).toFixed(1);
 		document.getElementById("avgYearly").innerText = ((smokes.length / diffDays) * 365.25).toFixed(1);
 		document.getElementById("avgGrams").innerText = ((totF + totE) / diffDays).toFixed(2) + "g";
+
+		const streak = calculateStreak();
+		const box = document.getElementById("streakBox");
+		if (streak >= 3) {
+			document.getElementById("streakDays").innerText = streak;
+			updateBestStreak(streak).then(best => {
+				document.getElementById("bestStreak").innerText = best;
+			});
+			box.style.display = "block";
+		} else {
+			box.style.display = "none";
+		}
 
 		renderCharts(totF, totE);
 	}
@@ -715,21 +875,11 @@
 
 		charts.pie = new Chart(document.getElementById("cPie"), {
 			type: 'doughnut',
-			data: {
-				labels: ['Fumo', 'Erba'],
-				datasets: [{
-					data: [numFumo, numErba],
-					backgroundColor: ['#795548', '#4CAF50']
-				}]
-			},
+			data: { labels: ['Fumo', 'Erba'], datasets: [{ data: [numFumo, numErba], backgroundColor: ['#795548', '#4CAF50'] }]},
 			options: { maintainAspectRatio: false }
 		});
 
-		const last7 = [...Array(7)].map((_,i) => {
-			let d = new Date(); d.setDate(d.getDate()-i);
-			return d.toISOString().split('T')[0];
-		}).reverse();
-
+		const last7 = [...Array(7)].map((_,i) => { let d = new Date(); d.setDate(d.getDate()-i); return d.toISOString().split('T')[0]; }).reverse();
 		const weightData = last7.map(d => smokes.filter(s => s.date === d).reduce((acc, curr) => acc + curr.grams, 0));
 
 		charts.weight = new Chart(document.getElementById("cWeight"), {
@@ -739,69 +889,27 @@
 		});
 
 		const dailyMap = {};
-		smokes.forEach(s => {
-			if (!dailyMap[s.date]) dailyMap[s.date] = 0;
-			dailyMap[s.date]++;
-		});
-
+		smokes.forEach(s => { if (!dailyMap[s.date]) dailyMap[s.date] = 0; dailyMap[s.date]++; });
 		const sortedDates = Object.keys(dailyMap).sort();
 		const dailyCounts = sortedDates.map(d => dailyMap[d]);
 
 		charts.dailyAll = new Chart(document.getElementById("cDailyAll"), {
 			type: 'line',
-			data: {
-				labels: sortedDates.map(d => d.split("-").reverse().join("/")),
-				datasets: [{
-					label: 'Joint',
-					data: dailyCounts,
-					borderColor: '#1b5e20',
-					backgroundColor: 'rgba(27,94,32,0.1)',
-					fill: true,
-					tension: 0.3
-				}]
-			},
+			data: { labels: sortedDates.map(d => d.split("-").reverse().join("/")), datasets: [{ label: 'Joint', data: dailyCounts, borderColor: '#1b5e20', backgroundColor: 'rgba(27,94,32,0.1)', fill: true, tension: 0.3 }]},
 			options: { maintainAspectRatio: false }
 		});
 
-		const weekDays = {
-			"Domenica": 0,
-			"Lunedì": 0,
-			"Martedì": 0,
-			"Mercoledì": 0,
-			"Giovedì": 0,
-			"Venerdì": 0,
-			"Sabato": 0
-		};
-
-		smokes.forEach(s => {
-			const d = new Date(s.date);
-			const dayIndex = d.getDay();
-			const names = Object.keys(weekDays);
-			weekDays[names[dayIndex]]++;
-		});
+		const weekDays = { "Domenica": 0, "Lunedì": 0, "Martedì": 0, "Mercoledì": 0, "Giovedì": 0, "Venerdì": 0, "Sabato": 0 };
+		smokes.forEach(s => { const d = new Date(s.date); const dayIndex = d.getDay(); const names = Object.keys(weekDays); weekDays[names[dayIndex]]++; });
 
 		charts.week = new Chart(document.getElementById("cWeekDays"), {
 			type: 'bar',
-			data: {
-				labels: Object.keys(weekDays),
-				datasets: [{
-					label: 'Joint',
-					data: Object.values(weekDays),
-					backgroundColor: '#66bb6a'
-				}]
-			},
+			data: { labels: Object.keys(weekDays), datasets: [{ label: 'Joint', data: Object.values(weekDays), backgroundColor: '#66bb6a' }]},
 			options: { maintainAspectRatio: false }
 		});
 
 		const hours = { Notte: 0, Mattina: 0, Pomeriggio: 0, Sera: 0 };
-		smokes.forEach(s => {
-			if (!s.time || typeof s.time !== "string") return;
-			const h = parseInt(s.time.split(':')[0]);
-			if(h >= 0 && h < 6) hours.Notte++;
-			else if(h >= 6 && h < 12) hours.Mattina++;
-			else if(h >= 12 && h < 18) hours.Pomeriggio++;
-			else hours.Sera++;
-		});
+		smokes.forEach(s => { if (!s.time || typeof s.time !== "string") return; const h = parseInt(s.time.split(':')[0]); if(h >= 0 && h < 6) hours.Notte++; else if(h >= 6 && h < 12) hours.Mattina++; else if(h >= 12 && h < 18) hours.Pomeriggio++; else hours.Sera++; });
 
 		charts.time = new Chart(document.getElementById("cTime"), {
 			type: 'polarArea',
@@ -810,56 +918,18 @@
 		});
 	}
 
-	function exportData() {
-		const data = localStorage.getItem("smokes_v3");
-		const best = localStorage.getItem("bestStreak");
+	// Inizializzazione
+	document.getElementById("date").value = new Date().toISOString().split("T")[0];
 
-		if (!data) {
-			alert("Nessun dato da esportare");
-			return;
-		}
+	document.querySelectorAll('input[name="g"]').forEach(r => {
+		r.addEventListener("change", e => {
+			document.querySelectorAll(".grams-row label").forEach(l => l.classList.remove("selected"));
+			e.target.parentElement.classList.add("selected");
+			document.getElementById("customGrams").style.display = e.target.value === "custom" ? "block" : "none";
+		});
+	});
 
-		const fullBackup = {
-			smokes_v3: JSON.parse(data),
-			bestStreak: best
-		};
-
-		const blob = new Blob(
-			[JSON.stringify(fullBackup, null, 2)],
-			{ type: "application/json" }
-		);
-
-		const url = URL.createObjectURL(blob);
-		window.open(url, "_blank");
-	}
-
-	function importData() {
-		const json = document.getElementById("importArea").value.trim();
-		if(!json) return alert("Incolla il backup JSON prima di importare!");
-
-		try {
-			const backup = JSON.parse(json);
-			if(!backup.smokes_v3) return alert("Backup non valido!");
-
-			localStorage.setItem("smokes_v3", JSON.stringify(backup.smokes_v3));
-			if(backup.bestStreak) localStorage.setItem("bestStreak", backup.bestStreak);
-
-			alert("Dati importati correttamente!");
-			location.reload();
-		} catch(e) {
-			alert("Errore nel JSON: controlla di aver copiato tutto correttamente!");
-			console.error(e);
-		}
-	}
-
-	function resetAll() {
-		if(confirm("ATTENZIONE: Questo cancellerà TUTTA la tua cronologia. Sei sicuro?")) {
-			localStorage.clear();
-			location.reload();
-		}
-	}
-
-	update();
+	checkAuth();
 </script>
 
 </body>
