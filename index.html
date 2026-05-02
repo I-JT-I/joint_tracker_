@@ -4,9 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Joint Tracker</title>
-	
-	<!-- PWA Meta Tags -->
-	<meta name="theme-color" content="#2e7d32">
+	<meta name="theme-color" content="#0a0a0a">
 	<meta name="description" content="App per tracciare il consumo di cannabis con statistiche dettagliate">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,1391 +12,977 @@
 	<link rel="apple-touch-icon" href="/icon-192.png">
 	<link rel="manifest" href="/manifest.json">
 	<link rel="icon" type="image/png" href="/icon-192.png">
-	
-	<!-- Supabase -->
-	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-	
-	<!-- Chart.js -->
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-	
+
 	<style>
+		* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
 		:root {
-			--primary: #2e7d32;
-			--bg: #f4f7f6;
-			--white: #ffffff;
-			--danger: #ff5252;
+			--bg: #0a0a0a;
+			--bg2: #141414;
+			--bg3: #1c1c1e;
+			--bg4: #2c2c2e;
+			--border: rgba(255,255,255,0.08);
+			--border2: rgba(255,255,255,0.14);
+			--text: #f5f5f7;
+			--text2: rgba(255,255,255,0.55);
+			--text3: rgba(255,255,255,0.28);
+			--green: #32d74b;
+			--green-dim: rgba(50,215,75,0.12);
+			--danger: #ff453a;
+			--radius: 16px;
+			--radius-sm: 10px;
 		}
 
-		* {
-			box-sizing: border-box;
-			-webkit-tap-highlight-color: transparent;
-		}
-
-		body {
-			margin: 0;
-			font-family: 'Segoe UI', system-ui, sans-serif;
+		html, body {
 			background: var(--bg);
-			color: #333;
+			color: var(--text);
+			font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+			min-height: 100vh;
+			-webkit-font-smoothing: antialiased;
 		}
 
-		header {
-			background: var(--primary);
-			color: white;
-			padding: 15px;
-			display: flex;
-			justify-content: space-between;
+		/* ── AUTH ── */
+		#page-auth {
+			min-height: 100vh;
+			display: none;
+			flex-direction: column;
 			align-items: center;
-			position: sticky;
-			top: 0;
-			z-index: 1000;
-			box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+			justify-content: center;
+			padding: 24px;
+			background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(50,215,75,0.15) 0%, transparent 70%), var(--bg);
 		}
+		#page-auth.active { display: flex; }
 
-		header h1 {
-			margin: 0;
-			font-size: 24px;
-		}
-
-		/* 1. Nascondi il tasto hamburger nel header */
-.menu-btn {
-    display: none;
-}
-
-/* 2. Trasforma il menu in una barra fissa in basso */
-.menu-content {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: auto; /* Sovrascrive il top: 60px precedente */
-    width: 100%;
-    background: white;
-    display: flex !important; /* Lo rendiamo sempre visibile come flexbox */
-    justify-content: space-around;
-    border-radius: 0; /* Rimuoviamo gli angoli arrotondati */
-    box-shadow: 0 -2px 15px rgba(0,0,0,0.1);
-    z-index: 1001;
-    padding-bottom: env(safe-area-inset-bottom); /* Supporto per iPhone moderni */
-}
-
-/* 3. Imposta i bottoni del menu per lo sviluppo orizzontale */
-.menu-content button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8% 0;
-font-size: 3.5vw;
-    border: none;
-    background: none;
-    flex: 1;
-	border-right: 1px solid #eee; 
-    cursor: pointer;
-    transition: background 0.2s;
-    border-bottom: none;
-}
-/* Rimuoviamo il bordo dall'ultimo tasto per estetica */
-.menu-content button:last-child {
-    border-right: none;
-}
-		
-/* Stile per evidenziare la pagina attiva nel menu */
-.menu-content button.active-tab {
-    background: #e8f5e9;
-    color: var(--primary);
-    border-top: 3px solid var(--primary); /* Una riga verde sopra il tasto attivo */
-}
-		
-/* Feedback visivo quando si preme */
-.menu-content button:active {
-    background: #e8f5e9; /* Un leggero verde che richiama il tema */
-}
-		
-/* Classe che aggiungeremo via Javascript */
-.menu-content button.active-tab {
-    background: #e8f5e9;
-    color: var(--primary);
-    font-weight: bold;
-}
-		
-
-/* Effetto al tocco */
-.menu-content button:active {
-    background: #f0f0f0;
-}
-
-/* 4. Aggiungi spazio in fondo alle pagine per non coprire i dati */
-body {
-    padding-bottom: 80px; 
-}
-
-		.page {
-			display: none;
-			padding: 15px;
-			max-width: 600px;
-			margin: 0 auto;
-			animation: fadeIn 0.3s ease;
-		}
-
-		.page.active {
-			display: block;
-		}
-
-		@keyframes fadeIn {
-			from { opacity: 0; transform: translateY(5px); }
-			to { opacity: 1; transform: translateY(0); }
-		}
-
-		.card {
-			background: var(--white);
-			border-radius: 16px;
-			padding: 20px;
-			box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-			margin-bottom: 20px;
-		}
-
-		h2, h3 {
-			margin-top: 0;
-			color: var(--primary);
-		}
-
-		label {
-			display: block;
-			margin-top: 15px;
-			font-weight: 600;
-			font-size: 14px;
-			color: #666;
-		}
-
-		input, select, button.action-btn {
-			width: 100%;
-			font-size: 16px;
-			padding: 12px;
-			margin-top: 8px;
-			border-radius: 12px;
-			border: 1px solid #ddd;
-		}
-
-		input:focus, select:focus {
-			outline: none;
-			border-color: var(--primary);
-			box-shadow: 0 0 0 3px rgba(46,125,50,0.1);
-		}
-
-		.grams-row {
-			display: flex;
-			gap: 8px;
-			margin-top: 8px;
-		}
-
-		.grams-row label {
-			flex: 1;
-			margin: 0;
-			background: #eee;
-			padding: 12px;
-			border-radius: 10px;
-			text-align: center;
-			cursor: pointer;
-			border: 2px solid transparent;
-			font-weight: 500;
-		}
-
-		.grams-row input {
-			display: none;
-		}
-
-		/* Feedback visivo per i grammi (Stato Selezionato) */
-.grams-row label.selected {
-    background: #e8f5e9 !important;
-    border-color: var(--primary) !important;
-    color: var(--primary) !important;
-    font-weight: bold;
-}
-
-		#customGrams {
-			display: none;
-		}
-
-		button.main-btn, button.action-btn {
-			background: var(--primary);
-			color: white;
-			border: none;
-			margin-top: 20px;
-			font-weight: bold;
-			cursor: pointer;
-		}
-
-		button.main-btn:hover, button.action-btn:hover {
-			background: #1b5e20;
-		}
-
-		button.secondary-btn {
-			background: #666;
-			color: white;
-			border: none;
-			padding: 12px;
-			margin-top: 10px;
-			font-weight: bold;
-			cursor: pointer;
-			border-radius: 12px;
-			width: 100%;
-		}
-
-		button.secondary-btn:hover {
-			background: #333;
-		}
-
-		/* Auth Pages */
-		.auth-container {
-			max-width: 400px;
-			margin: 50px auto;
-			padding: 20px;
-		}
-
+		.auth-logo { font-size: 52px; margin-bottom: 8px; }
+		.auth-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+		.auth-sub { font-size: 15px; color: var(--text2); margin-bottom: 36px; }
 		.auth-box {
-			background: white;
-			border-radius: 16px;
-			padding: 30px;
-			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+			background: var(--bg3);
+			border: 1px solid var(--border2);
+			border-radius: 20px;
+			padding: 28px 24px;
+			width: 100%;
+			max-width: 380px;
 		}
 
-		.auth-box h2 {
-			text-align: center;
-			margin-bottom: 30px;
+		.field { margin-bottom: 14px; }
+		.field label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+		.field input {
+			width: 100%;
+			background: var(--bg4);
+			border: 1px solid var(--border);
+			border-radius: var(--radius-sm);
+			color: var(--text);
+			font-size: 16px;
+			padding: 13px 15px;
+			outline: none;
+			transition: border-color 0.2s;
+			-webkit-appearance: none;
+		}
+		.field input:focus { border-color: var(--green); }
+
+		.btn-primary {
+			width: 100%;
+			background: var(--green);
+			color: #000;
+			border: none;
+			border-radius: var(--radius-sm);
+			font-size: 16px;
+			font-weight: 600;
+			padding: 14px;
+			cursor: pointer;
+			margin-top: 8px;
+			transition: opacity 0.15s, transform 0.1s;
+		}
+		.btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+
+		.btn-ghost {
+			width: 100%;
+			background: var(--bg4);
+			color: var(--text);
+			border: 1px solid var(--border2);
+			border-radius: var(--radius-sm);
+			font-size: 15px;
+			font-weight: 500;
+			padding: 13px;
+			cursor: pointer;
+			margin-top: 10px;
 		}
 
-		.loading {
-			text-align: center;
-			color: #999;
-			padding: 20px;
+		.btn-danger {
+			width: 100%;
+			background: rgba(255,69,58,0.12);
+			color: var(--danger);
+			border: 1px solid rgba(255,69,58,0.2);
+			border-radius: var(--radius-sm);
+			font-size: 15px;
+			font-weight: 500;
+			padding: 13px;
+			cursor: pointer;
+			margin-top: 10px;
+		}
+
+		.auth-switch { text-align: center; margin-top: 20px; font-size: 14px; color: var(--text2); }
+		.auth-switch a { color: var(--green); font-weight: 500; cursor: pointer; }
+
+		.msg-error {
+			background: rgba(255,69,58,0.12);
+			border: 1px solid rgba(255,69,58,0.25);
+			color: #ff6b63;
+			border-radius: var(--radius-sm);
+			padding: 11px 14px;
+			font-size: 14px;
+			margin-bottom: 14px;
+		}
+		.msg-success {
+			background: var(--green-dim);
+			border: 1px solid rgba(50,215,75,0.25);
+			color: var(--green);
+			border-radius: var(--radius-sm);
+			padding: 11px 14px;
+			font-size: 14px;
+			margin-bottom: 14px;
 		}
 
 		.spinner {
-			border: 4px solid #f3f3f3;
-			border-top: 4px solid var(--primary);
+			width: 24px; height: 24px;
+			border: 2.5px solid var(--border2);
+			border-top-color: var(--green);
 			border-radius: 50%;
-			width: 30px;
-			height: 30px;
-			animation: spin 1s linear infinite;
-			margin: 0 auto;
+			animation: spin 0.8s linear infinite;
+			margin: 24px auto;
 		}
+		@keyframes spin { to { transform: rotate(360deg); } }
 
-		@keyframes spin {
-			0% { transform: rotate(0deg); }
-			100% { transform: rotate(360deg); }
+		/* ── APP ── */
+		#app { display: none; flex-direction: column; min-height: 100vh; }
+		#app.active { display: flex; }
+
+		.topbar {
+			position: sticky; top: 0; z-index: 100;
+			background: rgba(10,10,10,0.85);
+			backdrop-filter: saturate(180%) blur(20px);
+			-webkit-backdrop-filter: saturate(180%) blur(20px);
+			border-bottom: 1px solid var(--border);
+			padding: 14px 20px;
+			display: flex; align-items: center; justify-content: space-between;
 		}
+		.topbar-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+		.topbar-email { font-size: 13px; color: var(--text2); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-		.error {
-			background: #ffebee;
-			color: var(--danger);
-			padding: 12px;
-			border-radius: 8px;
-			margin-bottom: 15px;
-			font-size: 14px;
-		}
-
-		.success {
-			background: #e8f5e9;
-			color: var(--primary);
-			padding: 12px;
-			border-radius: 8px;
-			margin-bottom: 15px;
-			font-size: 14px;
-		}
-
-		/* Cronologia */
-		.month-group {
-			margin-bottom: 12px;
-			border: 1px solid #eee;
-			border-radius: 12px;
-			overflow: hidden;
-		}
-
-		.month-header {
-			background: #f8f9fa;
-			padding: 12px 15px;
-			font-weight: bold;
-			cursor: pointer;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-		}
-
-		.day-group { border-bottom: 1px solid #f0f0f0; }
-		.day-header { padding: 10px 15px; background: #fff; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; color: #555; }
-		.day-content { display: none; background: #fafafa; }
-		.month-content { display: none; }
-
-		.history-item {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			padding: 10px 15px 10px 30px;
-			border-bottom: 1px solid #f0f0f0;
-			font-size: 14px;
-		}
-
-		.del-btn {
-			color: var(--danger);
-			background: none;
-			border: none;
-			font-size: 18px;
-			padding: 5px;
-			cursor: pointer;
-		}
-
-		.chevron::after { content: ' ▾'; color: #bbb; }
-
-		/* Stats */
-		.stat-grid {
+		/* ── BOTTOM NAV ── */
+		.bottom-nav {
+			position: fixed; bottom: 0; left: 0; right: 0;
+			background: rgba(20,20,20,0.92);
+			backdrop-filter: saturate(180%) blur(20px);
+			-webkit-backdrop-filter: saturate(180%) blur(20px);
+			border-top: 1px solid var(--border);
 			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 12px;
+			grid-template-columns: repeat(5, 1fr);
+			padding-bottom: env(safe-area-inset-bottom);
+			z-index: 100;
 		}
-
-		.stat-box {
-			background: #f8f9fa;
-			padding: 15px;
-			border-radius: 12px;
-			text-align: center;
-			border: 1px solid #eee;
+		.nav-item {
+			display: flex; flex-direction: column; align-items: center; justify-content: center;
+			padding: 10px 4px 8px; cursor: pointer; gap: 4px; transition: opacity 0.15s;
 		}
+		.nav-item:active { opacity: 0.6; }
+		.nav-icon { font-size: 20px; line-height: 1; }
+		.nav-label { font-size: 10px; color: var(--text3); letter-spacing: 0.2px; font-weight: 500; }
+		.nav-item.active .nav-label { color: var(--green); }
 
-		.stat-box big {
-			display: block;
-			font-size: 20px;
-			color: var(--primary);
-			font-weight: bold;
+		/* ── PAGES ── */
+		.page { display: none; padding: 20px 16px 110px; max-width: 680px; margin: 0 auto; width: 100%; animation: fadeUp 0.25s ease; }
+		.page.active { display: block; }
+		@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+		/* ── CARDS ── */
+		.card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+		.card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; }
+
+		/* ── ADD PAGE ── */
+		.type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+		.type-btn {
+			background: var(--bg4); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+			padding: 16px 12px; text-align: center; cursor: pointer; transition: all 0.15s;
+			color: var(--text2); font-size: 14px; font-weight: 500;
 		}
+		.type-btn .type-icon { font-size: 26px; display: block; margin-bottom: 6px; }
+		.type-btn.selected { background: var(--green-dim); border-color: var(--green); color: var(--green); }
 
-		.stat-box small {
-			font-size: 12px;
-			color: #999;
+		.grams-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+		.gram-btn {
+			background: var(--bg4); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+			padding: 14px 8px; text-align: center; cursor: pointer; font-size: 15px; font-weight: 500;
+			color: var(--text2); transition: all 0.15s;
 		}
+		.gram-btn.selected { background: var(--green-dim); border-color: var(--green); color: var(--green); }
 
+		.section-label { font-size: 13px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 10px; margin-top: 20px; }
+
+		.custom-input, .date-input, .text-input, .textarea-input {
+			width: 100%; background: var(--bg4); border: 1px solid var(--border);
+			border-radius: var(--radius-sm); color: var(--text); font-size: 16px;
+			padding: 13px 15px; outline: none; transition: border-color 0.2s;
+			-webkit-appearance: none; color-scheme: dark;
+		}
+		.custom-input { display: none; margin-top: 10px; }
+		.date-input { margin-top: 0; }
+		.textarea-input { height: 120px; font-family: monospace; font-size: 12px; resize: vertical; }
+		.custom-input:focus, .date-input:focus, .text-input:focus, .textarea-input:focus { border-color: var(--green); }
+
+		/* ── STATS ── */
+		.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+		.stat-tile { background: var(--bg4); border-radius: var(--radius-sm); padding: 16px; }
+		.stat-num { font-size: 24px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; line-height: 1; }
+		.stat-label { font-size: 12px; color: var(--text3); margin-top: 4px; font-weight: 500; }
+		.stat-unit { font-size: 14px; font-weight: 400; color: var(--text2); }
+
+		.streak-card {
+			background: linear-gradient(135deg, rgba(50,215,75,0.15), rgba(50,215,75,0.05));
+			border: 1px solid rgba(50,215,75,0.2);
+			border-radius: var(--radius); padding: 20px; margin-bottom: 16px; display: none;
+		}
+		.streak-num { font-size: 48px; font-weight: 800; color: var(--green); letter-spacing: -2px; line-height: 1; }
+		.streak-label { font-size: 14px; color: var(--text2); margin-top: 4px; }
+
+		/* ── HISTORY ── */
+		.month-group { margin-bottom: 8px; }
+		.month-header { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.7px; padding: 12px 4px 6px; display: flex; justify-content: space-between; cursor: pointer; }
+		.month-content { display: none; }
+		.day-group { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; overflow: hidden; }
+		.day-header { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; cursor: pointer; font-size: 15px; font-weight: 500; }
+		.day-meta { font-size: 13px; color: var(--text3); }
+		.day-content { display: none; }
+		.history-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px 11px 24px; border-top: 1px solid var(--border); font-size: 14px; color: var(--text2); }
+		.history-item-left { display: flex; align-items: center; gap: 8px; }
+		.history-time { font-size: 12px; color: var(--text3); }
+		.del-btn { background: none; border: none; color: var(--danger); font-size: 18px; cursor: pointer; padding: 4px 8px; opacity: 0.7; }
+		.del-btn:active { opacity: 1; }
+
+		/* ── CHARTS ── */
+		.chart-wrap { position: relative; height: 220px; width: 100%; margin-top: 8px; }
+
+		/* ── SOCIAL ── */
+		.friend-input-row { display: flex; gap: 10px; margin-bottom: 0; }
+		.friend-input-row input { flex: 1; }
+		.friend-input-row button { flex-shrink: 0; background: var(--green); color: #000; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; padding: 0 18px; cursor: pointer; }
+
+		.social-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+		.social-tab { flex: 1; background: var(--bg4); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text2); font-size: 14px; font-weight: 500; padding: 10px; cursor: pointer; text-align: center; }
+		.social-tab.active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+		.lb-item { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+		.lb-item:last-child { border-bottom: none; }
+		.lb-item:active { opacity: 0.7; }
+		.lb-left { display: flex; align-items: center; gap: 12px; }
+		.lb-rank { font-size: 18px; width: 32px; text-align: center; }
+		.lb-rank-num { font-size: 14px; font-weight: 600; color: var(--text3); width: 32px; text-align: center; }
+		.lb-name { font-size: 15px; font-weight: 500; }
+		.lb-me { color: var(--green); }
+		.lb-right { text-align: right; }
+		.lb-grams { font-size: 15px; font-weight: 600; color: var(--green); }
+		.lb-joints { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+		/* ── MODAL ── */
+		.modal-overlay {
+			display: none; position: fixed; inset: 0;
+			background: rgba(0,0,0,0.7); z-index: 500;
+			align-items: center; justify-content: center; padding: 20px;
+		}
+		.modal-overlay.active { display: flex; }
+		.modal-box {
+			background: var(--bg3); border: 1px solid var(--border2);
+			border-radius: 20px; padding: 24px; width: 100%; max-width: 360px;
+		}
+		.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+		.modal-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+		.modal-stat { background: var(--bg4); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
+		.modal-stat-num { font-size: 20px; font-weight: 700; color: var(--green); }
+		.modal-stat-label { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+		/* ── SETTINGS ── */
+		.settings-row { display: flex; gap: 10px; align-items: center; }
+		.settings-row input { flex: 1; }
+		.settings-row button { flex-shrink: 0; background: var(--green); color: #000; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; padding: 13px 16px; cursor: pointer; }
+
+		.username-status { font-size: 12px; font-weight: 600; margin-top: 6px; min-height: 18px; }
+
+		.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+		.reset-link { background: none; border: none; color: var(--danger); width: 100%; margin-top: 8px; font-size: 13px; font-weight: 600; cursor: pointer; padding: 10px; }
+
+		/* ── NOTIFICATION ── */
 		#notif {
-			position: fixed;
-			bottom: 20px;
-			left: 50%;
+			position: fixed; bottom: 90px; left: 50%;
 			transform: translateX(-50%);
-			background: #333;
-			color: white;
-			padding: 12px 25px;
-			border-radius: 50px;
-			display: none;
-			z-index: 2000;
+			background: var(--bg3); border: 1px solid var(--border2);
+			color: var(--text); padding: 12px 22px; border-radius: 50px;
+			font-size: 14px; font-weight: 500; display: none; z-index: 999;
+			white-space: nowrap; backdrop-filter: blur(20px);
 		}
 
-		.chart-container {
-			position: relative;
-			height: 250px;
-			width: 100%;
-			margin-top: 10px;
+		@media (min-width: 600px) {
+			.page { padding: 24px 24px 110px; }
+			.stats-grid { grid-template-columns: repeat(4, 1fr); }
 		}
-
-		hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
-		p { font-size: 11px; color: #999; text-align: center; }
-
-		.user-info {
-			text-align: center;
-			padding: 10px;
-			background: #f0f0f0;
-			border-radius: 8px;
-			margin-bottom: 15px;
-			font-size: 14px;
-		}
-
-		.user-info strong { color: var(--primary); }
-
-		a {
-			color: var(--primary);
-			text-decoration: none;
-			font-weight: bold;
-			cursor: pointer;
-		}
-
-		a:hover {
-			text-decoration: underline;
-		}
-
-		/* Stile per i tab della classifica */
-.tabs-social {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-.tabs-social button {
-    flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--primary);
-    background: transparent; color: var(--primary); cursor: pointer; font-weight: bold;
-}
-.tabs-social button.active {
-    background: var(--primary); color: white;
-}
-
-/* Stile per l'elemento della classifica */
-.lb-item {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 12px; border-bottom: 1px solid #eee; cursor: pointer;
-}
-.lb-item:hover { background: #f9f9f9; }
-.lb-rank { font-weight: bold; width: 30px; color: #888; }
-.lb-rank.top3 { font-size: 18px; color: #ffca28; }
-
-/* Stile finestra modale per le stats amici */
-.modal {
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;
-}
-.modal-content {
-    width: 90%; max-width: 400px; margin: 0;
-}
-		
 	</style>
 </head>
 <body>
 
-<div id="notif">Registrato! ✅</div>
+<div id="notif"></div>
 
-<!-- PAGINA LOGIN -->
-<div id="page-auth" class="page active">
-	<div class="auth-container">
-		<div class="auth-box">
-			<h2>🌿 JointTracker</h2>
-			<div id="authContent"></div>
-		</div>
+<!-- ── AUTH ── -->
+<div id="page-auth">
+	<div class="auth-logo">🌿</div>
+	<div class="auth-title">JointTracker</div>
+	<div class="auth-sub">Tieni traccia. Resti consapevole.</div>
+	<div class="auth-box">
+		<div id="authContent"><div class="spinner"></div></div>
 	</div>
 </div>
 
-<!-- PAGINA PRINCIPALE (quando loggato) -->
-<header id="header" style="display:none;">
-	<h1>🌿 JointTracker</h1>
-	<button class="menu-btn" onclick="toggleMenu()">☰</button>
-	<div class="menu-content" id="menu">
-    <button onclick="showPage('add')"><span>➕</span>Aggiungi</button>
-    <button onclick="showPage('history')"><span>📜</span>Registro</button>
-    <button onclick="showPage('stats')"><span>📊</span>Stats</button>
-    <button onclick="showPage('charts')"><span>📈</span>Grafici</button>
-    <button onclick="showPage('settings')"><span>⚙️</span>Dati</button>
-	<button onclick="showPage('social')"><span>🏆</span>Social</button>
-</div>
-</header>
+<!-- ── APP ── -->
+<div id="app">
+	<div class="topbar">
+		<div>
+			<div class="topbar-title">🌿 JointTracker</div>
+			<div class="topbar-email" id="emailDisplay"></div>
+		</div>
+	</div>
 
-<div id="page-add" class="page">
-	<div class="card">
-		<div class="user-info">Loggato come <strong id="emailDisplay"></strong></div>
-		<h3>Nuovo Inserimento</h3>
-
-		<label for="type">Cosa fumi?</label>
-		<select id="type">
-			<option value="fumo">🍫 Hashish (Fumo)</option>
-			<option value="erba">🍃 Marijuana (Erba)</option>
-		</select>
-
-		<label for="gCont">Quantità</label>
-		<div class="grams-row" id="gCont">
-			<label><input type="radio" name="g" value="0.3" checked> 0.3g</label>
-			<label><input type="radio" name="g" value="0.5"> 0.5g</label>
-			<label><input type="radio" name="g" value="custom"> Altro</label>
+	<!-- ADD -->
+	<div id="page-add" class="page active">
+		<p class="section-label">Tipo</p>
+		<div class="type-grid">
+			<div class="type-btn selected" data-val="fumo" onclick="selectType(this)">
+				<span class="type-icon">🍫</span>Hashish
+			</div>
+			<div class="type-btn" data-val="erba" onclick="selectType(this)">
+				<span class="type-icon">🍃</span>Marijuana
+			</div>
 		</div>
 
-		<input type="number" id="customGrams" step="0.1" placeholder="Grammi manuali">
+		<p class="section-label">Quantità</p>
+		<div class="grams-grid">
+			<div class="gram-btn selected" data-val="0.3" onclick="selectGram(this)">0.3g</div>
+			<div class="gram-btn" data-val="0.5" onclick="selectGram(this)">0.5g</div>
+			<div class="gram-btn" data-val="custom" onclick="selectGram(this)">Altro</div>
+		</div>
+		<input type="number" id="customGrams" class="custom-input" step="0.1" placeholder="Grammi...">
 
-		<label for="date">Data</label>
-		<input class="data" type="date" id="date">
+		<p class="section-label">Data</p>
+		<input type="date" id="date" class="date-input">
 
-		<button class="main-btn action-btn" onclick="saveData()">SALVA SESSIONE</button>
+		<button class="btn-primary" style="margin-top: 24px;" onclick="saveData()">Salva sessione</button>
 	</div>
-</div>
 
-<div id="page-history" class="page">
-	<div class="card">
-		<h3>📜 Registro Storico</h3>
+	<!-- HISTORY -->
+	<div id="page-history" class="page">
 		<div id="historyList"></div>
 	</div>
-</div>
 
-<div id="page-stats" class="page">
-	<div class="card">
-		<h3>Quantità Totali</h3>
-		<div class="stat-grid">
-			<div class="stat-box"><big id="sFumo">0</big><small>Grammi Fumo</small></div>
-			<div class="stat-box"><big id="sErba">0</big><small>Grammi Erba</small></div>
-			<div class="stat-box"><big id="sJTot">0</big><small>Joint Totali</small></div>
-			<div class="stat-box"><big id="sGTot">0</big><small>Grammi Totali</small></div>
+	<!-- STATS -->
+	<div id="page-stats" class="page">
+		<div id="streakCard" class="streak-card">
+			<div style="display:flex;justify-content:space-between;align-items:flex-start;">
+				<div>
+					<div class="streak-num" id="streakDays">0</div>
+					<div class="streak-label">giorni di streak 🔥</div>
+				</div>
+				<div style="text-align:right;">
+					<div style="font-size:22px;font-weight:700;color:var(--green)" id="bestStreak">0</div>
+					<div style="font-size:12px;color:var(--text3)">Miglior streak 🏆</div>
+				</div>
+			</div>
 		</div>
 
-		<hr>
-
-		<h3>Medie Reali (tutti i giorni)</h3>
-		<div class="stat-grid">
-			<div class="stat-box"><big id="avgDaily">0</big><small>J / Giorno</small></div>
-			<div class="stat-box"><big id="avgMonthly">0</big><small>J / Mese</small></div>
-			<div class="stat-box"><big id="avgYearly">0</big><small>J / Anno</small></div>
-			<div class="stat-box"><big id="avgGrams">0</big><small>Grammi / Giorno</small></div>
+		<div class="card">
+			<div class="card-title">Totali</div>
+			<div class="stats-grid">
+				<div class="stat-tile"><div class="stat-num" id="sFumo">0</div><div class="stat-label">Grammi Fumo</div></div>
+				<div class="stat-tile"><div class="stat-num" id="sErba">0</div><div class="stat-label">Grammi Erba</div></div>
+				<div class="stat-tile"><div class="stat-num" id="sJTot">0</div><div class="stat-label">Joint Totali</div></div>
+				<div class="stat-tile"><div class="stat-num" id="sGTot">0</div><div class="stat-label">Grammi Totali</div></div>
+			</div>
 		</div>
 
-		<hr>
-
-		<h3>🔥 Streak</h3>
-		<div class="stat-grid" id="streakBox">
-			<div class="stat-box"><big id="streakDays">0</big><small>🔥</small></div>
-			<div class="stat-box">🏆 Migliore streak:<big id="bestStreak">0</big></div>
+		<div class="card">
+			<div class="card-title">Medie</div>
+			<div class="stats-grid">
+				<div class="stat-tile"><div class="stat-num" id="avgDaily">0</div><div class="stat-label">Joint / giorno</div></div>
+				<div class="stat-tile"><div class="stat-num" id="avgMonthly">0</div><div class="stat-label">Joint / mese</div></div>
+				<div class="stat-tile"><div class="stat-num" id="avgYearly">0</div><div class="stat-label">Joint / anno</div></div>
+				<div class="stat-tile"><div class="stat-num" id="avgGrams">0</div><div class="stat-label">Grammi / giorno</div></div>
+			</div>
 		</div>
-
-		<p>*Il calcolo parte dalla tua prima J inserita.(<span id="diffDays">0</span> giorni fà)</p>
-	</div>
-</div>
-
-<div id="page-charts" class="page">
-	<div class="card">
-		<h3>📅 Joint per Giorno (Storico Completo)</h3>
-		<div class="chart-container"><canvas id="cDailyAll"></canvas></div>
+		<p style="font-size:12px;color:var(--text3);text-align:center;">Dal primo inserimento: <span id="diffDays">0</span> giorni fa</p>
 	</div>
 
-	<div class="card">
-		<h3>Consumo Grammi (Ultimi 7gg)</h3>
-		<div class="chart-container"><canvas id="cWeight"></canvas></div>
+	<!-- CHARTS -->
+	<div id="page-charts" class="page">
+		<div class="card"><div class="card-title">Storico giornaliero</div><div class="chart-wrap"><canvas id="cDailyAll"></canvas></div></div>
+		<div class="card"><div class="card-title">Grammi — ultimi 7 giorni</div><div class="chart-wrap"><canvas id="cWeight"></canvas></div></div>
+		<div class="card"><div class="card-title">Giorni della settimana</div><div class="chart-wrap"><canvas id="cWeekDays"></canvas></div></div>
+		<div class="card"><div class="card-title">Fasce orarie</div><div class="chart-wrap"><canvas id="cTime"></canvas></div></div>
+		<div class="card"><div class="card-title">Fumo vs Erba</div><div class="chart-wrap"><canvas id="cPie"></canvas></div></div>
 	</div>
 
-	<div class="card">
-		<h3>📊 Giorni della Settimana</h3>
-		<div class="chart-container"><canvas id="cWeekDays"></canvas></div>
-	</div>
-
-	<div class="card">
-		<h3>Fasce Orarie</h3>
-		<div class="chart-container"><canvas id="cTime"></canvas></div>
-	</div>
-
-	<div class="card">
-		<h3>Differenza Grammi Fumo/Erba</h3>
-		<div class="chart-container"><canvas id="cPie"></canvas></div>
-	</div>
-</div>
-
+	<!-- SOCIAL -->
 	<div id="page-social" class="page">
-    <div class="card">
-        <h3>👥 Aggiungi un Amico</h3>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="friendUsername" placeholder="Nickname dell'amico" style="margin-top: 0;">
-            <button class="action-btn" onclick="addFriend()" style="margin-top: 0; width: 80px;">Aggiungi</button>
-        </div>
-    </div>
+		<div class="card">
+			<div class="card-title">Aggiungi amico</div>
+			<div class="friend-input-row">
+				<input type="text" id="friendUsername" class="text-input" placeholder="Nickname dell'amico">
+				<button onclick="addFriend()">Aggiungi</button>
+			</div>
+		</div>
 
-    <div class="card">
-        <div class="tabs-social">
-            <button id="tab-global" class="active" onclick="switchSocialTab('global')">🌍 Mondiale</button>
-            <button id="tab-friends" onclick="switchSocialTab('friends')">👥 Amici</button>
-        </div>
-        <div id="leaderboardList"></div>
-    </div>
+		<div class="card">
+			<div class="social-tabs">
+				<div class="social-tab active" id="tab-global" onclick="switchSocialTab('global')">🌍 Mondiale</div>
+				<div class="social-tab" id="tab-friends" onclick="switchSocialTab('friends')">👥 Amici</div>
+			</div>
+			<div id="leaderboardList"></div>
+		</div>
+	</div>
+
+	<!-- SETTINGS -->
+	<div id="page-settings" class="page">
+		<div class="card">
+			<div class="card-title">Profilo</div>
+			<p style="font-size:14px;color:var(--text2);margin-bottom:14px;">Nickname attuale: <strong id="currentUsernameDisplay" style="color:var(--green)">—</strong></p>
+			<div class="settings-row">
+				<input type="text" id="usernameInput" class="text-input" placeholder="Nuovo nickname">
+				<button onclick="updateProfile()">Salva</button>
+			</div>
+			<div class="username-status" id="usernameStatus"></div>
+		</div>
+
+		<div class="card">
+			<div class="card-title">Dati</div>
+			<button class="btn-ghost" onclick="exportData()">📤 Esporta backup JSON</button>
+			<hr class="divider">
+			<p style="font-size:13px;color:var(--text2);margin-bottom:10px;">📥 Importa JSON</p>
+			<textarea id="importArea" class="textarea-input" placeholder="Incolla qui il JSON del backup..."></textarea>
+			<button class="btn-ghost" style="margin-top:10px;" onclick="importData()">Importa</button>
+			<hr class="divider">
+			<button class="reset-link" onclick="resetAll()">⚠️ Reset completo dati</button>
+		</div>
+
+		<div class="card">
+			<button class="btn-danger" onclick="logout()">Esci dall'account</button>
+		</div>
+	</div>
+
+	<!-- BOTTOM NAV -->
+	<nav class="bottom-nav">
+		<div class="nav-item active" id="nav-add" onclick="showPage('add', this)">
+			<div class="nav-icon">＋</div>
+			<div class="nav-label">Aggiungi</div>
+		</div>
+		<div class="nav-item" id="nav-history" onclick="showPage('history', this)">
+			<div class="nav-icon">📜</div>
+			<div class="nav-label">Storico</div>
+		</div>
+		<div class="nav-item" id="nav-stats" onclick="showPage('stats', this)">
+			<div class="nav-icon">📊</div>
+			<div class="nav-label">Stats</div>
+		</div>
+		<div class="nav-item" id="nav-charts" onclick="showPage('charts', this)">
+			<div class="nav-icon">📈</div>
+			<div class="nav-label">Grafici</div>
+		</div>
+		<div class="nav-item" id="nav-social" onclick="showPage('social', this)">
+			<div class="nav-icon">🏆</div>
+			<div class="nav-label">Social</div>
+		</div>
+	</nav>
 </div>
 
-<!-- Finestra popup (Modal) per le statistiche dell'amico -->
-<div id="friendModal" class="modal">
-    <div class="modal-content card">
-        <h3 id="modalFriendName">Statistiche</h3>
-        <div class="stat-grid" style="margin-bottom: 20px;">
-            <div class="stat-box"><big id="modaleFumo">0</big><small>g Fumo</small></div>
-            <div class="stat-box"><big id="modaleErba">0</big><small>g Erba</small></div>
-        </div>
-        <button class="secondary-btn" onclick="closeFriendModal()">Chiudi</button>
-    </div>
-</div>
-
-<div id="page-settings" class="page">
-	<div class="card">
-    <h3>👤 Profilo Social</h3>
-    <p>Il tuo nickname attuale: <strong id="currentUsernameDisplay" style="color: var(--primary);">...</strong></p>
-    
-    <label for="usernameInput">Cambia Nickname</label>
-    <input type="text" id="usernameInput" placeholder="Nuovo nickname">
-    <button class="action-btn" onclick="updateProfile()">Aggiorna Nome</button>
-</div>
-    <div class="card">
-        <h3>⚙️ Gestione Dati</h3>
-        
-        <button class="secondary-btn" onclick="exportData()">📤 Esporta Backup (JSON)</button>
-        
-        <hr>
-        
-        <label>📥 Importa Dati</label>
-        <textarea id="importArea" style="width:100%; height:120px; margin-top:10px; border-radius:12px; border:1px solid #ddd; padding:10px; font-family:monospace; font-size:12px;" placeholder="Incolla qui il codice JSON del tuo backup..."></textarea>
-        <button class="action-btn" onclick="importData()" style="background:#444;">Importa JSON</button>
-        
-        <hr>
-        
-        <button onclick="resetAll()" style="background:none; border:none; color:var(--danger); width:100%; margin-top:20px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Reset completo dati</button>
-    </div>
-
-    <div class="card">
-        <button class="secondary-btn" onclick="logout()" style="background:var(--danger)">🚪 Logout</button>
-    </div>
+<!-- MODAL AMICO -->
+<div class="modal-overlay" id="friendModal">
+	<div class="modal-box">
+		<div class="modal-title" id="modalFriendName">Statistiche</div>
+		<div class="modal-stats">
+			<div class="modal-stat">
+				<div class="modal-stat-num" id="modalFumo">0</div>
+				<div class="modal-stat-label">g Fumo</div>
+			</div>
+			<div class="modal-stat">
+				<div class="modal-stat-num" id="modalErba">0</div>
+				<div class="modal-stat-label">g Erba</div>
+			</div>
+			<div class="modal-stat">
+				<div class="modal-stat-num" id="modalJoint">0</div>
+				<div class="modal-stat-label">Joint tot.</div>
+			</div>
+		</div>
+		<button class="btn-ghost" onclick="closeFriendModal()">Chiudi</button>
+	</div>
 </div>
 
 <script>
-	// Inizializza Supabase
 	const SUPABASE_URL = 'https://afkxmbxcavwhurmdelfr.supabase.co';
-	const SUPABASE_KEY = 'sb_publishable_1rc0ueZL6Y03qhk5jp_34w_ObCOCpCP';
-	
-	const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+	const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFma3htYnhjYXZ3aHVybWRlbGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2Nzc4MzYsImV4cCI6MjA5MzI1MzgzNn0.5W49Evb1GsPQmVzeLggYOFpfE8ecofVZg3eLAaubzBI';
+
+	const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+		auth: { storage: window.localStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false }
+	});
 
 	let currentUser = null;
 	let smokes = [];
+	let selectedType = 'fumo';
+	let selectedGrams = '0.3';
+	let currentSocialTab = 'global';
 
-	// Controlla se loggato all'avvio
-	async function checkAuth() {
-		const { data: { session } } = await supabaseClient.auth.getSession();
-		if (session) {
+	// ── AUTH ──
+	supabaseClient.auth.onAuthStateChange(async (event, session) => {
+		if (event === 'SIGNED_IN' && session) {
 			currentUser = session.user;
 			showApp();
 			await loadData();
-		} else {
-			showLoginPage();
+		} else if (event === 'SIGNED_OUT') {
+			currentUser = null; smokes = [];
+			showAuthPage();
 		}
+	});
+
+	async function checkAuth() {
+		const { data: { session } } = await supabaseClient.auth.getSession();
+		if (session) { currentUser = session.user; showApp(); await loadData(); }
+		else showAuthPage();
 	}
 
-	function showLoginPage() {
+	function showAuthPage() {
 		document.getElementById('page-auth').classList.add('active');
-		document.getElementById('header').style.display = 'none';
-		document.querySelectorAll('.page:not(#page-auth)').forEach(p => p.classList.remove('active'));
-		
-		const content = document.getElementById('authContent');
-		content.innerHTML = `
-			<form onsubmit="handleAuth(event, 'login')">
-				<label for="email">Email</label>
-				<input type="email" id="email" placeholder="tua-email@gmail.com" required>
-				
-				<label for="password">Password</label>
-				<input type="password" id="password" placeholder="Password (min 6 caratteri)" required>
-				
-				<button type="submit" class="main-btn">🔓 Accedi</button>
-			</form>
-			
-			<p style="text-align: center; margin-top: 20px; color: #666;">
-				Non hai un account? <a onclick="toggleAuthMode(); return false;">Registrati</a>
-			</p>
+		document.getElementById('app').classList.remove('active');
+		renderLoginForm();
+	}
+
+	function renderLoginForm() {
+		document.getElementById('authContent').innerHTML = `
+			<div id="authMsg"></div>
+			<div class="field"><label>Email</label><input type="email" id="email" placeholder="tua@email.com" autocomplete="email"></div>
+			<div class="field"><label>Password</label><input type="password" id="password" placeholder="Password" autocomplete="current-password"></div>
+			<button class="btn-primary" onclick="handleAuth('login')">Accedi</button>
+			<div class="auth-switch">Non hai un account? <a onclick="renderSignupForm()">Registrati</a></div>
 		`;
 	}
 
-	function toggleAuthMode() {
-		const content = document.getElementById('authContent');
-		if (content.innerHTML.includes('Registrati')) {
-			// Mostra form registrazione
-			content.innerHTML = `
-				<form onsubmit="handleAuth(event, 'signup')">
-				
-					<label for="username">Nickname</label>
-					<input type="text" id="reg-username" placeholder="Scegli un nickname" oninput="checkLiveUsername(this)" required>
-					<span id="username-status" style="font-size: 12px; font-weight: bold;"></span>
-					<label for="email">Email</label>
-					<input type="email" id="email" placeholder="tua-email@gmail.com" required>
-					
-					<label for="password">Password</label>
-					<input type="password" id="password" placeholder="Password (min 6 caratteri)" required>
-					
-					<label for="confirm">Conferma Password</label>
-					<input type="password" id="confirm" placeholder="Ripeti password" required>
-					
-					<button type="submit" class="main-btn">📝 Registrati</button>
-				</form>
-				
-				<p style="text-align: center; margin-top: 20px; color: #666;">
-					Hai già un account? <a onclick="toggleAuthMode(); return false;">Accedi</a>
-				</p>
-			`;
-		} else {
-			showLoginPage();
-		}
+	function renderSignupForm() {
+		document.getElementById('authContent').innerHTML = `
+			<div id="authMsg"></div>
+			<div class="field"><label>Nickname</label><input type="text" id="reg-username" placeholder="Il tuo nickname" oninput="checkLiveUsername(this)"></div>
+			<div id="usernameStatusAuth" class="username-status"></div>
+			<div class="field"><label>Email</label><input type="email" id="email" placeholder="tua@email.com" autocomplete="email"></div>
+			<div class="field"><label>Password</label><input type="password" id="password" placeholder="Min 6 caratteri" autocomplete="new-password"></div>
+			<div class="field"><label>Conferma password</label><input type="password" id="confirm" placeholder="Ripeti password"></div>
+			<button class="btn-primary" onclick="handleAuth('signup')">Crea account</button>
+			<div class="auth-switch">Hai già un account? <a onclick="renderLoginForm()">Accedi</a></div>
+		`;
 	}
 
-	async function handleAuth(e, mode) {
-		e.preventDefault();
-		const username = document.getElementById('reg-username')?.value;
-		const email = document.getElementById('email').value;
-		const password = document.getElementById('password').value;
+	async function handleAuth(mode) {
+		const email = document.getElementById('email')?.value?.trim();
+		const password = document.getElementById('password')?.value;
 		const confirm = document.getElementById('confirm')?.value;
+		const username = document.getElementById('reg-username')?.value?.trim();
+		const msgEl = document.getElementById('authMsg');
 
-		if (mode === 'signup' && password !== confirm) {
-			showError('Le password non corrispondono!');
-			return;
-		}
+		if (!email || !password) { msgEl.innerHTML = '<div class="msg-error">Compila tutti i campi.</div>'; return; }
+		if (mode === 'signup' && password !== confirm) { msgEl.innerHTML = '<div class="msg-error">Le password non corrispondono.</div>'; return; }
+		if (password.length < 6) { msgEl.innerHTML = '<div class="msg-error">Password troppo corta (min 6 caratteri).</div>'; return; }
 
-		const content = document.getElementById('authContent');
-		content.innerHTML = '<div class="loading"><div class="spinner"></div><p>Un momento...</p></div>';
+		msgEl.innerHTML = '<div class="spinner"></div>';
 
 		try {
 			let result;
 			if (mode === 'login') {
 				result = await supabaseClient.auth.signInWithPassword({ email, password });
 			} else {
-				result = await supabaseClient.auth.signUp({ email, password,
-                options: {
-                    data: {
-                        username: username // Questo è quello che il trigger leggerà
-                    }
-                } });
+				result = await supabaseClient.auth.signUp({ email, password, options: { data: { username } } });
 			}
 
 			if (result.error) {
-    // 1. Controlliamo se l'errore riguarda il nickname già esistente
-    // In genere Supabase restituisce un errore che menziona la "chiave unica" del database
-    if (result.error.message.toLowerCase().includes("profiles_username_key") || 
-        result.error.message.toLowerCase().includes("unique constraint")) {
-        
-        showError("❌ Questo nickname è già occupato. Scegline un altro!");
-    
-    } else if (result.error.status === 429) {
-        showError("Too many requests: aspetta un minuto prima di riprovare.");
-    } else {
-        // 2. Altrimenti mostriamo l'errore standard (es. password troppo corta o email malformata)
-        showError(result.error.message);
-    }
-
-    // 3. Ripristiniamo il form corretto (senza questo, l'utente vedrebbe solo il caricamento infinito)
-    if (mode === 'login') {
-        showLoginPage();
-    } else {
-        toggleAuthMode();
-        // Un piccolo trucco: se siamo in signup, possiamo provare a rimettere 
-        // l'email che l'utente aveva già scritto per non fargliela riscrivere
-        setTimeout(() => {
-            if(document.getElementById('email')) document.getElementById('email').value = email;
-        }, 10);
-    }
-    return;
-}		
-			currentUser = result.data.user;
-			showApp();
-			await loadData();
-			showMessage('Benvenuto! 🎉');
+				msgEl.innerHTML = `<div class="msg-error">${translateError(result.error.message)}</div>`;
+				return;
+			}
+			if (mode === 'signup' && !result.data.session) {
+				msgEl.innerHTML = '<div class="msg-success">✓ Controlla la tua email per confermare l\'account.</div>';
+			}
 		} catch (err) {
-			showError(err.message);
+			msgEl.innerHTML = `<div class="msg-error">${err.message}</div>`;
 		}
 	}
 
 	async function checkLiveUsername(input) {
-    const username = input.value.trim();
-    const statusLabel = document.getElementById('username-status');
-    
-    if (username.length < 3) {
-        statusLabel.innerText = "Troppo corto...";
-        statusLabel.style.color = "orange";
-        return;
-    }
-
-    const { data } = await supabaseClient
-        .from('profiles')
-        .select('username')
-        .eq('username', username)
-        .single();
-
-    if (data) {
-        statusLabel.innerText = "❌ Già preso";
-        statusLabel.style.color = "red";
-        input.style.borderColor = "red";
-    } else {
-        statusLabel.innerText = "✅ Disponibile";
-        statusLabel.style.color = "green";
-        input.style.borderColor = "green";
-    }
-}
-
-	function showApp() {
-    document.getElementById('page-auth').classList.remove('active');
-    document.getElementById('header').style.display = 'flex';
-    
-    // Mostra la pagina "Aggiungi" e forza l'aggiornamento grafico dei bottoni
-    showPage('add'); 
-    
-    document.getElementById('emailDisplay').textContent = currentUser.email;
-    
-    // Applica graficamente la selezione al tasto 0.3g all'avvio
-    const defaultRadio = document.querySelector('input[name="g"][value="0.3"]');
-    if(defaultRadio) {
-        defaultRadio.parentElement.classList.add('selected');
-    }
-}
-
-	function showError(msg) {
-		const content = document.getElementById('authContent');
-		const errorDiv = document.createElement('div');
-		errorDiv.className = 'error';
-		errorDiv.textContent = msg;
-		content.insertBefore(errorDiv, content.firstChild);
+		const username = input.value.trim();
+		const statusEl = document.getElementById('usernameStatusAuth');
+		if (!statusEl) return;
+		if (username.length < 3) { statusEl.textContent = 'Troppo corto...'; statusEl.style.color = 'orange'; return; }
+		const { data } = await supabaseClient.from('profiles').select('username').eq('username', username).single();
+		if (data) { statusEl.textContent = '❌ Già preso'; statusEl.style.color = 'var(--danger)'; }
+		else { statusEl.textContent = '✅ Disponibile'; statusEl.style.color = 'var(--green)'; }
 	}
 
-	function showMessage(msg) {
-		document.getElementById('notif').textContent = msg;
-		document.getElementById('notif').style.display = 'block';
-		setTimeout(() => document.getElementById('notif').style.display = 'none', 2000);
+	function translateError(msg) {
+		if (msg.includes('Invalid login credentials')) return 'Email o password errati.';
+		if (msg.includes('Email not confirmed')) return 'Conferma prima la tua email.';
+		if (msg.includes('User already registered')) return 'Email già registrata. Accedi.';
+		if (msg.includes('Password should be')) return 'Password troppo corta (min 6 caratteri).';
+		return msg;
+	}
+
+	function showApp() {
+		document.getElementById('page-auth').classList.remove('active');
+		document.getElementById('app').classList.add('active');
+		if (currentUser) document.getElementById('emailDisplay').textContent = currentUser.email;
 	}
 
 	async function logout() {
 		await supabaseClient.auth.signOut();
-		currentUser = null;
-		smokes = [];
-		showLoginPage();
 	}
 
+	// ── DATA ──
 	async function loadData() {
-		const { data, error } = await supabaseClient
-			.from('smokes')
-			.select('*')
-			.order('ts', { ascending: false });
+		if (!currentUser) return;
+		const { data, error } = await supabaseClient.from('smokes').select('*').eq('user_id', currentUser.id).order('ts', { ascending: false });
+		if (!error) { smokes = data || []; update(); }
+		else console.error('loadData error:', error);
+	}
 
-		if (error) {
-			console.error('Errore caricamento dati:', error);
-			return;
-		}
+	function selectType(el) {
+		document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+		el.classList.add('selected');
+		selectedType = el.dataset.val;
+	}
 
-		smokes = data || [];
-		update();
+	function selectGram(el) {
+		document.querySelectorAll('.gram-btn').forEach(b => b.classList.remove('selected'));
+		el.classList.add('selected');
+		selectedGrams = el.dataset.val;
+		document.getElementById('customGrams').style.display = selectedGrams === 'custom' ? 'block' : 'none';
 	}
 
 	async function saveData() {
-		const type = document.getElementById("type").value;
-		const gVal = document.querySelector('input[name="g"]:checked').value;
-		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
-
-		if(!grams || grams <= 0) return alert("Inserisci un peso valido");
+		if (!currentUser) return;
+		const grams = selectedGrams === 'custom'
+			? parseFloat(document.getElementById('customGrams').value)
+			: parseFloat(selectedGrams);
+		if (!grams || grams <= 0) { showNotif('⚠ Inserisci un peso valido'); return; }
 
 		const now = new Date();
-		const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
-		const date = document.getElementById("date").value;
+		const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+		const date = document.getElementById('date').value;
 		const ts = Date.now();
 
-		const { error } = await supabaseClient.from('smokes').insert({
-			type, grams, date, time, ts, user_id: currentUser.id
-		});
-
-		if (error) {
-			console.error('Errore salvataggio:', error);
-			alert('Errore nel salvataggio. Riprova.');
-			return;
-		}
-
-		showMessage('Sessione salvata! ✅');
+		const { error } = await supabaseClient.from('smokes').insert({ type: selectedType, grams, date, time, ts, user_id: currentUser.id });
+		if (error) { showNotif('⚠ Errore nel salvataggio'); console.error(error); return; }
+		showNotif('✓ Sessione salvata');
 		await loadData();
 	}
 
 	async function deleteItem(ts) {
-		if(!confirm("Vuoi eliminare questo inserimento?")) return;
+		if (!confirm('Eliminare questo inserimento?')) return;
+		const { error } = await supabaseClient.from('smokes').delete().eq('ts', ts).eq('user_id', currentUser.id);
+		if (!error) await loadData();
+	}
 
-		const { error } = await supabaseClient.from('smokes').delete().eq('ts', ts);
-
-		if (error) {
-			console.error('Errore eliminazione:', error);
-			return;
+	// ── NAVIGATION ──
+	function showPage(p, navEl) {
+		document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+		document.getElementById('page-' + p).classList.add('active');
+		if (navEl) {
+			document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+			navEl.classList.add('active');
 		}
-
-		await loadData();
+		renderHistory();
+		renderStats();
+		if (p === 'charts') renderCharts();
+		if (p === 'social') loadSocial();
+		if (p === 'settings') loadUserProfile();
 	}
 
-	function toggleMenu() {
-		const m = document.getElementById("menu");
-		m.style.display = m.style.display === "block" ? "none" : "block";
-	}
-
-	function showPage(p) {
-    // 1. Gestione Pagine
-    document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
-    document.getElementById("page-" + p).classList.add("active");
-
-    // 2. Gestione Colore Tasti Menu
-    document.querySelectorAll(".menu-content button").forEach(btn => btn.classList.remove("active-tab"));
-    
-    // Mappa l'ID pagina all'indice del bottone (0=Add, 1=History, 2=Stats, 3=Charts, 4=Settings)
-    const pageToIndex = { 'add': 0, 'history': 1, 'stats': 2, 'charts': 3, 'settings': 4 };
-    const activeBtn = document.querySelectorAll(".menu-content button")[pageToIndex[p]];
-    if(activeBtn) activeBtn.classList.add("active-tab");
-	if (p === 'social') loadSocial();
-    if (p === 'settings') loadUserProfile();
-
-    update();
-}
-	
 	function toggleAccordion(el) {
-		const content = el.nextElementSibling;
-		const isVisible = content.style.display === "block";
-		content.style.display = isVisible ? "none" : "block";
+		const c = el.nextElementSibling;
+		c.style.display = c.style.display === 'block' ? 'none' : 'block';
+	}
+
+	function showNotif(msg) {
+		const n = document.getElementById('notif');
+		n.textContent = msg; n.style.display = 'block';
+		setTimeout(() => n.style.display = 'none', 2500);
+	}
+
+	// ── RENDER ──
+	function update() { renderHistory(); renderStats(); }
+
+	function renderHistory() {
+		const hList = document.getElementById('historyList');
+		if (!hList) return;
+		if (!smokes.length) { hList.innerHTML = '<p style="text-align:center;color:var(--text3);padding:40px 0;">Nessun dato ancora.</p>'; return; }
+
+		const months = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+		const grouped = {};
+		smokes.forEach(s => {
+			const d = new Date(s.date);
+			const mk = `${months[d.getMonth()]} ${d.getFullYear()}`;
+			if (!grouped[mk]) grouped[mk] = {};
+			if (!grouped[mk][s.date]) grouped[mk][s.date] = [];
+			grouped[mk][s.date].push(s);
+		});
+
+		let html = '';
+		for (let mk in grouped) {
+			let dayHtml = '';
+			for (let dk in grouped[mk]) {
+				const ds = grouped[mk][dk];
+				const dw = ds.reduce((a,s) => a + Number(s.grams), 0);
+				const dp = dk.split('-').reverse().join('/');
+				const items = ds.map(s => `
+					<div class="history-item">
+						<div class="history-item-left">
+							<span>${s.type === 'fumo' ? '🍫' : '🍃'}</span>
+							<span>${s.grams}g</span>
+							<span class="history-time">${s.time}</span>
+						</div>
+						<button class="del-btn" onclick="deleteItem(${s.ts})">🗑</button>
+					</div>`).join('');
+				dayHtml += `<div class="day-group">
+					<div class="day-header" onclick="toggleAccordion(this)">
+						<span>${dp}</span><span class="day-meta">${dw.toFixed(1)}g</span>
+					</div>
+					<div class="day-content">${items}</div>
+				</div>`;
+			}
+			html += `<div class="month-group">
+				<div class="month-header" onclick="toggleAccordion(this)"><span>${mk}</span><span>▾</span></div>
+				<div class="month-content">${dayHtml}</div>
+			</div>`;
+		}
+		hList.innerHTML = html;
+	}
+
+	function renderStats() {
+		let totF = 0, totE = 0;
+		smokes.forEach(s => s.type === 'fumo' ? totF += Number(s.grams) : totE += Number(s.grams));
+		const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+		set('sFumo', totF.toFixed(2) + 'g');
+		set('sErba', totE.toFixed(2) + 'g');
+		set('sJTot', smokes.length);
+		set('sGTot', (totF+totE).toFixed(2) + 'g');
+
+		let diffDays = 1;
+		if (smokes.length) {
+			const sorted = [...smokes].sort((a,b) => new Date(a.date)-new Date(b.date));
+			diffDays = Math.ceil(Math.abs(new Date()-new Date(sorted[0].date))/86400000) || 1;
+		}
+		set('diffDays', diffDays);
+		set('avgDaily', (smokes.length/diffDays).toFixed(2));
+		set('avgMonthly', ((smokes.length/diffDays)*30.44).toFixed(1));
+		set('avgYearly', ((smokes.length/diffDays)*365.25).toFixed(1));
+		set('avgGrams', ((totF+totE)/diffDays).toFixed(2) + 'g');
+
+		const streak = calculateStreak();
+		const sc = document.getElementById('streakCard');
+		if (sc) {
+			if (streak >= 3) {
+				sc.style.display = 'block';
+				set('streakDays', streak);
+				updateBestStreak(streak).then(b => set('bestStreak', b));
+			} else sc.style.display = 'none';
+		}
 	}
 
 	function calculateStreak() {
-		if (smokes.length === 0) return 0;
-
+		if (!smokes.length) return 0;
 		const days = [...new Set(smokes.map(s => s.date))].sort();
 		let streak = 1;
-
 		for (let i = days.length - 1; i > 0; i--) {
-			const today = new Date(days[i]);
-			const yesterday = new Date(days[i - 1]);
-			today.setHours(0,0,0,0);
-			yesterday.setHours(0,0,0,0);
-			const diff = (today - yesterday) / (1000 * 60 * 60 * 24);
-			if (diff === 1) streak++;
-			else break;
+			const diff = (new Date(days[i]) - new Date(days[i-1])) / 86400000;
+			if (diff === 1) streak++; else break;
 		}
-
-		const last = new Date(days[days.length - 1]);
-		const now = new Date();
-		last.setHours(0,0,0,0);
-		now.setHours(0,0,0,0);
-		const diffFromToday = (now - last) / (1000 * 60 * 60 * 24);
-		if (diffFromToday > 1) return 0;
-
-		return streak;
+		const last = new Date(days[days.length-1]); const now = new Date();
+		last.setHours(0,0,0,0); now.setHours(0,0,0,0);
+		return (now-last)/86400000 > 1 ? 0 : streak;
 	}
 
-	async function updateBestStreak(currentStreak) {
+	async function updateBestStreak(s) {
+		if (!currentUser) return 0;
 		const { data } = await supabaseClient.from('user_stats').select('best_streak').eq('user_id', currentUser.id).single();
-		
 		let best = data?.best_streak || 0;
-		if (currentStreak > best) {
-			await supabaseClient.from('user_stats').upsert({
-				user_id: currentUser.id,
-				best_streak: currentStreak
-			});
-			best = currentStreak;
+		if (s > best) {
+			await supabaseClient.from('user_stats').upsert({ user_id: currentUser.id, best_streak: s, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+			best = s;
 		}
 		return best;
 	}
 
-	function update() {
-		const hList = document.getElementById("historyList");
-		hList.innerHTML = "";
-
-		if (smokes.length === 0) {
-			hList.innerHTML = "<p style='text-align:center; color:#999;'>Nessun dato presente.</p>";
-		} else {
-			const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
-			const grouped = {};
-
-			smokes.forEach(s => {
-				const d = new Date(s.date);
-				const mKey = `${months[d.getMonth()]} ${d.getFullYear()}`;
-				if (!grouped[mKey]) grouped[mKey] = {};
-				if (!grouped[mKey][s.date]) grouped[mKey][s.date] = [];
-				grouped[mKey][s.date].push(s);
-			});
-
-			for (let mKey in grouped) {
-				let mGrams = 0;
-				let daysHtml = "";
-
-				for (let dKey in grouped[mKey]) {
-					const daySmokes = grouped[mKey][dKey];
-					const dayWeight = daySmokes.reduce((sum, s) => sum + s.grams, 0);
-					mGrams += dayWeight;
-
-					const dDisplay = dKey.split('-').reverse().join('/');
-
-					let itemsHtml = daySmokes.map(s => `
-						<div class="history-item">
-							<span>${s.time} - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g</span>
-							<button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
-						</div>
-					`).join('');
-
-					daysHtml += `
-						<div class="day-group">
-							<div class="day-header" onclick="toggleAccordion(this)">
-								<span>📅 ${dDisplay}</span>
-								<span>${dayWeight.toFixed(1)}g <span class="chevron"></span></span>
-							</div>
-							<div class="day-content">${itemsHtml}</div>
-						</div>`;
-				}
-
-				hList.innerHTML += `
-					<div class="month-group">
-						<div class="month-header" onclick="toggleAccordion(this)">
-							<span>📂 ${mKey}</span>
-							<span>${mGrams.toFixed(1)}g <span class="chevron"></span></span>
-						</div>
-						<div class="month-content">${daysHtml}</div>
-					</div>`;
-			}
-		}
-
-		// Statistiche
-		let totF = 0, totE = 0;
-		smokes.forEach(s => { s.type === 'fumo' ? totF += s.grams : totE += s.grams; });
-
-		document.getElementById("sFumo").innerText = totF.toFixed(2);
-		document.getElementById("sErba").innerText = totE.toFixed(2);
-		document.getElementById("sJTot").innerText = smokes.length;
-		document.getElementById("sGTot").innerText = (totF + totE).toFixed(2);
-
-		let diffDays = 1;
-		if (smokes.length > 0) {
-			const sortedSmokes = [...smokes].sort((a,b) => new Date(a.date) - new Date(b.date));
-			const firstJ = new Date(sortedSmokes[0].date);
-			const today = new Date();
-			diffDays = Math.ceil(Math.abs(today - firstJ) / (1000 * 60 * 60 * 24)) || 1;
-		}
-		document.getElementById("diffDays").innerText = diffDays.toFixed(2);
-
-		document.getElementById("avgDaily").innerText = (smokes.length / diffDays).toFixed(2);
-		document.getElementById("avgMonthly").innerText = ((smokes.length / diffDays) * 30.44).toFixed(1);
-		document.getElementById("avgYearly").innerText = ((smokes.length / diffDays) * 365.25).toFixed(1);
-		document.getElementById("avgGrams").innerText = ((totF + totE) / diffDays).toFixed(2) + "g";
-
-		const streak = calculateStreak();
-		const box = document.getElementById("streakBox");
-		if (streak >= 3) {
-			document.getElementById("streakDays").innerText = streak;
-			updateBestStreak(streak).then(best => {
-				document.getElementById("bestStreak").innerText = best;
-			});
-			box.style.display = "block";
-		} else {
-			box.style.display = "none";
-		}
-
-		renderCharts(totF, totE);
-	}
-
 	let charts = {};
-	function renderCharts(f, e) {
-		Object.values(charts).forEach(c => c.destroy());
+	function renderCharts() {
+		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
+		charts = {};
 
-		let numFumo = smokes.filter(s => s.type === 'fumo').length;
-		let numErba = smokes.filter(s => s.type === 'erba').length;
+		const cd = { maintainAspectRatio: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.55)', font: { size: 12 } } } }, scales: { x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } } } };
+		const nd = { maintainAspectRatio: false, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.55)', font: { size: 12 } } } } };
 
-		charts.pie = new Chart(document.getElementById("cPie"), {
-			type: 'doughnut',
-			data: { labels: ['Fumo', 'Erba'], datasets: [{ data: [numFumo, numErba], backgroundColor: ['#795548', '#4CAF50'] }]},
-			options: { maintainAspectRatio: false }
-		});
+		charts.pie = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['Fumo','Erba'], datasets: [{ data: [smokes.filter(s=>s.type==='fumo').length, smokes.filter(s=>s.type==='erba').length], backgroundColor: ['#8d6e63','#32d74b'], borderWidth: 0 }] }, options: { ...nd, cutout: '65%' } });
 
-		const last7 = [...Array(7)].map((_,i) => { let d = new Date(); d.setDate(d.getDate()-i); return d.toISOString().split('T')[0]; }).reverse();
-		const weightData = last7.map(d => smokes.filter(s => s.date === d).reduce((acc, curr) => acc + curr.grams, 0));
+		const last7 = [...Array(7)].map((_,i) => { let d=new Date(); d.setDate(d.getDate()-i); return d.toISOString().split('T')[0]; }).reverse();
+		charts.weight = new Chart(document.getElementById('cWeight'), { type: 'bar', data: { labels: last7.map(d=>d.slice(8)), datasets: [{ label:'Grammi', data: last7.map(d=>smokes.filter(s=>s.date===d).reduce((a,s)=>a+Number(s.grams),0)), backgroundColor: 'rgba(50,215,75,0.5)', borderColor: '#32d74b', borderWidth: 1, borderRadius: 6 }] }, options: cd });
 
-		charts.weight = new Chart(document.getElementById("cWeight"), {
-			type: 'line',
-			data: { labels: last7.map(d => d.slice(8)), datasets: [{ label: 'Grammi', data: weightData, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true }]},
-			options: { maintainAspectRatio: false }
-		});
+		const dm = {}; smokes.forEach(s => { dm[s.date]=(dm[s.date]||0)+1; });
+		const sd = Object.keys(dm).sort();
+		charts.dailyAll = new Chart(document.getElementById('cDailyAll'), { type: 'line', data: { labels: sd.map(d=>d.split('-').slice(1).reverse().join('/')), datasets: [{ label:'Joint', data: sd.map(d=>dm[d]), borderColor: '#32d74b', backgroundColor: 'rgba(50,215,75,0.08)', fill:true, tension:0.4, pointRadius:3, pointBackgroundColor:'#32d74b' }] }, options: cd });
 
-		const dailyMap = {};
-		smokes.forEach(s => { if (!dailyMap[s.date]) dailyMap[s.date] = 0; dailyMap[s.date]++; });
-		const sortedDates = Object.keys(dailyMap).sort();
-		const dailyCounts = sortedDates.map(d => dailyMap[d]);
+		const wk = {'Dom':0,'Lun':0,'Mar':0,'Mer':0,'Gio':0,'Ven':0,'Sab':0};
+		smokes.forEach(s => { wk[Object.keys(wk)[new Date(s.date).getDay()]]++; });
+		charts.week = new Chart(document.getElementById('cWeekDays'), { type: 'bar', data: { labels: Object.keys(wk), datasets: [{ label:'Joint', data: Object.values(wk), backgroundColor: 'rgba(50,215,75,0.4)', borderColor: '#32d74b', borderWidth: 1, borderRadius: 6 }] }, options: cd });
 
-		charts.dailyAll = new Chart(document.getElementById("cDailyAll"), {
-			type: 'line',
-			data: { labels: sortedDates.map(d => d.split("-").reverse().join("/")), datasets: [{ label: 'Joint', data: dailyCounts, borderColor: '#1b5e20', backgroundColor: 'rgba(27,94,32,0.1)', fill: true, tension: 0.3 }]},
-			options: { maintainAspectRatio: false }
-		});
-
-		const weekDays = { "Domenica": 0, "Lunedì": 0, "Martedì": 0, "Mercoledì": 0, "Giovedì": 0, "Venerdì": 0, "Sabato": 0 };
-		smokes.forEach(s => { const d = new Date(s.date); const dayIndex = d.getDay(); const names = Object.keys(weekDays); weekDays[names[dayIndex]]++; });
-
-		charts.week = new Chart(document.getElementById("cWeekDays"), {
-			type: 'bar',
-			data: { labels: Object.keys(weekDays), datasets: [{ label: 'Joint', data: Object.values(weekDays), backgroundColor: '#66bb6a' }]},
-			options: { maintainAspectRatio: false }
-		});
-
-		const hours = { Notte: 0, Mattina: 0, Pomeriggio: 0, Sera: 0 };
-		smokes.forEach(s => { if (!s.time || typeof s.time !== "string") return; const h = parseInt(s.time.split(':')[0]); if(h >= 0 && h < 6) hours.Notte++; else if(h >= 6 && h < 12) hours.Mattina++; else if(h >= 12 && h < 18) hours.Pomeriggio++; else hours.Sera++; });
-
-		charts.time = new Chart(document.getElementById("cTime"), {
-			type: 'polarArea',
-			data: { labels: Object.keys(hours), datasets: [{ data: Object.values(hours), backgroundColor: ['#2c3e50','#f1c40f','#e67e22','#2980b9'] }]},
-			options: { maintainAspectRatio: false }
-		});
+		const hr = {'Notte':0,'Mattina':0,'Pomeriggio':0,'Sera':0};
+		smokes.forEach(s => { if(!s.time) return; const h=parseInt(s.time.split(':')[0]); if(h<6)hr.Notte++; else if(h<12)hr.Mattina++; else if(h<18)hr.Pomeriggio++; else hr.Sera++; });
+		charts.time = new Chart(document.getElementById('cTime'), { type: 'polarArea', data: { labels: Object.keys(hr), datasets: [{ data: Object.values(hr), backgroundColor: ['rgba(44,62,80,0.8)','rgba(241,196,15,0.6)','rgba(230,126,34,0.6)','rgba(41,128,185,0.6)'], borderWidth: 0 }] }, options: nd });
 	}
-// ESPORTA DATI
-async function exportData() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('smokes')
-            .select('*')
-            .order('ts', { ascending: false });
 
-        if (error) throw error;
+	// ── SOCIAL ──
+	function switchSocialTab(tab) {
+		currentSocialTab = tab;
+		document.getElementById('tab-global').classList.toggle('active', tab === 'global');
+		document.getElementById('tab-friends').classList.toggle('active', tab === 'friends');
+		loadSocial();
+	}
 
-        const dataStr = JSON.stringify(data, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `jointtracker_backup_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        showMessage("Backup scaricato! 💾");
-    } catch (err) {
-        console.error(err);
-        alert("Errore durante l'esportazione.");
-    }
-}
+	async function loadSocial() {
+		const list = document.getElementById('leaderboardList');
+		if (!list || !currentUser) return;
+		list.innerHTML = '<div class="spinner"></div>';
 
-// IMPORTA DATI
-async function importData() {
-    const area = document.getElementById('importArea');
-    const jsonRaw = area.value.trim();
+		const isGlobal = currentSocialTab === 'global';
+		const rpcName = isGlobal ? 'get_global_leaderboard' : 'get_friends_leaderboard';
+		const params = isGlobal ? {} : { current_user_id: currentUser.id };
 
-    if (!jsonRaw) return alert("Incolla prima il JSON nell'area di testo.");
+		const { data, error } = await supabaseClient.rpc(rpcName, params);
 
-    try {
-        let importedData = JSON.parse(jsonRaw);
+		if (error) { list.innerHTML = `<p style="color:var(--danger);font-size:14px;padding:10px 0;">Errore: ${error.message}</p>`; return; }
+		if (!data || !data.length) { list.innerHTML = `<p style="text-align:center;color:var(--text3);padding:20px 0;">${isGlobal ? 'Nessun dato.' : 'Nessun amico ancora.'}</p>`; return; }
 
-        // Se è un oggetto con "smokes_v3", estrai l'array
-        if (importedData.smokes_v3 && Array.isArray(importedData.smokes_v3)) {
-            importedData = importedData.smokes_v3;
-        }
+		list.innerHTML = data.map((u, i) => {
+			const isTop3 = i < 3;
+			const rank = isTop3 ? ['🥇','🥈','🥉'][i] : null;
+			const isMe = u.user_id === currentUser.id;
+			return `<div class="lb-item" onclick="viewFriendStats('${u.user_id}', '${u.username}')">
+				<div class="lb-left">
+					${rank ? `<span class="lb-rank">${rank}</span>` : `<span class="lb-rank-num">#${i+1}</span>`}
+					<span class="lb-name ${isMe ? 'lb-me' : ''}">${u.username}${isMe ? ' (Tu)' : ''}</span>
+				</div>
+				<div class="lb-right">
+					<div class="lb-grams">${Number(u.total_g).toFixed(1)}g</div>
+					<div class="lb-joints">${u.total_j} joint</div>
+				</div>
+			</div>`;
+		}).join('');
+	}
 
-        // Ora controlla se è un array
-        if (!Array.isArray(importedData)) {
-            throw new Error("Il formato del backup non è valido (deve essere un array o un oggetto con 'smokes_v3').");
-        }
+	async function addFriend() {
+		const username = document.getElementById('friendUsername').value.trim();
+		if (!username) return;
+		const { data: profiles, error } = await supabaseClient.from('profiles').select('id').ilike('username', username);
+		if (error || !profiles.length) { showNotif('⚠ Utente non trovato'); return; }
+		if (profiles[0].id === currentUser.id) { showNotif('⚠ Non puoi aggiungere te stesso'); return; }
+		const { error: insertErr } = await supabaseClient.from('friendships').insert({ user_id: currentUser.id, friend_id: profiles[0].id });
+		if (insertErr?.code === '23505') showNotif('Siete già amici!');
+		else if (insertErr) showNotif('⚠ Errore durante l\'aggiunta');
+		else { showNotif('Amico aggiunto! 🤝'); document.getElementById('friendUsername').value = ''; if (currentSocialTab === 'friends') loadSocial(); }
+	}
 
-        if (!confirm(`Stai per importare ${importedData.length} sessioni. Procedere?`)) return;
+	// FIX: modal amico con tutti e 3 i campi (fumo, erba, joint)
+	async function viewFriendStats(targetId, username) {
+		const { data, error } = await supabaseClient.rpc('get_friend_stats', { target_user_id: targetId });
+		if (error || !data || !data.length) { showNotif('⚠ Impossibile caricare le statistiche'); return; }
 
-        // Prepariamo i dati: rimuoviamo gli ID vecchi per evitare conflitti 
-        // e forziamo l'user_id dell'utente corrente
-        const cleanData = importedData.map((item, index) => {
-    const { id, created_at, ...rest } = item; 
-    return { 
-        ...rest, 
-        user_id: currentUser.id,
-        ts: Math.floor(item.ts) + index, // Aggiunge index per rendere ts unico
-        time: item.time || '12:00'
-    };
-});
-		const { error } = await supabaseClient
-            .from('smokes')
-            .insert(cleanData);
-		
-        if (error) throw error;
+		document.getElementById('modalFriendName').textContent = `Stats di ${username}`;
+		document.getElementById('modalFumo').textContent = Number(data[0].fumo_g || 0).toFixed(1) + 'g';
+		document.getElementById('modalErba').textContent = Number(data[0].erba_g || 0).toFixed(1) + 'g';
+		document.getElementById('modalJoint').textContent = data[0].totale_j || 0;
+		document.getElementById('friendModal').classList.add('active');
+	}
 
-        alert("Importazione completata con successo! 🎉");
-        area.value = "";
-        await loadData(); // Ricarica la UI
-        showPage('history'); // Porta l'utente a vedere i dati importati
-    } catch (err) {
-        console.error(err);
-        alert("Errore durante l'importazione: " + err.message);
-    }
-}
+	function closeFriendModal() {
+		document.getElementById('friendModal').classList.remove('active');
+	}
 
-// RESET TOTALE
-async function resetAll() {
-    const conferma = confirm("ATTENZIONE: Questa operazione cancellerà DEFINITIVAMENTE tutte le tue sessioni salvate. Non potrai tornare indietro. Sei davvero sicuro?");
-    
-    if (conferma) {
-        const confermaFinale = prompt("Per confermare la cancellazione totale, scrivi 'ELIMINA' (tutto maiuscolo):");
-        
-        if (confermaFinale === "ELIMINA") {
-            try {
-                const { error } = await supabaseClient
-                    .from('smokes')
-                    .delete()
-                    .eq('user_id', currentUser.id);
-
-                if (error) throw error;
-
-                alert("Tutti i dati sono stati cancellati.");
-                await loadData();
-                showPage('add');
-            } catch (err) {
-                console.error(err);
-                alert("Errore durante il reset.");
-            }
-        } else {
-            alert("Reset annullato.");
-        }
-    }
-}
-	// Inizializzazione
-	document.getElementById("date").value = new Date().toISOString().split("T")[0];
-
-	document.querySelectorAll('input[name="g"]').forEach(r => {
-		r.addEventListener("change", e => {
-			document.querySelectorAll(".grams-row label").forEach(l => l.classList.remove("selected"));
-			e.target.parentElement.classList.add("selected");
-			document.getElementById("customGrams").style.display = e.target.value === "custom" ? "block" : "none";
-		});
-	});
-
-	let currentSocialTab = 'global';
-
-// Cambia tra classifica Globale e Amici
-function switchSocialTab(tab) {
-    currentSocialTab = tab;
-    document.getElementById('tab-global').classList.toggle('active', tab === 'global');
-    document.getElementById('tab-friends').classList.toggle('active', tab === 'friends');
-    loadSocial();
-}
-
-// Carica la classifica in base al tab selezionato
-async function loadSocial() {
-    const list = document.getElementById('leaderboardList');
-    if (!list) return;
-
-    list.innerHTML = '<div class="spinner"></div>';
-
-    // 1. Controllo sicurezza: se non c'è l'utente, non possiamo caricare gli amici
-    if (!currentUser) {
-        list.innerHTML = "<p style='text-align:center;'>Effettua il login per vedere la classifica.</p>";
-        return;
-    }
-
-    const isGlobal = currentSocialTab === 'global';
-    const rpcName = isGlobal ? 'get_global_leaderboard' : 'get_friends_leaderboard';
-    
-    // 2. Prepariamo i parametri in modo pulito
-    const params = isGlobal ? {} : { current_user_id: currentUser.id };
-	console.log("Chiamata RPC:", rpcName, params); // Debug: guarda la console del browser (F12)
-
-    const { data, error } = await supabaseClient.rpc(rpcName, params);
-
-    if (error) {
-        console.error("Errore dettagliato:", error); // Fondamentale per capire il problema
-        list.innerHTML = `<p class='error'>Errore tecnico: ${error.message}</p>`;
-        return;
-    }
-    try {
-        const { data, error } = await supabaseClient.rpc(rpcName, params);
-
-        if (error) {
-            console.error("Errore Supabase RPC:", error);
-            list.innerHTML = "<p class='error'>Errore nel recupero dati dal database.</p>";
-            return;
-        }
-
-        if (!data || data.length === 0) {
-            list.innerHTML = `<p style='text-align:center; padding: 20px;'>
-                ${isGlobal ? "Nessun dato globale." : "Non hai ancora amici. Aggiungili con il loro nickname!"}
-            </p>`;
-            return;
-        }
-
-        // 3. Rendering
-        list.innerHTML = data.map((u, i) => {
-            const rankStr = i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`;
-            const rankClass = i < 3 ? 'top3' : '';
-            const isMe = u.user_id === currentUser.id;
-
-            return `
-                <div class="lb-item" onclick="viewFriendStats('${u.user_id}', '${u.username}')" 
-                     style="${isMe ? 'background: rgba(var(--primary-rgb), 0.1);' : ''}">
-                    <div style="display: flex; align-items: center;">
-                        <span class="lb-rank ${rankClass}">${rankStr}</span>
-                        <span style="font-weight: ${isMe ? 'bold' : '500'};">
-                            ${u.username} ${isMe ? '(Tu)' : ''}
-                        </span>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="font-weight: bold; color: var(--primary);">${Number(u.total_g).toFixed(1)}g</span><br>
-                        <small style="color: #999;">${u.total_j} joint</small>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-    } catch (err) {
-        console.error("Errore generico loadSocial:", err);
-        list.innerHTML = "<p class='error'>Errore di connessione.</p>";
-    }
-}
-
-// Aggiungi un amico tramite Nickname
-async function addFriend() {
-    const username = document.getElementById('friendUsername').value.trim();
-    if (!username) return alert("Inserisci un nickname");
-
-    // Trova l'ID dell'amico
-    const { data: profiles, error: profileErr } = await supabaseClient
-        .from('profiles')
-        .select('id')
-        .ilike('username', username);
-
-    if (profileErr || profiles.length === 0) return alert("Utente non trovato!");
-    if (profiles[0].id === currentUser.id) return alert("Non puoi aggiungere te stesso!");
-
-    // Salva l'amicizia
-    const { error: insertErr } = await supabaseClient
-        .from('friendships')
-        .insert({ user_id: currentUser.id, friend_id: profiles[0].id });
-
-    if (insertErr && insertErr.code === '23505') {
-        alert("Siete già amici!");
-    } else if (insertErr) {
-        alert("Errore durante l'aggiunta.");
-    } else {
-        showMessage("Amico aggiunto! 🤝");
-        document.getElementById('friendUsername').value = "";
-        if(currentSocialTab === 'friends') loadSocial();
-    }
-}
-
-// Visualizza le statistiche dettagliate di un utente cliccato in classifica
-async function viewFriendStats(targetId, username) {
-    const { data, error } = await supabaseClient.rpc('get_friend_stats', { target_user_id: targetId });
-    
-    if (error || !data || data.length === 0) return alert("Impossibile caricare le statistiche.");
-
-    document.getElementById('modalFriendName').innerText = `Statistiche di ${username}`;
-    document.getElementById('modaleFumo').innerText = data[0].fumo_g.toFixed(1);
-    document.getElementById('modaleErba').innerText = data[0].erba_g.toFixed(1);
-    document.getElementById('modaleJoint').innerText = data[0].totale_j;
-	
-    document.getElementById('friendModal').style.display = 'flex';
-}
-
-function closeFriendModal() {
-    document.getElementById('friendModal').style.display = 'none';
-}
-
-// Aggiorna il proprio Nickname nelle Impostazioni
-async function updateProfile() {
-    const newName = document.getElementById('usernameInput').value.trim();
-    if(newName.length < 3) return alert("Il nickname deve avere almeno 3 caratteri!");
-
-    // Usiamo upsert per sicurezza, nel caso non fosse scattato il trigger di registrazione
-    const { error } = await supabaseClient
-        .from('profiles')
-        .upsert({ id: currentUser.id, username: newName });
-
-    if (error) {
-        alert(error.code === '23505' ? "Nickname già in uso! Scegline un altro." : "Errore salvataggio profilo.");
-    } else {
-        showMessage("Nickname aggiornato! ✅");
-        document.getElementById('usernameInput').value = "";
-    }
-}
-
-// Aggiorna la tua funzione showPage esistente
-const originalShowPage = showPage;
-showPage = function(p) {
-    originalShowPage(p); // Chiama la vecchia logica
-    if(p === 'social') loadSocial();
-}
-
+	// ── SETTINGS ──
 	async function loadUserProfile() {
-    const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('username')
-        .eq('id', currentUser.id)
-        .single();
+		if (!currentUser) return;
+		const { data } = await supabaseClient.from('profiles').select('username').eq('id', currentUser.id).single();
+		if (data?.username) {
+			document.getElementById('currentUsernameDisplay').textContent = data.username;
+			document.getElementById('usernameInput').value = data.username;
+		}
+	}
 
-    if (data && data.username) {
-        document.getElementById('currentUsernameDisplay').innerText = data.username;
-        // Opzionale: riempiamo anche l'input così è pronto per la modifica
-        document.getElementById('usernameInput').value = data.username;
-    }
-}
-	
+	async function updateProfile() {
+		const newName = document.getElementById('usernameInput').value.trim();
+		const statusEl = document.getElementById('usernameStatus');
+		if (newName.length < 3) { statusEl.textContent = 'Minimo 3 caratteri.'; statusEl.style.color = 'var(--danger)'; return; }
+		const { error } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, username: newName });
+		if (error) {
+			statusEl.textContent = error.code === '23505' ? 'Nickname già in uso.' : 'Errore salvataggio.';
+			statusEl.style.color = 'var(--danger)';
+		} else {
+			statusEl.textContent = '✓ Salvato!'; statusEl.style.color = 'var(--green)';
+			document.getElementById('currentUsernameDisplay').textContent = newName;
+			setTimeout(() => statusEl.textContent = '', 2000);
+		}
+	}
 
+	async function exportData() {
+		const { data, error } = await supabaseClient.from('smokes').select('*').order('ts', { ascending: false });
+		if (error) { showNotif('⚠ Errore esportazione'); return; }
+		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a'); a.href = url;
+		a.download = `jointtracker_backup_${new Date().toISOString().split('T')[0]}.json`;
+		document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+		showNotif('💾 Backup scaricato');
+	}
+
+	async function importData() {
+		const jsonRaw = document.getElementById('importArea').value.trim();
+		if (!jsonRaw) return;
+		try {
+			let imported = JSON.parse(jsonRaw);
+			if (imported.smokes_v3) imported = imported.smokes_v3;
+			if (!Array.isArray(imported)) throw new Error('Formato non valido.');
+			if (!confirm(`Importare ${imported.length} sessioni?`)) return;
+			const clean = imported.map((item, i) => {
+				const { id, created_at, ...rest } = item;
+				return { ...rest, user_id: currentUser.id, ts: Math.floor(item.ts) + i, time: item.time || '12:00' };
+			});
+			const { error } = await supabaseClient.from('smokes').insert(clean);
+			if (error) throw error;
+			showNotif('✓ Importazione completata');
+			document.getElementById('importArea').value = '';
+			await loadData();
+		} catch (err) { alert('Errore: ' + err.message); }
+	}
+
+	async function resetAll() {
+		if (!confirm('Questa operazione cancellerà TUTTI i tuoi dati. Sei sicuro?')) return;
+		const conf = prompt("Scrivi 'ELIMINA' per confermare:");
+		if (conf !== 'ELIMINA') { alert('Reset annullato.'); return; }
+		const { error } = await supabaseClient.from('smokes').delete().eq('user_id', currentUser.id);
+		if (error) { alert('Errore durante il reset.'); return; }
+		showNotif('✓ Dati eliminati');
+		await loadData();
+	}
+
+	// ── INIT ──
+	document.getElementById('date').value = new Date().toISOString().split('T')[0];
 	checkAuth();
 </script>
-
 </body>
 </html>
