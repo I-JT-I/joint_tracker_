@@ -685,6 +685,10 @@ body {
 			// Mostra form registrazione
 			content.innerHTML = `
 				<form onsubmit="handleAuth(event, 'signup')">
+				
+					<label for="username">Nickname</label>
+					<input type="text" id="reg-username" placeholder="Scegli un nickname" oninput="checkLiveUsername(this)" required>
+					<span id="username-status" style="font-size: 12px; font-weight: bold;"></span>
 					<label for="email">Email</label>
 					<input type="email" id="email" placeholder="tua-email@gmail.com" required>
 					
@@ -708,6 +712,7 @@ body {
 
 	async function handleAuth(e, mode) {
 		e.preventDefault();
+		const username = document.getElementById('reg-username')?.value;
 		const email = document.getElementById('email').value;
 		const password = document.getElementById('password').value;
 		const confirm = document.getElementById('confirm')?.value;
@@ -725,16 +730,68 @@ body {
 			if (mode === 'login') {
 				result = await supabaseClient.auth.signInWithPassword({ email, password });
 			} else {
-				result = await supabaseClient.auth.signUp({ email, password });
+				result = await supabaseClient.auth.signUp({ email, password,
+                options: {
+                    data: {
+                        username: username // Questo è quello che il trigger leggerà
+                    }
+                } });
 			}
 
 			if (result.error) {
-				showError(result.error.message);
-				if (mode === 'login') showLoginPage();
-				else toggleAuthMode();
-				return;
-			}
+    // 1. Controlliamo se l'errore riguarda il nickname già esistente
+    // In genere Supabase restituisce un errore che menziona la "chiave unica" del database
+    if (result.error.message.toLowerCase().includes("profiles_username_key") || 
+        result.error.message.toLowerCase().includes("unique constraint")) {
+        
+        showError("❌ Questo nickname è già occupato. Scegline un altro!");
+    
+    } else if (result.error.status === 429) {
+        showError("Too many requests: aspetta un minuto prima di riprovare.");
+    } else {
+        // 2. Altrimenti mostriamo l'errore standard (es. password troppo corta o email malformata)
+        showError(result.error.message);
+    }
 
+    // 3. Ripristiniamo il form corretto (senza questo, l'utente vedrebbe solo il caricamento infinito)
+    if (mode === 'login') {
+        showLoginPage();
+    } else {
+        toggleAuthMode();
+        // Un piccolo trucco: se siamo in signup, possiamo provare a rimettere 
+        // l'email che l'utente aveva già scritto per non fargliela riscrivere
+        setTimeout(() => {
+            if(document.getElementById('email')) document.getElementById('email').value = email;
+        }, 10);
+    }
+    return;
+}
+	async function checkLiveUsername(input) {
+    const username = input.value.trim();
+    const statusLabel = document.getElementById('username-status');
+    
+    if (username.length < 3) {
+        statusLabel.innerText = "Troppo corto...";
+        statusLabel.style.color = "orange";
+        return;
+    }
+
+    const { data } = await supabaseClient
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .single();
+
+    if (data) {
+        statusLabel.innerText = "❌ Già preso";
+        statusLabel.style.color = "red";
+        input.style.borderColor = "red";
+    } else {
+        statusLabel.innerText = "✅ Disponibile";
+        statusLabel.style.color = "green";
+        input.style.borderColor = "green";
+    }
+}		
 			currentUser = result.data.user;
 			showApp();
 			await loadData();
@@ -743,6 +800,33 @@ body {
 			showError(err.message);
 		}
 	}
+
+	async function checkLiveUsername(input) {
+    const username = input.value.trim();
+    const statusLabel = document.getElementById('username-status');
+    
+    if (username.length < 3) {
+        statusLabel.innerText = "Troppo corto...";
+        statusLabel.style.color = "orange";
+        return;
+    }
+
+    const { data } = await supabaseClient
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .single();
+
+    if (data) {
+        statusLabel.innerText = "❌ Già preso";
+        statusLabel.style.color = "red";
+        input.style.borderColor = "red";
+    } else {
+        statusLabel.innerText = "✅ Disponibile";
+        statusLabel.style.color = "green";
+        input.style.borderColor = "green";
+    }
+}
 
 	function showApp() {
     document.getElementById('page-auth').classList.remove('active');
