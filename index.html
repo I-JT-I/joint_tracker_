@@ -17,6 +17,7 @@
 	
 	<!-- Supabase -->
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	
 	<!-- Chart.js -->
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	
@@ -25,6 +26,7 @@
 			--primary: #2e7d32;
 			--bg: #f4f7f6;
 			--white: #ffffff;
+			--danger: #ff5252;
 		}
 
 		* {
@@ -38,71 +40,6 @@
 			background: var(--bg);
 			color: #333;
 		}
-
-		/* ── AUTH PAGE ── */
-		#authPage {
-			display: none;
-			min-height: 100vh;
-			align-items: center;
-			justify-content: center;
-			background: var(--bg);
-			padding: 24px;
-		}
-		#authPage.active { display: flex; }
-
-		.auth-box {
-			background: var(--white);
-			border-radius: 20px;
-			padding: 32px 28px;
-			box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-			width: 100%;
-			max-width: 380px;
-		}
-		.auth-logo { font-size: 48px; text-align: center; margin-bottom: 8px; }
-		.auth-title { font-size: 24px; font-weight: 700; color: var(--primary); text-align: center; margin-bottom: 4px; }
-		.auth-sub { font-size: 14px; color: #999; text-align: center; margin-bottom: 28px; }
-
-		.auth-field { margin-bottom: 14px; }
-		.auth-field label { display: block; font-size: 13px; font-weight: 600; color: #666; margin-bottom: 6px; }
-		.auth-field input {
-			width: 100%; padding: 12px 14px; border: 1px solid #ddd;
-			border-radius: 10px; font-size: 16px; outline: none;
-			transition: border-color 0.2s;
-		}
-		.auth-field input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(46,125,50,0.1); }
-
-		.auth-btn {
-			width: 100%; background: var(--primary); color: white;
-			border: none; border-radius: 10px; font-size: 16px;
-			font-weight: 700; padding: 13px; cursor: pointer;
-			margin-top: 8px; transition: background 0.15s;
-		}
-		.auth-btn:hover { background: #1b5e20; }
-		.auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-		.auth-switch { text-align: center; font-size: 14px; color: #999; margin-top: 18px; }
-		.auth-switch a { color: var(--primary); font-weight: 600; cursor: pointer; }
-
-		.auth-msg-error {
-			background: #fff3f3; border: 1px solid #ffcccc; color: #c0392b;
-			border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px;
-		}
-		.auth-msg-ok {
-			background: #f0fff4; border: 1px solid #b2dfdb; color: #2e7d32;
-			border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px;
-		}
-
-		.spinner {
-			width: 22px; height: 22px;
-			border: 2.5px solid #ddd; border-top-color: var(--primary);
-			border-radius: 50%; animation: spin 0.8s linear infinite;
-			margin: 20px auto;
-		}
-		@keyframes spin { to { transform: rotate(360deg); } }
-
-		/* ── APP ── */
-		#app { display: none; }
-		#app.active { display: block; }
 
 		header {
 			background: var(--primary);
@@ -140,7 +77,7 @@
 			overflow: hidden;
 			display: none;
 			z-index: 1001;
-			width: 180px;
+			width: 200px;
 		}
 
 		.menu-content button {
@@ -162,6 +99,11 @@
 			background: #f5f5f5;
 		}
 
+		.menu-content .logout-btn {
+			color: var(--danger);
+			font-weight: bold;
+		}
+
 		.page {
 			display: none;
 			padding: 15px;
@@ -175,14 +117,8 @@
 		}
 
 		@keyframes fadeIn {
-			from {
-				opacity: 0;
-				transform: translateY(5px);
-			}
-			to {
-				opacity: 1;
-				transform: translateY(0);
-			}
+			from { opacity: 0; transform: translateY(5px); }
+			to { opacity: 1; transform: translateY(0); }
 		}
 
 		.card {
@@ -221,15 +157,6 @@
 			box-shadow: 0 0 0 3px rgba(46,125,50,0.1);
 		}
 
-		.data {
-			width: 95%;
-			font-size: 16px;
-			padding: 12px;
-			margin-top: 8px;
-			border-radius: 12px;
-			border: 1px solid #ddd;
-		}
-
 		.grams-row {
 			display: flex;
 			gap: 8px;
@@ -263,7 +190,7 @@
 			display: none;
 		}
 
-		button.main-btn {
+		button.main-btn, button.action-btn {
 			background: var(--primary);
 			color: white;
 			border: none;
@@ -272,21 +199,90 @@
 			cursor: pointer;
 		}
 
-		button.main-btn:hover {
+		button.main-btn:hover, button.action-btn:hover {
 			background: #1b5e20;
 		}
 
-		button.main-btn:disabled {
-			opacity: 0.6;
-			cursor: not-allowed;
+		button.secondary-btn {
+			background: #666;
+			color: white;
+			border: none;
+			padding: 12px;
+			margin-top: 10px;
+			font-weight: bold;
+			cursor: pointer;
+			border-radius: 12px;
+			width: 100%;
 		}
 
+		button.secondary-btn:hover {
+			background: #333;
+		}
+
+		/* Auth Pages */
+		.auth-container {
+			max-width: 400px;
+			margin: 50px auto;
+			padding: 20px;
+		}
+
+		.auth-box {
+			background: white;
+			border-radius: 16px;
+			padding: 30px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+
+		.auth-box h2 {
+			text-align: center;
+			margin-bottom: 30px;
+		}
+
+		.loading {
+			text-align: center;
+			color: #999;
+			padding: 20px;
+		}
+
+		.spinner {
+			border: 4px solid #f3f3f3;
+			border-top: 4px solid var(--primary);
+			border-radius: 50%;
+			width: 30px;
+			height: 30px;
+			animation: spin 1s linear infinite;
+			margin: 0 auto;
+		}
+
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+
+		.error {
+			background: #ffebee;
+			color: var(--danger);
+			padding: 12px;
+			border-radius: 8px;
+			margin-bottom: 15px;
+			font-size: 14px;
+		}
+
+		.success {
+			background: #e8f5e9;
+			color: var(--primary);
+			padding: 12px;
+			border-radius: 8px;
+			margin-bottom: 15px;
+			font-size: 14px;
+		}
+
+		/* Cronologia */
 		.month-group {
 			margin-bottom: 12px;
 			border: 1px solid #eee;
 			border-radius: 12px;
 			overflow: hidden;
-			background: #fff;
 		}
 
 		.month-header {
@@ -297,31 +293,12 @@
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			border-bottom: 1px solid #eee;
 		}
 
-		.day-group {
-			border-bottom: 1px solid #f0f0f0;
-		}
-
-		.day-header {
-			padding: 10px 15px;
-			background: #fff;
-			cursor: pointer;
-			font-size: 14px;
-			display: flex;
-			justify-content: space-between;
-			color: #555;
-		}
-
-		.day-content {
-			display: none;
-			background: #fafafa;
-		}
-
-		.month-content {
-			display: none;
-		}
+		.day-group { border-bottom: 1px solid #f0f0f0; }
+		.day-header { padding: 10px 15px; background: #fff; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; color: #555; }
+		.day-content { display: none; background: #fafafa; }
+		.month-content { display: none; }
 
 		.history-item {
 			display: flex;
@@ -333,20 +310,17 @@
 		}
 
 		.del-btn {
-			color: #ff5252;
+			color: var(--danger);
 			background: none;
 			border: none;
 			font-size: 18px;
 			padding: 5px;
 			cursor: pointer;
-			margin-left: 10px;
 		}
 
-		.chevron::after {
-			content: ' ▾';
-			color: #bbb;
-		}
+		.chevron::after { content: ' ▾'; color: #bbb; }
 
+		/* Stats */
 		.stat-grid {
 			display: grid;
 			grid-template-columns: 1fr 1fr;
@@ -384,7 +358,6 @@
 			border-radius: 50px;
 			display: none;
 			z-index: 2000;
-			white-space: nowrap;
 		}
 
 		.chart-container {
@@ -394,25 +367,29 @@
 			margin-top: 10px;
 		}
 
-		textarea {
-			width: 100%;
-			font-size: 14px;
-			padding: 12px;
-			border-radius: 12px;
-			border: 1px solid #ddd;
-			font-family: monospace;
-		}
+		hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+		p { font-size: 11px; color: #999; text-align: center; }
 
-		hr {
-			border: 0;
-			border-top: 1px solid #eee;
-			margin: 20px 0;
-		}
-
-		p {
-			font-size: 11px;
-			color: #999;
+		.user-info {
 			text-align: center;
+			padding: 10px;
+			background: #f0f0f0;
+			border-radius: 8px;
+			margin-bottom: 15px;
+			font-size: 14px;
+		}
+
+		.user-info strong { color: var(--primary); }
+
+		a {
+			color: var(--primary);
+			text-decoration: none;
+			font-weight: bold;
+			cursor: pointer;
+		}
+
+		a:hover {
+			text-decoration: underline;
 		}
 	</style>
 </head>
@@ -420,492 +397,383 @@
 
 <div id="notif">Registrato! ✅</div>
 
-<!-- AUTH PAGE -->
-<div id="authPage">
-	<div class="auth-box">
-		<div class="auth-logo">🌿</div>
-		<div class="auth-title">JointTracker</div>
-		<div class="auth-sub">Tieni traccia. Resti consapevole.</div>
-		<div id="authContent">
-			<div class="spinner"></div>
+<!-- PAGINA LOGIN -->
+<div id="page-auth" class="page active">
+	<div class="auth-container">
+		<div class="auth-box">
+			<h2>🌿 JointTracker</h2>
+			<div id="authContent"></div>
 		</div>
 	</div>
 </div>
 
-<!-- APP -->
-<div id="app">
-	<header>
-		<h1>🌿 JointTracker</h1>
-		<button class="menu-btn" onclick="toggleMenu()">☰</button>
-		<div class="menu-content" id="menu">
-			<button onclick="showPage('add')">➕ Aggiungi</button>
-			<button onclick="showPage('history')">📜 Cronologia</button>
-			<button onclick="showPage('stats')">📊 Statistiche</button>
-			<button onclick="showPage('charts')">📈 Dashboard</button>
-			<button onclick="showPage('settings')">⚙️ Settings</button>
+<!-- PAGINA PRINCIPALE (quando loggato) -->
+<header id="header" style="display:none;">
+	<h1>🌿 JointTracker</h1>
+	<button class="menu-btn" onclick="toggleMenu()">☰</button>
+	<div class="menu-content" id="menu">
+		<button onclick="showPage('add')">➕ Aggiungi</button>
+		<button onclick="showPage('history')">📜 Cronologia</button>
+		<button onclick="showPage('stats')">📊 Statistiche</button>
+		<button onclick="showPage('charts')">📈 Dashboard</button>
+		<button onclick="showPage('settings')">⚙️ Settings</button>
+		<button class="logout-btn" onclick="logout()">🚪 Logout</button>
+	</div>
+</header>
+
+<div id="page-add" class="page">
+	<div class="card">
+		<div class="user-info">Loggato come <strong id="emailDisplay"></strong></div>
+		<h3>Nuovo Inserimento</h3>
+
+		<label for="type">Cosa fumi?</label>
+		<select id="type">
+			<option value="fumo">🍫 Hashish (Fumo)</option>
+			<option value="erba">🍃 Marijuana (Erba)</option>
+		</select>
+
+		<label for="gCont">Quantità</label>
+		<div class="grams-row" id="gCont">
+			<label><input type="radio" name="g" value="0.3" checked> 0.3g</label>
+			<label><input type="radio" name="g" value="0.5"> 0.5g</label>
+			<label><input type="radio" name="g" value="custom"> Altro</label>
 		</div>
-	</header>
 
-	<div id="page-add" class="page active">
-		<div class="card">
-			<h3>Nuovo Inserimento</h3>
+		<input type="number" id="customGrams" step="0.1" placeholder="Grammi manuali">
 
-			<label>Cosa fumi?</label>
-			<select id="type">
-				<option value="fumo">🍫 Hashish (Fumo)</option>
-				<option value="erba">🍃 Marijuana (Erba)</option>
-			</select>
+		<label for="date">Data</label>
+		<input class="data" type="date" id="date">
 
-			<label>Quantità</label>
-			<div class="grams-row" id="gCont">
-				<label><input type="radio" name="g" value="0.3" checked> 0.3g</label>
-				<label><input type="radio" name="g" value="0.5"> 0.5g</label>
-				<label><input type="radio" name="g" value="custom"> Altro</label>
-			</div>
+		<button class="main-btn action-btn" onclick="saveData()">SALVA SESSIONE</button>
+	</div>
+</div>
 
-			<input type="number" id="customGrams" step="0.1" placeholder="Grammi manuali">
+<div id="page-history" class="page">
+	<div class="card">
+		<h3>📜 Registro Storico</h3>
+		<div id="historyList"></div>
+	</div>
+</div>
 
-			<label>Data</label>
-			<input class="data" type="date" id="date">
-
-			<button class="main-btn action-btn" id="saveBtn" onclick="saveData()">SALVA SESSIONE</button>
+<div id="page-stats" class="page">
+	<div class="card">
+		<h3>Quantità Totali</h3>
+		<div class="stat-grid">
+			<div class="stat-box"><big id="sFumo">0</big><small>Grammi Fumo</small></div>
+			<div class="stat-box"><big id="sErba">0</big><small>Grammi Erba</small></div>
+			<div class="stat-box"><big id="sJTot">0</big><small>Joint Totali</small></div>
+			<div class="stat-box"><big id="sGTot">0</big><small>Grammi Totali</small></div>
 		</div>
+
+		<hr>
+
+		<h3>Medie Reali (tutti i giorni)</h3>
+		<div class="stat-grid">
+			<div class="stat-box"><big id="avgDaily">0</big><small>J / Giorno</small></div>
+			<div class="stat-box"><big id="avgMonthly">0</big><small>J / Mese</small></div>
+			<div class="stat-box"><big id="avgYearly">0</big><small>J / Anno</small></div>
+			<div class="stat-box"><big id="avgGrams">0</big><small>Grammi / Giorno</small></div>
+		</div>
+
+		<hr>
+
+		<h3>🔥 Streak</h3>
+		<div class="stat-grid" id="streakBox">
+			<div class="stat-box"><big id="streakDays">0</big><small>🔥</small></div>
+			<div class="stat-box">🏆 Migliore streak:<big id="bestStreak">0</big></div>
+		</div>
+
+		<p>*Il calcolo parte dalla tua prima J inserita.(<span id="diffDays">0</span> giorni fà)</p>
+	</div>
+</div>
+
+<div id="page-charts" class="page">
+	<div class="card">
+		<h3>📅 Joint per Giorno (Storico Completo)</h3>
+		<div class="chart-container"><canvas id="cDailyAll"></canvas></div>
 	</div>
 
-	<div id="page-history" class="page">
-		<div class="card">
-			<h3>📜 Registro Storico</h3>
-			<div id="historyList"></div>
-		</div>
+	<div class="card">
+		<h3>Consumo Grammi (Ultimi 7gg)</h3>
+		<div class="chart-container"><canvas id="cWeight"></canvas></div>
 	</div>
 
-	<div id="page-settings" class="page">
-		<div class="card">
-			<h3>⚙️ Impostazioni</h3>
-			<p style="font-size:13px;color:#666;text-align:left;">I dati sono sincronizzati su Supabase Cloud.</p>
-			<button class="main-btn" onclick="exportData()">📤 Esporta Dati</button>
-
-			<div style="margin-top: 20px;">
-				<h3>📥 Importa Dati</h3>
-				<label>Incolla qui il backup JSON</label>
-				<textarea id="importArea" placeholder="Incolla qui il backup JSON"></textarea>
-				<button class="main-btn" onclick="importData()">Importa</button>
-			</div>
-
-			<div style="margin-top: 20px;">
-				<button class="main-btn" onclick="logout()" style="background:#c0392b;">🚪 Esci dall'account</button>
-			</div>
-
-			<div style="margin-top: 20px;">
-				<button onclick="resetAll()" style="background:none; border:none; color:red; width:100%; padding:12px; font-size:14px; cursor:pointer;">⚠️ Reset completo dati</button>
-			</div>
-		</div>
+	<div class="card">
+		<h3>📊 Giorni della Settimana</h3>
+		<div class="chart-container"><canvas id="cWeekDays"></canvas></div>
 	</div>
 
-	<div id="page-stats" class="page">
-		<div class="card">
-			<h3>Quantità Totali</h3>
-			<div class="stat-grid">
-				<div class="stat-box"><big id="sFumo">0</big><small>Grammi Fumo</small></div>
-				<div class="stat-box"><big id="sErba">0</big><small>Grammi Erba</small></div>
-				<div class="stat-box"><big id="sJTot">0</big><small>Joint Totali</small></div>
-				<div class="stat-box"><big id="sGTot">0</big><small>Grammi Totali</small></div>
-			</div>
-
-			<hr>
-
-			<h3>Medie Reali (tutti i giorni)</h3>
-			<div class="stat-grid">
-				<div class="stat-box"><big id="avgDaily">0</big><small>J / Giorno</small></div>
-				<div class="stat-box"><big id="avgMonthly">0</big><small>J / Mese</small></div>
-				<div class="stat-box"><big id="avgYearly">0</big><small>J / Anno</small></div>
-				<div class="stat-box"><big id="avgGrams">0</big><small>Grammi / Giorno</small></div>
-			</div>
-
-			<hr>
-
-			<h3>🔥 Streak</h3>
-			<div class="stat-grid" id="streakBox">
-				<div class="stat-box"><big id="streakDays">0</big><small>🔥</small></div>
-				<div class="stat-box">🏆 Migliore streak:<big id="bestStreak">0</big></div>
-			</div>
-
-			<p>*Il calcolo parte dalla tua prima J inserita.(<span id="diffDays">0</span> giorni fà)</p>
-		</div>
+	<div class="card">
+		<h3>Fasce Orarie</h3>
+		<div class="chart-container"><canvas id="cTime"></canvas></div>
 	</div>
 
-	<div id="page-charts" class="page">
-		<div class="card">
-			<h3>📅 Joint per Giorno (Storico Completo)</h3>
-			<div class="chart-container"><canvas id="cDailyAll"></canvas></div>
-		</div>
+	<div class="card">
+		<h3>Differenza Grammi Fumo/Erba</h3>
+		<div class="chart-container"><canvas id="cPie"></canvas></div>
+	</div>
+</div>
 
-		<div class="card">
-			<h3>Consumo Grammi (Ultimi 7gg)</h3>
-			<div class="chart-container"><canvas id="cWeight"></canvas></div>
-		</div>
-
-		<div class="card">
-			<h3>📊 Giorni della Settimana</h3>
-			<div class="chart-container"><canvas id="cWeekDays"></canvas></div>
-		</div>
-
-		<div class="card">
-			<h3>Fasce Orarie</h3>
-			<div class="chart-container"><canvas id="cTime"></canvas></div>
-		</div>
-
-		<div class="card">
-			<h3>Differenza Grammi Fumo/Erba</h3>
-			<div class="chart-container"><canvas id="cPie"></canvas></div>
-		</div>
+<div id="page-settings" class="page">
+	<div class="card">
+		<h3>⚙️ Impostazioni</h3>
+		<button class="secondary-btn" onclick="logout()">🚪 Logout</button>
 	</div>
 </div>
 
 <script>
-	// ── SUPABASE ──────────────────────────────────────
+	// Inizializza Supabase
 	const SUPABASE_URL = 'https://afkxmbxcavwhurmdelfr.supabase.co';
-	const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFma3htYnhjYXZ3aHVybWRlbGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2Nzc4MzYsImV4cCI6MjA5MzI1MzgzNn0.5W49Evb1GsPQmVzeLggYOFpfE8ecofVZg3eLAaubzBI';
-	const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+	const SUPABASE_KEY = 'sb_publishable_1rc0ueZL6Y03qhk5jp_34w_ObCOCpCP';
+	
+	const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 	let currentUser = null;
 	let smokes = [];
-	let useCloud = false;
 
-	// ── AUTH STATE ────────────────────────────────────
-	sb.auth.onAuthStateChange(async (event, session) => {
-		if (event === 'SIGNED_IN' && session) {
-			currentUser = session.user;
-			useCloud = true;
-			showApp();
-			await loadData();
-		} else if (event === 'SIGNED_OUT') {
-			currentUser = null;
-			useCloud = false;
-			smokes = [];
-			showAuthPage();
-		}
-	});
-
+	// Controlla se loggato all'avvio
 	async function checkAuth() {
-		const { data: { session } } = await sb.auth.getSession();
+		const { data: { session } } = await supabaseClient.auth.getSession();
 		if (session) {
 			currentUser = session.user;
-			useCloud = true;
 			showApp();
 			await loadData();
 		} else {
-			showAuthPage();
+			showLoginPage();
 		}
 	}
 
-	// ── AUTH UI ───────────────────────────────────────
-	function showAuthPage() {
-		document.getElementById('authPage').classList.add('active');
-		document.getElementById('app').classList.remove('active');
-		renderLoginForm();
-	}
-
-	function showApp() {
-		document.getElementById('authPage').classList.remove('active');
-		document.getElementById('app').classList.add('active');
-	}
-
-	function renderLoginForm() {
-		document.getElementById('authContent').innerHTML = `
-			<div id="authMsg"></div>
-			<div class="auth-field">
-				<label>Email</label>
-				<input type="email" id="authEmail" placeholder="tua@email.com" autocomplete="email">
-			</div>
-			<div class="auth-field">
-				<label>Password</label>
-				<input type="password" id="authPass" placeholder="Password" autocomplete="current-password">
-			</div>
-			<button class="auth-btn" onclick="handleAuth('login')">Accedi</button>
-			<div class="auth-switch">Non hai un account? <a onclick="renderSignupForm()">Registrati</a></div>
-		`;
-		setTimeout(() => document.getElementById('authEmail')?.focus(), 100);
-	}
-
-	function renderSignupForm() {
-		document.getElementById('authContent').innerHTML = `
-			<div id="authMsg"></div>
-			<div class="auth-field">
-				<label>Email</label>
-				<input type="email" id="authEmail" placeholder="tua@email.com" autocomplete="email">
-			</div>
-			<div class="auth-field">
-				<label>Password</label>
-				<input type="password" id="authPass" placeholder="Minimo 6 caratteri" autocomplete="new-password">
-			</div>
-			<div class="auth-field">
-				<label>Conferma password</label>
-				<input type="password" id="authConfirm" placeholder="Ripeti password" autocomplete="new-password">
-			</div>
-			<button class="auth-btn" onclick="handleAuth('signup')">Crea account</button>
-			<div class="auth-switch">Hai già un account? <a onclick="renderLoginForm()">Accedi</a></div>
+	function showLoginPage() {
+		document.getElementById('page-auth').classList.add('active');
+		document.getElementById('header').style.display = 'none';
+		document.querySelectorAll('.page:not(#page-auth)').forEach(p => p.classList.remove('active'));
+		
+		const content = document.getElementById('authContent');
+		content.innerHTML = `
+			<form onsubmit="handleAuth(event, 'login')">
+				<label for="email">Email</label>
+				<input type="email" id="email" placeholder="tua-email@gmail.com" required>
+				
+				<label for="password">Password</label>
+				<input type="password" id="password" placeholder="Password (min 6 caratteri)" required>
+				
+				<button type="submit" class="main-btn">🔓 Accedi</button>
+			</form>
+			
+			<p style="text-align: center; margin-top: 20px; color: #666;">
+				Non hai un account? <a onclick="toggleAuthMode(); return false;">Registrati</a>
+			</p>
 		`;
 	}
 
-	async function handleAuth(mode) {
-		const email = document.getElementById('authEmail')?.value?.trim();
-		const pass = document.getElementById('authPass')?.value;
-		const confirm = document.getElementById('authConfirm')?.value;
-		const msgEl = document.getElementById('authMsg');
+	function toggleAuthMode() {
+		const content = document.getElementById('authContent');
+		if (content.innerHTML.includes('Registrati')) {
+			// Mostra form registrazione
+			content.innerHTML = `
+				<form onsubmit="handleAuth(event, 'signup')">
+					<label for="email">Email</label>
+					<input type="email" id="email" placeholder="tua-email@gmail.com" required>
+					
+					<label for="password">Password</label>
+					<input type="password" id="password" placeholder="Password (min 6 caratteri)" required>
+					
+					<label for="confirm">Conferma Password</label>
+					<input type="password" id="confirm" placeholder="Ripeti password" required>
+					
+					<button type="submit" class="main-btn">📝 Registrati</button>
+				</form>
+				
+				<p style="text-align: center; margin-top: 20px; color: #666;">
+					Hai già un account? <a onclick="toggleAuthMode(); return false;">Accedi</a>
+				</p>
+			`;
+		} else {
+			showLoginPage();
+		}
+	}
 
-		if (!email || !pass) { msgEl.innerHTML = '<div class="auth-msg-error">Compila tutti i campi.</div>'; return; }
-		if (mode === 'signup' && pass !== confirm) { msgEl.innerHTML = '<div class="auth-msg-error">Le password non corrispondono.</div>'; return; }
-		if (pass.length < 6) { msgEl.innerHTML = '<div class="auth-msg-error">Password troppo corta (min 6 caratteri).</div>'; return; }
+	async function handleAuth(e, mode) {
+		e.preventDefault();
+		const email = document.getElementById('email').value;
+		const password = document.getElementById('password').value;
+		const confirm = document.getElementById('confirm')?.value;
 
-		msgEl.innerHTML = '<div class="spinner"></div>';
+		if (mode === 'signup' && password !== confirm) {
+			showError('Le password non corrispondono!');
+			return;
+		}
+
+		const content = document.getElementById('authContent');
+		content.innerHTML = '<div class="loading"><div class="spinner"></div><p>Un momento...</p></div>';
 
 		try {
 			let result;
 			if (mode === 'login') {
-				result = await sb.auth.signInWithPassword({ email, password: pass });
+				result = await supabaseClient.auth.signInWithPassword({ email, password });
 			} else {
-				result = await sb.auth.signUp({ email, password: pass });
+				result = await supabaseClient.auth.signUp({ email, password });
 			}
 
 			if (result.error) {
-				msgEl.innerHTML = `<div class="auth-msg-error">${translateError(result.error.message)}</div>`;
+				showError(result.error.message);
+				if (mode === 'login') showLoginPage();
+				else toggleAuthMode();
 				return;
 			}
 
-			if (mode === 'signup' && !result.data.session) {
-				msgEl.innerHTML = '<div class="auth-msg-ok">✓ Controlla la tua email per confermare l\'account, poi accedi.</div>';
-			}
+			currentUser = result.data.user;
+			showApp();
+			await loadData();
+			showMessage('Benvenuto! 🎉');
 		} catch (err) {
-			msgEl.innerHTML = `<div class="auth-msg-error">${err.message}</div>`;
+			showError(err.message);
 		}
 	}
 
-	function translateError(msg) {
-		if (msg.includes('Invalid login credentials')) return 'Email o password errati.';
-		if (msg.includes('Email not confirmed')) return 'Conferma prima la tua email.';
-		if (msg.includes('User already registered')) return 'Email già registrata. Accedi.';
-		if (msg.includes('Password should be')) return 'Password troppo corta (min 6 caratteri).';
-		return msg;
+	function showApp() {
+		document.getElementById('page-auth').classList.remove('active');
+		document.getElementById('header').style.display = 'flex';
+		document.getElementById('page-add').classList.add('active');
+		document.getElementById('emailDisplay').textContent = currentUser.email;
+	}
+
+	function showError(msg) {
+		const content = document.getElementById('authContent');
+		const errorDiv = document.createElement('div');
+		errorDiv.className = 'error';
+		errorDiv.textContent = msg;
+		content.insertBefore(errorDiv, content.firstChild);
+	}
+
+	function showMessage(msg) {
+		document.getElementById('notif').textContent = msg;
+		document.getElementById('notif').style.display = 'block';
+		setTimeout(() => document.getElementById('notif').style.display = 'none', 2000);
 	}
 
 	async function logout() {
-		await sb.auth.signOut();
+		await supabaseClient.auth.signOut();
+		currentUser = null;
+		smokes = [];
+		showLoginPage();
 	}
 
-	// ── DATA LOADING ───────────────────────────────────
 	async function loadData() {
-		if (!currentUser) return;
-		const { data, error } = await sb
+		const { data, error } = await supabaseClient
 			.from('smokes')
 			.select('*')
-			.eq('user_id', currentUser.id)
 			.order('ts', { ascending: false });
 
 		if (error) {
-			console.error('loadData error:', error);
-			showNotif('⚠ Errore nel caricamento dati');
-			smokes = [];
-		} else {
-			smokes = (data || []).map(row => ({
-				type: row.type,
-				grams: parseFloat(row.grams),
-				date: row.date,
-				time: row.time || '',
-				ts: row.ts
-			}));
+			console.error('Errore caricamento dati:', error);
+			return;
 		}
+
+		smokes = data || [];
 		update();
 	}
 
 	async function saveData() {
-		const type = document.getElementById('type').value;
+		const type = document.getElementById("type").value;
 		const gVal = document.querySelector('input[name="g"]:checked').value;
-		const grams = gVal === 'custom' ? parseFloat(document.getElementById('customGrams').value) : parseFloat(gVal);
+		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
 
-		if(!grams || grams <= 0) { showNotif('⚠ Inserisci un peso valido'); return; }
+		if(!grams || grams <= 0) return alert("Inserisci un peso valido");
 
 		const now = new Date();
 		const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
-		const date = document.getElementById('date').value;
+		const date = document.getElementById("date").value;
 		const ts = Date.now();
 
-		const btn = document.getElementById('saveBtn');
-		btn.disabled = true;
-		btn.textContent = 'Salvataggio...';
+		const { error } = await supabaseClient.from('smokes').insert({
+			type, grams, date, time, ts, user_id: currentUser.id
+		});
 
-		if (useCloud && currentUser) {
-			const { data, error } = await sb.from('smokes').insert({
-				user_id: currentUser.id,
-				type,
-				grams: parseFloat(grams),
-				date,
-				time,
-				ts
-			}).select();
-
-			btn.disabled = false;
-			btn.textContent = 'SALVA SESSIONE';
-
-			if (error) {
-				console.error('saveData error:', error);
-				showNotif('⚠ Errore: ' + error.message);
-				return;
-			}
-			smokes.unshift({ type, grams, date, time, ts });
-		} else {
-			smokes.push({ type, grams, date, time, ts });
-			localStorage.setItem('smokes_v3', JSON.stringify(smokes));
-			btn.disabled = false;
-			btn.textContent = 'SALVA SESSIONE';
+		if (error) {
+			console.error('Errore salvataggio:', error);
+			alert('Errore nel salvataggio. Riprova.');
+			return;
 		}
 
-		showNotif('✅ Sessione salvata!');
-		update();
+		showMessage('Sessione salvata! ✅');
+		await loadData();
 	}
 
 	async function deleteItem(ts) {
-		if (!confirm('Vuoi eliminare questo inserimento?')) return;
+		if(!confirm("Vuoi eliminare questo inserimento?")) return;
 
-		if (useCloud && currentUser) {
-			const { error } = await sb.from('smokes').delete()
-				.eq('ts', ts).eq('user_id', currentUser.id);
-			if (error) { showNotif('⚠ Errore eliminazione'); return; }
+		const { error } = await supabaseClient.from('smokes').delete().eq('ts', ts);
+
+		if (error) {
+			console.error('Errore eliminazione:', error);
+			return;
 		}
 
-		smokes = smokes.filter(s => s.ts !== ts);
-		if (!useCloud) localStorage.setItem('smokes_v3', JSON.stringify(smokes));
+		await loadData();
+	}
+
+	function toggleMenu() {
+		const m = document.getElementById("menu");
+		m.style.display = m.style.display === "block" ? "none" : "block";
+	}
+
+	function showPage(p) {
+		document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
+		document.getElementById("page-" + p).classList.add("active");
+		document.getElementById("menu").style.display = "none";
 		update();
 	}
 
+	function toggleAccordion(el) {
+		const content = el.nextElementSibling;
+		const isVisible = content.style.display === "block";
+		content.style.display = isVisible ? "none" : "block";
+	}
+
+	function calculateStreak() {
+		if (smokes.length === 0) return 0;
+
+		const days = [...new Set(smokes.map(s => s.date))].sort();
+		let streak = 1;
+
+		for (let i = days.length - 1; i > 0; i--) {
+			const today = new Date(days[i]);
+			const yesterday = new Date(days[i - 1]);
+			today.setHours(0,0,0,0);
+			yesterday.setHours(0,0,0,0);
+			const diff = (today - yesterday) / (1000 * 60 * 60 * 24);
+			if (diff === 1) streak++;
+			else break;
+		}
+
+		const last = new Date(days[days.length - 1]);
+		const now = new Date();
+		last.setHours(0,0,0,0);
+		now.setHours(0,0,0,0);
+		const diffFromToday = (now - last) / (1000 * 60 * 60 * 24);
+		if (diffFromToday > 1) return 0;
+
+		return streak;
+	}
+
 	async function updateBestStreak(currentStreak) {
-		if (!useCloud || !currentUser) return currentStreak;
-		const { data } = await sb.from('user_stats').select('best_streak').eq('user_id', currentUser.id).single();
+		const { data } = await supabaseClient.from('user_stats').select('best_streak').eq('user_id', currentUser.id).single();
+		
 		let best = data?.best_streak || 0;
 		if (currentStreak > best) {
-			await sb.from('user_stats').upsert(
-				{ user_id: currentUser.id, best_streak: currentStreak, updated_at: new Date().toISOString() },
-				{ onConflict: 'user_id' }
-			);
+			await supabaseClient.from('user_stats').upsert({
+				user_id: currentUser.id,
+				best_streak: currentStreak
+			});
 			best = currentStreak;
 		}
 		return best;
 	}
 
-	function exportData() {
-		if (!smokes.length) { alert('Nessun dato da esportare'); return; }
-		const fullBackup = { smokes_v3: smokes, bestStreak: localStorage.getItem('bestStreak') || 0 };
-		const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: 'application/json' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = 'jointtracker_backup.json';
-		a.click();
-	}
-
-	async function importData() {
-		const json = document.getElementById('importArea').value.trim();
-		if (!json) { alert('Incolla il backup JSON prima!'); return; }
-
-		let backup;
-		try { backup = JSON.parse(json); } catch(e) { alert('JSON non valido!'); return; }
-		if (!backup.smokes_v3) { alert('Backup non valido: manca smokes_v3'); return; }
-
-		if (!confirm(`Importare ${backup.smokes_v3.length} record? I duplicati verranno ignorati.`)) return;
-
-		let ok = 0, skip = 0;
-
-		if (useCloud && currentUser) {
-			for (const s of backup.smokes_v3) {
-				const row = {
-					user_id: currentUser.id,
-					type: s.type,
-					grams: parseFloat(s.grams),
-					date: s.date,
-					time: s.time || '',
-					ts: s.ts || Date.now()
-				};
-				const { error } = await sb.from('smokes').insert(row);
-				if (error && error.code === '23505') { skip++; }
-				else if (error) { console.warn('skip:', error.message); skip++; }
-				else ok++;
-			}
-			await loadData();
-		} else {
-			smokes = [...smokes, ...backup.smokes_v3];
-			localStorage.setItem('smokes_v3', JSON.stringify(smokes));
-			if (backup.bestStreak) localStorage.setItem('bestStreak', backup.bestStreak);
-			update();
-			ok = backup.smokes_v3.length;
-		}
-
-		showNotif(`✅ Importati: ${ok} | Saltati: ${skip}`);
-	}
-
-	async function resetAll() {
-		if (!confirm('ATTENZIONE: Cancellerà TUTTA la tua cronologia. Sei sicuro?')) return;
-		if (!confirm('Sei DAVVERO sicuro? Operazione irreversibile!')) return;
-
-		if (useCloud && currentUser) {
-			const { error } = await sb.from('smokes').delete().eq('user_id', currentUser.id);
-			if (error) { showNotif('⚠ Errore reset'); return; }
-		} else {
-			localStorage.removeItem('smokes_v3');
-		}
-
-		smokes = [];
-		update();
-		showNotif('🗑 Dati eliminati');
-	}
-
-	// ── UI HELPERS ────────────────────────────────────
-	function toggleMenu() {
-		const m = document.getElementById('menu');
-		m.style.display = m.style.display === 'block' ? 'none' : 'block';
-	}
-
-	function showPage(p) {
-		document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
-		document.getElementById('page-' + p).classList.add('active');
-		document.getElementById('menu').style.display = 'none';
-		if (p !== 'charts') update();
-		if (p === 'charts') renderCharts();
-	}
-
-	function toggleAccordion(el) {
-		const content = el.nextElementSibling;
-		const isVisible = content.style.display === 'block';
-		content.style.display = isVisible ? 'none' : 'block';
-	}
-
-	function showNotif(msg) {
-		const n = document.getElementById('notif');
-		n.textContent = msg;
-		n.style.display = 'block';
-		setTimeout(() => n.style.display = 'none', 2500);
-	}
-
-	// ── STREAK ────────────────────────────────────────
-	function calculateStreak() {
-		if (smokes.length === 0) return 0;
-		const days = [...new Set(smokes.map(s => s.date))].sort();
-		let streak = 1;
-		for (let i = days.length - 1; i > 0; i--) {
-			const diff = (new Date(days[i]) - new Date(days[i-1])) / 86400000;
-			if (diff === 1) streak++; else break;
-		}
-		const last = new Date(days[days.length - 1]);
-		const now = new Date();
-		last.setHours(0,0,0,0); now.setHours(0,0,0,0);
-		return (now - last) / 86400000 > 1 ? 0 : streak;
-	}
-
-	// ── RENDER ────────────────────────────────────────
 	function update() {
-		smokes.sort((a,b) => b.ts - a.ts);
-
-		const hList = document.getElementById('historyList');
-		hList.innerHTML = '';
+		const hList = document.getElementById("historyList");
+		hList.innerHTML = "";
 
 		if (smokes.length === 0) {
 			hList.innerHTML = "<p style='text-align:center; color:#999;'>Nessun dato presente.</p>";
@@ -934,7 +802,7 @@
 
 					let itemsHtml = daySmokes.map(s => `
 						<div class="history-item">
-							<span>${s.time || '--:--'} - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g</span>
+							<span>${s.time} - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g</span>
 							<button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
 						</div>
 					`).join('');
@@ -960,53 +828,54 @@
 			}
 		}
 
-		const streak = calculateStreak();
-		const box = document.getElementById('streakBox');
-
-		if (streak >= 3) {
-			document.getElementById('streakDays').innerText = streak;
-			updateBestStreak(streak).then(b => { document.getElementById('bestStreak').innerText = b; });
-			box.style.display = 'grid';
-		} else {
-			box.style.display = 'none';
-		}
-
+		// Statistiche
 		let totF = 0, totE = 0;
 		smokes.forEach(s => { s.type === 'fumo' ? totF += s.grams : totE += s.grams; });
 
-		document.getElementById('sFumo').innerText = totF.toFixed(2);
-		document.getElementById('sErba').innerText = totE.toFixed(2);
-		document.getElementById('sJTot').innerText = smokes.length;
-		document.getElementById('sGTot').innerText = (totF + totE).toFixed(2);
+		document.getElementById("sFumo").innerText = totF.toFixed(2);
+		document.getElementById("sErba").innerText = totE.toFixed(2);
+		document.getElementById("sJTot").innerText = smokes.length;
+		document.getElementById("sGTot").innerText = (totF + totE).toFixed(2);
 
 		let diffDays = 1;
 		if (smokes.length > 0) {
-			const sortedSmokes = [...smokes].sort((a,b) => a.ts - b.ts);
+			const sortedSmokes = [...smokes].sort((a,b) => new Date(a.date) - new Date(b.date));
 			const firstJ = new Date(sortedSmokes[0].date);
 			const today = new Date();
 			diffDays = Math.ceil(Math.abs(today - firstJ) / (1000 * 60 * 60 * 24)) || 1;
 		}
-		document.getElementById('diffDays').innerText = diffDays;
+		document.getElementById("diffDays").innerText = diffDays.toFixed(2);
 
-		document.getElementById('avgDaily').innerText = (smokes.length / diffDays).toFixed(2);
-		document.getElementById('avgMonthly').innerText = ((smokes.length / diffDays) * 30.44).toFixed(1);
-		document.getElementById('avgYearly').innerText = ((smokes.length / diffDays) * 365.25).toFixed(1);
-		document.getElementById('avgGrams').innerText = ((totF + totE) / diffDays).toFixed(2) + 'g';
+		document.getElementById("avgDaily").innerText = (smokes.length / diffDays).toFixed(2);
+		document.getElementById("avgMonthly").innerText = ((smokes.length / diffDays) * 30.44).toFixed(1);
+		document.getElementById("avgYearly").innerText = ((smokes.length / diffDays) * 365.25).toFixed(1);
+		document.getElementById("avgGrams").innerText = ((totF + totE) / diffDays).toFixed(2) + "g";
 
-		renderCharts();
+		const streak = calculateStreak();
+		const box = document.getElementById("streakBox");
+		if (streak >= 3) {
+			document.getElementById("streakDays").innerText = streak;
+			updateBestStreak(streak).then(best => {
+				document.getElementById("bestStreak").innerText = best;
+			});
+			box.style.display = "block";
+		} else {
+			box.style.display = "none";
+		}
+
+		renderCharts(totF, totE);
 	}
 
 	let charts = {};
-	function renderCharts() {
-		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
-		charts = {};
+	function renderCharts(f, e) {
+		Object.values(charts).forEach(c => c.destroy());
 
 		let numFumo = smokes.filter(s => s.type === 'fumo').length;
 		let numErba = smokes.filter(s => s.type === 'erba').length;
 
 		charts.pie = new Chart(document.getElementById("cPie"), {
 			type: 'doughnut',
-			data: { labels: ['Fumo', 'Erba'], datasets: [{ data: [numFumo, numErba], backgroundColor: ['#795548', '#4CAF50'] }] },
+			data: { labels: ['Fumo', 'Erba'], datasets: [{ data: [numFumo, numErba], backgroundColor: ['#795548', '#4CAF50'] }]},
 			options: { maintainAspectRatio: false }
 		});
 
@@ -1026,7 +895,7 @@
 
 		charts.dailyAll = new Chart(document.getElementById("cDailyAll"), {
 			type: 'line',
-			data: { labels: sortedDates.map(d => d.split("-").reverse().join("/")), datasets: [{ label: 'Joint', data: dailyCounts, borderColor: '#1b5e20', backgroundColor: 'rgba(27,94,32,0.1)', fill: true, tension: 0.3 }] },
+			data: { labels: sortedDates.map(d => d.split("-").reverse().join("/")), datasets: [{ label: 'Joint', data: dailyCounts, borderColor: '#1b5e20', backgroundColor: 'rgba(27,94,32,0.1)', fill: true, tension: 0.3 }]},
 			options: { maintainAspectRatio: false }
 		});
 
@@ -1035,19 +904,12 @@
 
 		charts.week = new Chart(document.getElementById("cWeekDays"), {
 			type: 'bar',
-			data: { labels: Object.keys(weekDays), datasets: [{ label: 'Joint', data: Object.values(weekDays), backgroundColor: '#66bb6a' }] },
+			data: { labels: Object.keys(weekDays), datasets: [{ label: 'Joint', data: Object.values(weekDays), backgroundColor: '#66bb6a' }]},
 			options: { maintainAspectRatio: false }
 		});
 
 		const hours = { Notte: 0, Mattina: 0, Pomeriggio: 0, Sera: 0 };
-		smokes.forEach(s => {
-			if (!s.time || typeof s.time !== "string") return;
-			const h = parseInt(s.time.split(':')[0]);
-			if(h >= 0 && h < 6) hours.Notte++;
-			else if(h >= 6 && h < 12) hours.Mattina++;
-			else if(h >= 12 && h < 18) hours.Pomeriggio++;
-			else hours.Sera++;
-		});
+		smokes.forEach(s => { if (!s.time || typeof s.time !== "string") return; const h = parseInt(s.time.split(':')[0]); if(h >= 0 && h < 6) hours.Notte++; else if(h >= 6 && h < 12) hours.Mattina++; else if(h >= 12 && h < 18) hours.Pomeriggio++; else hours.Sera++; });
 
 		charts.time = new Chart(document.getElementById("cTime"), {
 			type: 'polarArea',
@@ -1056,17 +918,17 @@
 		});
 	}
 
-	// ── RADIO LABELS ──────────────────────────────────
+	// Inizializzazione
+	document.getElementById("date").value = new Date().toISOString().split("T")[0];
+
 	document.querySelectorAll('input[name="g"]').forEach(r => {
-		r.addEventListener('change', e => {
-			document.querySelectorAll('.grams-row label').forEach(l => l.classList.remove('selected'));
-			e.target.parentElement.classList.add('selected');
-			document.getElementById('customGrams').style.display = e.target.value === 'custom' ? 'block' : 'none';
+		r.addEventListener("change", e => {
+			document.querySelectorAll(".grams-row label").forEach(l => l.classList.remove("selected"));
+			e.target.parentElement.classList.add("selected");
+			document.getElementById("customGrams").style.display = e.target.value === "custom" ? "block" : "none";
 		});
 	});
 
-	// ── INIT ──────────────────────────────────────────
-	document.getElementById('date').value = new Date().toISOString().split('T')[0];
 	checkAuth();
 </script>
 
