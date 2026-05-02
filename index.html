@@ -1,613 +1,866 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<title>Joint Tracker</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Joint Tracker</title>
 	
-	<link rel="manifest" href="manifest.json">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="icon-192.png">
+	<!-- PWA Meta Tags -->
+	<meta name="theme-color" content="#2e7d32">
+	<meta name="description" content="App per tracciare il consumo di cannabis con statistiche dettagliate">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<link rel="apple-touch-icon" href="/icon-192.png">
+	<link rel="manifest" href="/manifest.json">
+	<link rel="icon" type="image/png" href="/icon-192.png">
 	
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-:root { --primary: #2e7d32; --bg: #f4f7f6; --white: #ffffff; }
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #333; }
+	<!-- Chart.js -->
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	
+	<style>
+		:root {
+			--primary: #2e7d32;
+			--bg: #f4f7f6;
+			--white: #ffffff;
+		}
 
-header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-.menu-btn { font-size: 28px; background: none; border: none; color: white; cursor: pointer; }
-.menu-content { position: absolute; right: 10px; top: 60px; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); overflow: hidden; display: none; z-index: 1001; width: 180px; }
-.menu-content button { padding: 15px; width: 100%; font-size: 16px; border: none; background: white; text-align: left; border-bottom: 1px solid #f0f0f0; }
+		* {
+			box-sizing: border-box;
+			-webkit-tap-highlight-color: transparent;
+		}
 
-.page { display: none; padding: 15px; max-width: 600px; margin: 0 auto; animation: fadeIn 0.3s ease; }
-.page.active { display: block; }
-@keyframes fadeIn { from {opacity: 0; transform: translateY(5px);} to {opacity: 1; transform: translateY(0);} }
+		body {
+			margin: 0;
+			font-family: 'Segoe UI', system-ui, sans-serif;
+			background: var(--bg);
+			color: #333;
+		}
 
-.card { background: var(--white); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
-h2, h3 { margin-top: 0; color: var(--primary); }
+		header {
+			background: var(--primary);
+			color: white;
+			padding: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			position: sticky;
+			top: 0;
+			z-index: 1000;
+			box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+		}
 
-/* Form Elements */
-label { display: block; margin-top: 15px; font-weight: 600; font-size: 14px; color: #666; }
-input, select, button.action-btn { width: 100%; font-size: 16px; padding: 12px; margin-top: 8px; border-radius: 12px; border: 1px solid #ddd; }
-.data { width: 95%; font-size: 16px; padding: 12px; margin-top: 8px; border-radius: 12px; border: 1px solid #ddd;}
-.grams-row { display: flex; gap: 8px; margin-top: 8px; }
-.grams-row label { flex: 1; margin: 0; background: #eee; padding: 12px; border-radius: 10px; text-align: center; cursor: pointer; border: 2px solid transparent; }
-.grams-row input { display: none; }
-.grams-row label.selected { background: #e8f5e9; border-color: var(--primary); color: var(--primary); font-weight: bold; }
-#customGrams { display: none; }
-button.main-btn { background: var(--primary); color: white; border: none; margin-top: 20px; font-weight: bold; cursor: pointer; }
+		header h1 {
+			margin: 0;
+			font-size: 24px;
+		}
 
+		.menu-btn {
+			font-size: 28px;
+			background: none;
+			border: none;
+			color: white;
+			cursor: pointer;
+		}
 
+		.menu-content {
+			position: absolute;
+			right: 10px;
+			top: 60px;
+			background: white;
+			border-radius: 12px;
+			box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+			overflow: hidden;
+			display: none;
+			z-index: 1001;
+			width: 180px;
+		}
 
-/* NUOVI STILI CRONOLOGIA RAGGRUPPATA */
-.month-group { margin-bottom: 12px; border: 1px solid #eee; border-radius: 12px; overflow: hidden; background: #fff; }
-.month-header { background: #f8f9fa; padding: 12px 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
-.day-group { border-bottom: 1px solid #f0f0f0; }
-.day-header { padding: 10px 15px; background: #fff; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; color: #555; }
-.day-content { display: none; background: #fafafa; }
-.month-content { display: none; }
-.history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px 10px 30px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
-.del-btn { color: #ff5252; background: none; border: none; font-size: 18px; padding: 5px; cursor: pointer; margin-left: 10px; }
-.chevron::after { content: ' ▾'; color: #bbb; }
+		.menu-content button {
+			padding: 15px;
+			width: 100%;
+			font-size: 16px;
+			border: none;
+			background: white;
+			text-align: left;
+			border-bottom: 1px solid #f0f0f0;
+			cursor: pointer;
+		}
 
-/* Stats */
-.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.stat-box { background: #f8f9fa; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #eee; }
-.stat-box b { display: block; font-size: 20px; color: var(--primary); }
+		.menu-content button:last-child {
+			border-bottom: none;
+		}
 
-#notif { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 25px; border-radius: 50px; display: none; z-index: 2000; }
-.chart-container { position: relative; height: 250px; width: 100%; margin-top: 10px; }
+		.menu-content button:hover {
+			background: #f5f5f5;
+		}
 
+		.page {
+			display: none;
+			padding: 15px;
+			max-width: 600px;
+			margin: 0 auto;
+			animation: fadeIn 0.3s ease;
+		}
 
-</style>
+		.page.active {
+			display: block;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(5px);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.card {
+			background: var(--white);
+			border-radius: 16px;
+			padding: 20px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+			margin-bottom: 20px;
+		}
+
+		h2, h3 {
+			margin-top: 0;
+			color: var(--primary);
+		}
+
+		/* Form Elements */
+		label {
+			display: block;
+			margin-top: 15px;
+			font-weight: 600;
+			font-size: 14px;
+			color: #666;
+		}
+
+		input, select, button.action-btn {
+			width: 100%;
+			font-size: 16px;
+			padding: 12px;
+			margin-top: 8px;
+			border-radius: 12px;
+			border: 1px solid #ddd;
+		}
+
+		input:focus, select:focus {
+			outline: none;
+			border-color: var(--primary);
+			box-shadow: 0 0 0 3px rgba(46,125,50,0.1);
+		}
+
+		.data {
+			width: 95%;
+			font-size: 16px;
+			padding: 12px;
+			margin-top: 8px;
+			border-radius: 12px;
+			border: 1px solid #ddd;
+		}
+
+		.grams-row {
+			display: flex;
+			gap: 8px;
+			margin-top: 8px;
+		}
+
+		.grams-row label {
+			flex: 1;
+			margin: 0;
+			background: #eee;
+			padding: 12px;
+			border-radius: 10px;
+			text-align: center;
+			cursor: pointer;
+			border: 2px solid transparent;
+			font-weight: 500;
+		}
+
+		.grams-row input {
+			display: none;
+		}
+
+		.grams-row label.selected {
+			background: #e8f5e9;
+			border-color: var(--primary);
+			color: var(--primary);
+			font-weight: bold;
+		}
+
+		#customGrams {
+			display: none;
+		}
+
+		button.main-btn {
+			background: var(--primary);
+			color: white;
+			border: none;
+			margin-top: 20px;
+			font-weight: bold;
+			cursor: pointer;
+		}
+
+		button.main-btn:hover {
+			background: #1b5e20;
+		}
+
+		/* Cronologia */
+		.month-group {
+			margin-bottom: 12px;
+			border: 1px solid #eee;
+			border-radius: 12px;
+			overflow: hidden;
+			background: #fff;
+		}
+
+		.month-header {
+			background: #f8f9fa;
+			padding: 12px 15px;
+			font-weight: bold;
+			cursor: pointer;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			border-bottom: 1px solid #eee;
+		}
+
+		.day-group {
+			border-bottom: 1px solid #f0f0f0;
+		}
+
+		.day-header {
+			padding: 10px 15px;
+			background: #fff;
+			cursor: pointer;
+			font-size: 14px;
+			display: flex;
+			justify-content: space-between;
+			color: #555;
+		}
+
+		.day-content {
+			display: none;
+			background: #fafafa;
+		}
+
+		.month-content {
+			display: none;
+		}
+
+		.history-item {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 10px 15px 10px 30px;
+			border-bottom: 1px solid #f0f0f0;
+			font-size: 14px;
+		}
+
+		.del-btn {
+			color: #ff5252;
+			background: none;
+			border: none;
+			font-size: 18px;
+			padding: 5px;
+			cursor: pointer;
+			margin-left: 10px;
+		}
+
+		.chevron::after {
+			content: ' ▾';
+			color: #bbb;
+		}
+
+		/* Stats */
+		.stat-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 12px;
+		}
+
+		.stat-box {
+			background: #f8f9fa;
+			padding: 15px;
+			border-radius: 12px;
+			text-align: center;
+			border: 1px solid #eee;
+		}
+
+		.stat-box big {
+			display: block;
+			font-size: 20px;
+			color: var(--primary);
+			font-weight: bold;
+		}
+
+		.stat-box small {
+			font-size: 12px;
+			color: #999;
+		}
+
+		#notif {
+			position: fixed;
+			bottom: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: #333;
+			color: white;
+			padding: 12px 25px;
+			border-radius: 50px;
+			display: none;
+			z-index: 2000;
+		}
+
+		.chart-container {
+			position: relative;
+			height: 250px;
+			width: 100%;
+			margin-top: 10px;
+		}
+
+		textarea {
+			width: 100%;
+			font-size: 14px;
+			padding: 12px;
+			border-radius: 12px;
+			border: 1px solid #ddd;
+			font-family: monospace;
+		}
+
+		hr {
+			border: 0;
+			border-top: 1px solid #eee;
+			margin: 20px 0;
+		}
+
+		p {
+			font-size: 11px;
+			color: #999;
+			text-align: center;
+		}
+	</style>
 </head>
 <body>
 
 <div id="notif">Registrato! ✅</div>
 
 <header>
-  <h1>🌿 JointTracker</h1>
-  <button class="menu-btn" onclick="toggleMenu()">☰</button>
-  <div class="menu-content" id="menu">
-    <button onclick="showPage('add')">➕ Aggiungi</button>
-    <button onclick="showPage('history')">📜 Cronologia</button>
-    <button onclick="showPage('stats')">📊 Statistiche</button>
-    <button onclick="showPage('charts')">📈 Dashboard</button>
-<button onclick="showPage('settings')">⚙️ Settings</button>
-  </div>
+	<h1>🌿 JointTracker</h1>
+	<button class="menu-btn" onclick="toggleMenu()">☰</button>
+	<div class="menu-content" id="menu">
+		<button onclick="showPage('add')">➕ Aggiungi</button>
+		<button onclick="showPage('history')">📜 Cronologia</button>
+		<button onclick="showPage('stats')">📊 Statistiche</button>
+		<button onclick="showPage('charts')">📈 Dashboard</button>
+		<button onclick="showPage('settings')">⚙️ Settings</button>
+	</div>
 </header>
 
 <div id="page-add" class="page active">
-  <div class="card">
-    <h3>Nuovo Inserimento</h3>
+	<div class="card">
+		<h3>Nuovo Inserimento</h3>
 
+		<label for="type">Cosa fumi?</label>
+		<select id="type">
+			<option value="fumo">🍫 Hashish (Fumo)</option>
+			<option value="erba">🍃 Marijuana (Erba)</option>
+		</select>
 
-    <label>Cosa fumi?</label>
-    <select id="type">
-      <option value="fumo">🍫 Hashish (Fumo)</option>
-      <option value="erba">🍃 Marijuana (Erba)</option>
-    </select>
-    <label>Quantità</label>
-    <div class="grams-row" id="gCont">
-      <label class="selected"><input type="radio" name="g" value="0.3" checked> 0.3g</label>
-      <label><input type="radio" name="g" value="0.5"> 0.5g</label>
-      <label><input type="radio" name="g" value="custom"> Altro</label>
-    </div>
-    <input type="number" id="customGrams" step="0.1" placeholder="Grammi manuali">
-    <label>Data</label>
-    <input class="data" type="date" id="date">
-    <button class="main-btn action-btn" onclick="saveData()">SALVA SESSIONE</button> 
-  </div>
+		<label for="gCont">Quantità</label>
+		<div class="grams-row" id="gCont">
+			<label><input type="radio" name="g" value="0.3" checked> 0.3g</label>
+			<label><input type="radio" name="g" value="0.5"> 0.5g</label>
+			<label><input type="radio" name="g" value="custom"> Altro</label>
+		</div>
+
+		<input type="number" id="customGrams" step="0.1" placeholder="Grammi manuali">
+
+		<label for="date">Data</label>
+		<input class="data" type="date" id="date">
+
+		<button class="main-btn action-btn" onclick="saveData()">SALVA SESSIONE</button>
+	</div>
 </div>
 
 <div id="page-history" class="page">
-  <div class="card">
-    <h3>📜 Registro Storico</h3>
-    <div id="historyList"></div>
-  </div>
+	<div class="card">
+		<h3>📜 Registro Storico</h3>
+		<div id="historyList"></div>
+	</div>
 </div>
 
+<div id="page-settings" class="page">
+	<div class="card">
+		<h3>⚙️ Impostazioni</h3>
+		<button class="main-btn" onclick="exportData()">📤 Esporta Dati</button>
 
-	<div id="page-settings" class="page">
-  <div class="card">
-    <h3>⚙️ Impostazioni</h3>
-<button onclick="exportData()">📤 Esporta Dati</button>
-<input type="file" id="importFile" style="display:none" onchange="importData(event)">
-<div>
-  <h3>📥 Importa Dati</h3>
-  <textarea id="importArea" style="width:100%; height:200px;" placeholder="Incolla qui il backup JSON"></textarea>
-  <button onclick="importData()">Importa</button>
-</div>
-	  <div>
-		  <button onclick="resetAll()" style="background:none; border:none; color:red; width:100%; margin-top:20px; font-size:12px; cursor:pointer;">⚠️ Reset completo dati</button>
-	  </div>
-  </div>
+		<div style="margin-top: 20px;">
+			<h3>📥 Importa Dati</h3>
+			<label for="importArea">Incolla qui il backup JSON</label>
+			<textarea id="importArea" placeholder="Incolla qui il backup JSON"></textarea>
+			<button class="main-btn" onclick="importData()">Importa</button>
+		</div>
+
+		<div style="margin-top: 20px;">
+			<button onclick="resetAll()" style="background:none; border:none; color:red; width:100%; padding:12px; font-size:14px; cursor:pointer;">⚠️ Reset completo dati</button>
+		</div>
+	</div>
 </div>
 
 <div id="page-stats" class="page">
-  <div class="card">
-    <h3>Quantità Totali</h3>
-    <div class="stat-grid">
-      <div class="stat-box"><big id="sFumo">0</big><small>Grammi Fumo</small></div>
-      <div class="stat-box"><big id="sErba">0</big><small>Grammi Erba</small></div>
-      <div class="stat-box"><big id="sJTot">0</big><small>Joint Totali</small></div>
-      <div class="stat-box"><big id="sGTot">0</big><small>Grammi Totali</small></div>
-    </div>
-    <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-    <h3>Medie Reali (tutti i giorni)</h3>
-    <div class="stat-grid">
-      <div class="stat-box"><big id="avgDaily">0</big><small>J / Giorno</small></div>
-      <div class="stat-box"><big id="avgMonthly">0</big><small>J / Mese</small></div>
-      <div class="stat-box"><big id="avgYearly">0</big><small>J / Anno</small></div>
-      <div class="stat-box"><big id="avgGrams">0</big><small>Grammi / Giorno</small></div>
-    </div>
-<hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-	<h3>🔥 Streak</h3>
-    <div class="stat-grid" id="streakBox">
-      <div class="stat-box"><big id="streakDays">0</big><small>🔥</small></div>
-      <div class="stat-box">🏆 Migliore streak:<big id="bestStreak">0</big></div>
-    </div>
-</div>
-    <p style="font-size:11px; color:#999; text-align:center;">*Il calcolo parte dalla tua prima J inserita.(<span id="diffDays">0</span> giorni fà)</p>
-	
-  </div>
+	<div class="card">
+		<h3>Quantità Totali</h3>
+		<div class="stat-grid">
+			<div class="stat-box"><big id="sFumo">0</big><small>Grammi Fumo</small></div>
+			<div class="stat-box"><big id="sErba">0</big><small>Grammi Erba</small></div>
+			<div class="stat-box"><big id="sJTot">0</big><small>Joint Totali</small></div>
+			<div class="stat-box"><big id="sGTot">0</big><small>Grammi Totali</small></div>
+		</div>
+
+		<hr>
+
+		<h3>Medie Reali (tutti i giorni)</h3>
+		<div class="stat-grid">
+			<div class="stat-box"><big id="avgDaily">0</big><small>J / Giorno</small></div>
+			<div class="stat-box"><big id="avgMonthly">0</big><small>J / Mese</small></div>
+			<div class="stat-box"><big id="avgYearly">0</big><small>J / Anno</small></div>
+			<div class="stat-box"><big id="avgGrams">0</big><small>Grammi / Giorno</small></div>
+		</div>
+
+		<hr>
+
+		<h3>🔥 Streak</h3>
+		<div class="stat-grid" id="streakBox">
+			<div class="stat-box"><big id="streakDays">0</big><small>🔥</small></div>
+			<div class="stat-box">🏆 Migliore streak:<big id="bestStreak">0</big></div>
+		</div>
+
+		<p>*Il calcolo parte dalla tua prima J inserita.(<span id="diffDays">0</span> giorni fà)</p>
+	</div>
 </div>
 
 <div id="page-charts" class="page">
-
-<div class="card">
-  <h3>📅 Joint per Giorno (Storico Completo)</h3>
-  <div class="chart-container"><canvas id="cDailyAll"></canvas></div>
-</div>
-
-
-  <div class="card">
-    <h3>Consumo Grammi (Ultimi 7gg)</h3>
-    <div class="chart-container"><canvas id="cWeight"></canvas></div>
-  </div>
-
-<div class="card">
-  <h3>📊 Giorni della Settimana</h3>
-  <div class="chart-container"><canvas id="cWeekDays"></canvas></div>
-</div>
-
-  <div class="card">
-    <h3>Fasce Orarie</h3>
-    <div class="chart-container"><canvas id="cTime"></canvas></div>
-  </div>
+	<div class="card">
+		<h3>📅 Joint per Giorno (Storico Completo)</h3>
+		<div class="chart-container"><canvas id="cDailyAll"></canvas></div>
+	</div>
 
 	<div class="card">
-    <h3>Differenza Grammi Fumo/Erba</h3>
-    <div class="chart-container"><canvas id="cPie"></canvas></div>
-  </div>
+		<h3>Consumo Grammi (Ultimi 7gg)</h3>
+		<div class="chart-container"><canvas id="cWeight"></canvas></div>
+	</div>
 
+	<div class="card">
+		<h3>📊 Giorni della Settimana</h3>
+		<div class="chart-container"><canvas id="cWeekDays"></canvas></div>
+	</div>
+
+	<div class="card">
+		<h3>Fasce Orarie</h3>
+		<div class="chart-container"><canvas id="cTime"></canvas></div>
+	</div>
+
+	<div class="card">
+		<h3>Differenza Grammi Fumo/Erba</h3>
+		<div class="chart-container"><canvas id="cPie"></canvas></div>
+	</div>
 </div>
 
-  
-
 <script>
-// Carica dati nuovi (v3) o migra vecchi da "smokes"
-let smokes = JSON.parse(localStorage.getItem("smokes_v3")) || [];
-
-// Migrazione dai dati vecchi "smokes" se v3 è vuoto
-function migrate() {
-    let oldData = JSON.parse(localStorage.getItem("smokes"));
-    if (oldData && smokes.length === 0) {
-        smokes = oldData.map(i => ({
-            ...i,
-            ts: i.ts || new Date(i.date).getTime() + Math.random(),
-            time: i.time || "12:00"
-        }));
-        localStorage.setItem("smokes_v3", JSON.stringify(smokes));
-        console.log("Dati migrati da smokes a smokes_v3");
-    }
-}
-
-// Pulizia vecchie fumate con time "12:00" prima di una certa data
-const ORARIO_INTRODOTTO_IL = new Date("2026-02-08").getTime();
-function fixOldFakeTimes() {
-    let changed = false;
-
-    smokes = smokes.map(s => {
-        if (s.ts < ORARIO_INTRODOTTO_IL && s.time === "12:00") {
-            const { time, ...rest } = s;
-            changed = true;
-            return rest; // rimuove il time solo se è vecchia
-        }
-        return s;
-    });
-
-    if (changed) {
-        localStorage.setItem("smokes_v3", JSON.stringify(smokes));
-        console.log("Pulizia completata.");
-    }
-}
-
-// Esegui migrazione e pulizia all'avvio
-migrate();
-fixOldFakeTimes();
-
-
-
-
-
-document.getElementById("date").value = new Date().toISOString().split("T")[0];
-
-// Gestione UI Radio
-document.querySelectorAll('input[name="g"]').forEach(r => {
-    r.addEventListener("change", e => {
-        document.querySelectorAll(".grams-row label").forEach(l => l.classList.remove("selected"));
-        e.target.parentElement.classList.add("selected");
-        document.getElementById("customGrams").style.display = e.target.value === "custom" ? "block" : "none";
-    });
-});
-
-function toggleMenu() {
-    const m = document.getElementById("menu");
-    m.style.display = m.style.display === "block" ? "none" : "block";
-}
-
-function showPage(p) {
-    document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
-    document.getElementById("page-" + p).classList.add("active");
-    document.getElementById("menu").style.display = "none";
-    update();
-}
-
-function saveData() {
-    const type = document.getElementById("type").value;
-    const gVal = document.querySelector('input[name="g"]:checked').value;
-    const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
-    
-    if(!grams || grams <= 0) return alert("Inserisci un peso valido");
-    
-    const now = new Date();
-    const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
-
-    smokes.push({ 
-        type, 
-        grams, 
-        date: document.getElementById("date").value, 
-        time, 
-        ts: Date.now() 
-    });
-    
-    localStorage.setItem("smokes_v3", JSON.stringify(smokes));
-    document.getElementById("notif").style.display = "block";
-    setTimeout(() => document.getElementById("notif").style.display = "none", 2000);
-    update();
-}
-
-function deleteItem(ts) {
-    if(confirm("Vuoi eliminare questo inserimento?")) {
-        smokes = smokes.filter(s => s.ts !== ts);
-        localStorage.setItem("smokes_v3", JSON.stringify(smokes));
-        update();
-    }
-}
-
-function toggleAccordion(el) {
-    const content = el.nextElementSibling;
-    const isVisible = content.style.display === "block";
-    content.style.display = isVisible ? "none" : "block";
-}
-
-function calculateStreak() {
-  if (smokes.length === 0) return 0;
-
-  const days = [...new Set(smokes.map(s => s.date))].sort();
-  let streak = 1;
-
-  for (let i = days.length - 1; i > 0; i--) {
-    const today = new Date(days[i]);
-    const yesterday = new Date(days[i - 1]);
-    today.setHours(0,0,0,0);
-    yesterday.setHours(0,0,0,0);
-    const diff = (today - yesterday) / (1000 * 60 * 60 * 24);
-    if (diff === 1) streak++;
-    else break;
-  }
-
-  const last = new Date(days[days.length - 1]);
-  const now = new Date();
-  last.setHours(0,0,0,0);
-  now.setHours(0,0,0,0);
-  const diffFromToday = (now - last) / (1000 * 60 * 60 * 24);
-  if (diffFromToday > 1) return 0;
-
-  return streak;
-}
-
-function updateBestStreak(currentStreak) {
-  let best = parseInt(localStorage.getItem("bestStreak")) || 0;
-  if (currentStreak > best) {
-    best = currentStreak;
-    localStorage.setItem("bestStreak", best);
-  }
-  return best;
-}
-
-function update() {
-	
-    // Ordinamento cronologico inverso
-    smokes.sort((a,b) => b.ts - a.ts);
-
-    const hList = document.getElementById("historyList");
-    hList.innerHTML = "";
-
-    if (smokes.length === 0) {
-        hList.innerHTML = "<p style='text-align:center; color:#999;'>Nessun dato presente.</p>";
-    } else {
-        const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
-        const grouped = {};
-
-        smokes.forEach(s => {
-            const d = new Date(s.date);
-            const mKey = `${months[d.getMonth()]} ${d.getFullYear()}`;
-            if (!grouped[mKey]) grouped[mKey] = {};
-            if (!grouped[mKey][s.date]) grouped[mKey][s.date] = [];
-            grouped[mKey][s.date].push(s);
-        });
-
-        for (let mKey in grouped) {
-            let mGrams = 0;
-            let daysHtml = "";
-
-            for (let dKey in grouped[mKey]) {
-                const daySmokes = grouped[mKey][dKey];
-                const dayWeight = daySmokes.reduce((sum, s) => sum + s.grams, 0);
-                mGrams += dayWeight;
-
-                const dDisplay = dKey.split('-').reverse().join('/');
-                
-                let itemsHtml = daySmokes.map(s => `
-                    <div class="history-item">
-                        <span>${s.time} - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g</span>
-                        <button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
-                    </div>
-                `).join('');
-
-                daysHtml += `
-                    <div class="day-group">
-                        <div class="day-header" onclick="toggleAccordion(this)">
-                            <span>📅 ${dDisplay}</span>
-                            <span>${dayWeight.toFixed(1)}g <span class="chevron"></span></span>
-                        </div>
-                        <div class="day-content">${itemsHtml}</div>
-                    </div>`;
-            }
-
-            hList.innerHTML += `
-                <div class="month-group">
-                    <div class="month-header" onclick="toggleAccordion(this)">
-                        <span>📂 ${mKey}</span>
-                        <span>${mGrams.toFixed(1)}g <span class="chevron"></span></span>
-                    </div>
-                    <div class="month-content">${daysHtml}</div>
-                </div>`;
-        }
- }
-const streak = calculateStreak();
-const box = document.getElementById("streakBox");
-
-if (streak >= 3) { 
-  document.getElementById("streakDays").innerText = streak;
-  document.getElementById("bestStreak").innerText = updateBestStreak(streak);
-  box.style.display = "block";
-} else {
-  box.style.display = "none";
-}
-
-
-//parte aggiunta
- // Statistiche Grammi
-  let totF = 0, totE = 0;
-  smokes.forEach(s => { s.type === 'fumo' ? totF += s.grams : totE += s.grams; });
-  
-  document.getElementById("sFumo").innerText = totF.toFixed(2);
-  document.getElementById("sErba").innerText = totE.toFixed(2);
-  document.getElementById("sJTot").innerText = smokes.length;
-  document.getElementById("sGTot").innerText = (totF + totE).toFixed(2);
-
-  // Calcolo Medie Reali
-  const firstJ = new Date([...smokes].sort((a,b) => a.ts - b.ts)[0].date);
-  const today = new Date();
-  const diffDays = Math.ceil(Math.abs(today - firstJ) / (1000 * 60 * 60 * 24)) || 1;
-document.getElementById("diffDays").innerText = diffDays.toFixed(2);
-  
-  document.getElementById("avgDaily").innerText = (smokes.length / diffDays).toFixed(2);
-  document.getElementById("avgMonthly").innerText = ((smokes.length / diffDays) * 30.44).toFixed(1);
-  document.getElementById("avgYearly").innerText = ((smokes.length / diffDays) * 365.25).toFixed(1);
-  document.getElementById("avgGrams").innerText = ((totF + totE) / diffDays).toFixed(2) + "g";
-
-  renderCharts(totF, totE);
-}
-
-
-
-
-
-
-
-let charts = {};
-function renderCharts(f, e) {
-    Object.values(charts).forEach(c => c.destroy());
-    
-    // Calcolo numero di joint per tipo
-let numFumo = smokes.filter(s => s.type === 'fumo').length;
-let numErba = smokes.filter(s => s.type === 'erba').length;
-
-charts.pie = new Chart(document.getElementById("cPie"), {
-    type: 'doughnut',
-    data: { 
-        labels: ['Fumo', 'Erba'], 
-        datasets: [{
-            data: [numFumo, numErba], // qui metti il numero di J
-            backgroundColor: ['#795548', '#4CAF50']
-        }]
-    },
-    options: { maintainAspectRatio: false }
-});
-
-    const last7 = [...Array(7)].map((_,i) => {
-        let d = new Date(); d.setDate(d.getDate()-i);
-        return d.toISOString().split('T')[0];
-    }).reverse();
-    
-    const weightData = last7.map(d => smokes.filter(s => s.date === d).reduce((acc, curr) => acc + curr.grams, 0));
-
-    charts.weight = new Chart(document.getElementById("cWeight"), {
-        type: 'line',
-        data: { labels: last7.map(d => d.slice(8)), datasets: [{ label: 'Grammi', data: weightData, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true }]},
-        options: { maintainAspectRatio: false }
-    });
-
-    // ==========================
-    // JOINT PER OGNI GIORNO (DI SEMPRE)
-    // ==========================
-
-    const dailyMap = {};
-
-    smokes.forEach(s => {
-        if (!dailyMap[s.date]) dailyMap[s.date] = 0;
-        dailyMap[s.date]++;
-    });
-
-    const sortedDates = Object.keys(dailyMap).sort();
-    const dailyCounts = sortedDates.map(d => dailyMap[d]);
-
-    charts.dailyAll = new Chart(document.getElementById("cDailyAll"), {
-        type: 'line',
-        data: {
-            labels: sortedDates.map(d => d.split("-").reverse().join("/")),
-            datasets: [{
-                label: 'Joint',
-                data: dailyCounts,
-                borderColor: '#1b5e20',
-                backgroundColor: 'rgba(27,94,32,0.1)',
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: { maintainAspectRatio: false }
-    });
-
-    // ==========================
-    // GIORNI DELLA SETTIMANA
-    // ==========================
-
-    const weekDays = {
-        "Domenica": 0,
-        "Lunedì": 0,
-        "Martedì": 0,
-        "Mercoledì": 0,
-        "Giovedì": 0,
-        "Venerdì": 0,
-        "Sabato": 0
-    };
-
-    smokes.forEach(s => {
-        const d = new Date(s.date);
-        const dayIndex = d.getDay();
-        const names = Object.keys(weekDays);
-        weekDays[names[dayIndex]]++;
-    });
-
-    charts.week = new Chart(document.getElementById("cWeekDays"), {
-        type: 'bar',
-        data: {
-            labels: Object.keys(weekDays),
-            datasets: [{
-                label: 'Joint',
-                data: Object.values(weekDays),
-                backgroundColor: '#66bb6a'
-            }]
-        },
-        options: { maintainAspectRatio: false }
-    });
-
-    const hours = { Notte: 0, Mattina: 0, Pomeriggio: 0, Sera: 0 };
-
-smokes.forEach(s => {
-
-    if (!s.time || typeof s.time !== "string") return; // ← protezione
-
-    const h = parseInt(s.time.split(':')[0]);
-
-    if(h >= 0 && h < 6) hours.Notte++;
-    else if(h >= 6 && h < 12) hours.Mattina++;
-    else if(h >= 12 && h < 18) hours.Pomeriggio++;
-    else hours.Sera++;
-});
-
-    charts.time = new Chart(document.getElementById("cTime"), {
-        type: 'polarArea',
-        data: { labels: Object.keys(hours), datasets: [{ data: Object.values(hours), backgroundColor: ['#2c3e50','#f1c40f','#e67e22','#2980b9'] }]},
-        options: { maintainAspectRatio: false }
-    });
-}
-
-
-	
-    // ==========================
-    // EXPORTDATA
-    // ==========================
+	// Carica dati nuovi (v3) o migra vecchi da "smokes"
+	let smokes = JSON.parse(localStorage.getItem("smokes_v3")) || [];
+
+	// Migrazione dai dati vecchi "smokes" se v3 è vuoto
+	function migrate() {
+		let oldData = JSON.parse(localStorage.getItem("smokes"));
+		if (oldData && smokes.length === 0) {
+			smokes = oldData.map(i => ({
+				...i,
+				ts: i.ts || new Date(i.date).getTime() + Math.random(),
+				time: i.time || "12:00"
+			}));
+			localStorage.setItem("smokes_v3", JSON.stringify(smokes));
+			console.log("Dati migrati da smokes a smokes_v3");
+		}
+	}
+
+	// Pulizia vecchie fumate con time "12:00" prima di una certa data
+	const ORARIO_INTRODOTTO_IL = new Date("2026-02-08").getTime();
+	function fixOldFakeTimes() {
+		let changed = false;
+
+		smokes = smokes.map(s => {
+			if (s.ts < ORARIO_INTRODOTTO_IL && s.time === "12:00") {
+				const { time, ...rest } = s;
+				changed = true;
+				return rest;
+			}
+			return s;
+		});
+
+		if (changed) {
+			localStorage.setItem("smokes_v3", JSON.stringify(smokes));
+			console.log("Pulizia completata.");
+		}
+	}
+
+	migrate();
+	fixOldFakeTimes();
+
+	document.getElementById("date").value = new Date().toISOString().split("T")[0];
+
+	// Gestione UI Radio
+	document.querySelectorAll('input[name="g"]').forEach(r => {
+		r.addEventListener("change", e => {
+			document.querySelectorAll(".grams-row label").forEach(l => l.classList.remove("selected"));
+			e.target.parentElement.classList.add("selected");
+			document.getElementById("customGrams").style.display = e.target.value === "custom" ? "block" : "none";
+		});
+	});
+
+	function toggleMenu() {
+		const m = document.getElementById("menu");
+		m.style.display = m.style.display === "block" ? "none" : "block";
+	}
+
+	function showPage(p) {
+		document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
+		document.getElementById("page-" + p).classList.add("active");
+		document.getElementById("menu").style.display = "none";
+		update();
+	}
+
+	function saveData() {
+		const type = document.getElementById("type").value;
+		const gVal = document.querySelector('input[name="g"]:checked').value;
+		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
+
+		if(!grams || grams <= 0) return alert("Inserisci un peso valido");
+
+		const now = new Date();
+		const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+
+		smokes.push({
+			type,
+			grams,
+			date: document.getElementById("date").value,
+			time,
+			ts: Date.now()
+		});
+
+		localStorage.setItem("smokes_v3", JSON.stringify(smokes));
+		document.getElementById("notif").style.display = "block";
+		setTimeout(() => document.getElementById("notif").style.display = "none", 2000);
+		update();
+	}
+
+	function deleteItem(ts) {
+		if(confirm("Vuoi eliminare questo inserimento?")) {
+			smokes = smokes.filter(s => s.ts !== ts);
+			localStorage.setItem("smokes_v3", JSON.stringify(smokes));
+			update();
+		}
+	}
+
+	function toggleAccordion(el) {
+		const content = el.nextElementSibling;
+		const isVisible = content.style.display === "block";
+		content.style.display = isVisible ? "none" : "block";
+	}
+
+	function calculateStreak() {
+		if (smokes.length === 0) return 0;
+
+		const days = [...new Set(smokes.map(s => s.date))].sort();
+		let streak = 1;
+
+		for (let i = days.length - 1; i > 0; i--) {
+			const today = new Date(days[i]);
+			const yesterday = new Date(days[i - 1]);
+			today.setHours(0,0,0,0);
+			yesterday.setHours(0,0,0,0);
+			const diff = (today - yesterday) / (1000 * 60 * 60 * 24);
+			if (diff === 1) streak++;
+			else break;
+		}
+
+		const last = new Date(days[days.length - 1]);
+		const now = new Date();
+		last.setHours(0,0,0,0);
+		now.setHours(0,0,0,0);
+		const diffFromToday = (now - last) / (1000 * 60 * 60 * 24);
+		if (diffFromToday > 1) return 0;
+
+		return streak;
+	}
+
+	function updateBestStreak(currentStreak) {
+		let best = parseInt(localStorage.getItem("bestStreak")) || 0;
+		if (currentStreak > best) {
+			best = currentStreak;
+			localStorage.setItem("bestStreak", best);
+		}
+		return best;
+	}
+
+	function update() {
+		smokes.sort((a,b) => b.ts - a.ts);
+
+		const hList = document.getElementById("historyList");
+		hList.innerHTML = "";
+
+		if (smokes.length === 0) {
+			hList.innerHTML = "<p style='text-align:center; color:#999;'>Nessun dato presente.</p>";
+		} else {
+			const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+			const grouped = {};
+
+			smokes.forEach(s => {
+				const d = new Date(s.date);
+				const mKey = `${months[d.getMonth()]} ${d.getFullYear()}`;
+				if (!grouped[mKey]) grouped[mKey] = {};
+				if (!grouped[mKey][s.date]) grouped[mKey][s.date] = [];
+				grouped[mKey][s.date].push(s);
+			});
+
+			for (let mKey in grouped) {
+				let mGrams = 0;
+				let daysHtml = "";
+
+				for (let dKey in grouped[mKey]) {
+					const daySmokes = grouped[mKey][dKey];
+					const dayWeight = daySmokes.reduce((sum, s) => sum + s.grams, 0);
+					mGrams += dayWeight;
+
+					const dDisplay = dKey.split('-').reverse().join('/');
+
+					let itemsHtml = daySmokes.map(s => `
+						<div class="history-item">
+							<span>${s.time} - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g</span>
+							<button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
+						</div>
+					`).join('');
+
+					daysHtml += `
+						<div class="day-group">
+							<div class="day-header" onclick="toggleAccordion(this)">
+								<span>📅 ${dDisplay}</span>
+								<span>${dayWeight.toFixed(1)}g <span class="chevron"></span></span>
+							</div>
+							<div class="day-content">${itemsHtml}</div>
+						</div>`;
+				}
+
+				hList.innerHTML += `
+					<div class="month-group">
+						<div class="month-header" onclick="toggleAccordion(this)">
+							<span>📂 ${mKey}</span>
+							<span>${mGrams.toFixed(1)}g <span class="chevron"></span></span>
+						</div>
+						<div class="month-content">${daysHtml}</div>
+					</div>`;
+			}
+		}
+
+		const streak = calculateStreak();
+		const box = document.getElementById("streakBox");
+
+		if (streak >= 3) {
+			document.getElementById("streakDays").innerText = streak;
+			document.getElementById("bestStreak").innerText = updateBestStreak(streak);
+			box.style.display = "block";
+		} else {
+			box.style.display = "none";
+		}
+
+		// Statistiche Grammi
+		let totF = 0, totE = 0;
+		smokes.forEach(s => { s.type === 'fumo' ? totF += s.grams : totE += s.grams; });
+
+		document.getElementById("sFumo").innerText = totF.toFixed(2);
+		document.getElementById("sErba").innerText = totE.toFixed(2);
+		document.getElementById("sJTot").innerText = smokes.length;
+		document.getElementById("sGTot").innerText = (totF + totE).toFixed(2);
+
+		// Calcolo Medie Reali - FIXATO
+		let diffDays = 1;
+		if (smokes.length > 0) {
+			const sortedSmokes = [...smokes].sort((a,b) => a.ts - b.ts);
+			const firstJ = new Date(sortedSmokes[0].date);
+			const today = new Date();
+			diffDays = Math.ceil(Math.abs(today - firstJ) / (1000 * 60 * 60 * 24)) || 1;
+		}
+		document.getElementById("diffDays").innerText = diffDays.toFixed(2);
+
+		document.getElementById("avgDaily").innerText = (smokes.length / diffDays).toFixed(2);
+		document.getElementById("avgMonthly").innerText = ((smokes.length / diffDays) * 30.44).toFixed(1);
+		document.getElementById("avgYearly").innerText = ((smokes.length / diffDays) * 365.25).toFixed(1);
+		document.getElementById("avgGrams").innerText = ((totF + totE) / diffDays).toFixed(2) + "g";
+
+		renderCharts(totF, totE);
+	}
+
+	let charts = {};
+	function renderCharts(f, e) {
+		Object.values(charts).forEach(c => c.destroy());
+
+		let numFumo = smokes.filter(s => s.type === 'fumo').length;
+		let numErba = smokes.filter(s => s.type === 'erba').length;
+
+		charts.pie = new Chart(document.getElementById("cPie"), {
+			type: 'doughnut',
+			data: {
+				labels: ['Fumo', 'Erba'],
+				datasets: [{
+					data: [numFumo, numErba],
+					backgroundColor: ['#795548', '#4CAF50']
+				}]
+			},
+			options: { maintainAspectRatio: false }
+		});
+
+		const last7 = [...Array(7)].map((_,i) => {
+			let d = new Date(); d.setDate(d.getDate()-i);
+			return d.toISOString().split('T')[0];
+		}).reverse();
+
+		const weightData = last7.map(d => smokes.filter(s => s.date === d).reduce((acc, curr) => acc + curr.grams, 0));
+
+		charts.weight = new Chart(document.getElementById("cWeight"), {
+			type: 'line',
+			data: { labels: last7.map(d => d.slice(8)), datasets: [{ label: 'Grammi', data: weightData, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true }]},
+			options: { maintainAspectRatio: false }
+		});
+
+		const dailyMap = {};
+		smokes.forEach(s => {
+			if (!dailyMap[s.date]) dailyMap[s.date] = 0;
+			dailyMap[s.date]++;
+		});
+
+		const sortedDates = Object.keys(dailyMap).sort();
+		const dailyCounts = sortedDates.map(d => dailyMap[d]);
+
+		charts.dailyAll = new Chart(document.getElementById("cDailyAll"), {
+			type: 'line',
+			data: {
+				labels: sortedDates.map(d => d.split("-").reverse().join("/")),
+				datasets: [{
+					label: 'Joint',
+					data: dailyCounts,
+					borderColor: '#1b5e20',
+					backgroundColor: 'rgba(27,94,32,0.1)',
+					fill: true,
+					tension: 0.3
+				}]
+			},
+			options: { maintainAspectRatio: false }
+		});
+
+		const weekDays = {
+			"Domenica": 0,
+			"Lunedì": 0,
+			"Martedì": 0,
+			"Mercoledì": 0,
+			"Giovedì": 0,
+			"Venerdì": 0,
+			"Sabato": 0
+		};
+
+		smokes.forEach(s => {
+			const d = new Date(s.date);
+			const dayIndex = d.getDay();
+			const names = Object.keys(weekDays);
+			weekDays[names[dayIndex]]++;
+		});
+
+		charts.week = new Chart(document.getElementById("cWeekDays"), {
+			type: 'bar',
+			data: {
+				labels: Object.keys(weekDays),
+				datasets: [{
+					label: 'Joint',
+					data: Object.values(weekDays),
+					backgroundColor: '#66bb6a'
+				}]
+			},
+			options: { maintainAspectRatio: false }
+		});
+
+		const hours = { Notte: 0, Mattina: 0, Pomeriggio: 0, Sera: 0 };
+		smokes.forEach(s => {
+			if (!s.time || typeof s.time !== "string") return;
+			const h = parseInt(s.time.split(':')[0]);
+			if(h >= 0 && h < 6) hours.Notte++;
+			else if(h >= 6 && h < 12) hours.Mattina++;
+			else if(h >= 12 && h < 18) hours.Pomeriggio++;
+			else hours.Sera++;
+		});
+
+		charts.time = new Chart(document.getElementById("cTime"), {
+			type: 'polarArea',
+			data: { labels: Object.keys(hours), datasets: [{ data: Object.values(hours), backgroundColor: ['#2c3e50','#f1c40f','#e67e22','#2980b9'] }]},
+			options: { maintainAspectRatio: false }
+		});
+	}
 
 	function exportData() {
-    const data = localStorage.getItem("smokes_v3");
-    const best = localStorage.getItem("bestStreak");
+		const data = localStorage.getItem("smokes_v3");
+		const best = localStorage.getItem("bestStreak");
 
-    if (!data) {
-        alert("Nessun dato da esportare");
-        return;
-    }
+		if (!data) {
+			alert("Nessun dato da esportare");
+			return;
+		}
 
-    const fullBackup = {
-        smokes_v3: JSON.parse(data),
-        bestStreak: best
-    };
+		const fullBackup = {
+			smokes_v3: JSON.parse(data),
+			bestStreak: best
+		};
 
-    const blob = new Blob(
-        [JSON.stringify(fullBackup, null, 2)],
-        { type: "application/json" }
-    );
+		const blob = new Blob(
+			[JSON.stringify(fullBackup, null, 2)],
+			{ type: "application/json" }
+		);
 
-    const url = URL.createObjectURL(blob);
+		const url = URL.createObjectURL(blob);
+		window.open(url, "_blank");
+	}
 
-    // Metodo compatibile iOS
-    window.open(url, "_blank");
-}
+	function importData() {
+		const json = document.getElementById("importArea").value.trim();
+		if(!json) return alert("Incolla il backup JSON prima di importare!");
 
-function importData() {
-    const json = document.getElementById("importArea").value.trim();
-    if(!json) return alert("Incolla il backup JSON prima di importare!");
+		try {
+			const backup = JSON.parse(json);
+			if(!backup.smokes_v3) return alert("Backup non valido!");
 
-    try {
-        const backup = JSON.parse(json);
+			localStorage.setItem("smokes_v3", JSON.stringify(backup.smokes_v3));
+			if(backup.bestStreak) localStorage.setItem("bestStreak", backup.bestStreak);
 
-        if(!backup.smokes_v3) return alert("Backup non valido!");
+			alert("Dati importati correttamente!");
+			location.reload();
+		} catch(e) {
+			alert("Errore nel JSON: controlla di aver copiato tutto correttamente!");
+			console.error(e);
+		}
+	}
 
-        localStorage.setItem("smokes_v3", JSON.stringify(backup.smokes_v3));
-        if(backup.bestStreak) localStorage.setItem("bestStreak", backup.bestStreak);
+	function resetAll() {
+		if(confirm("ATTENZIONE: Questo cancellerà TUTTA la tua cronologia. Sei sicuro?")) {
+			localStorage.clear();
+			location.reload();
+		}
+	}
 
-        alert("Dati importati correttamente!");
-        location.reload();
-    } catch(e) {
-        alert("Errore nel JSON: controlla di aver copiato tutto correttamente!");
-        console.error(e);
-    }
-}
-
-	
-    // ==========================
-    // RESETALL
-    // ==========================
-function resetAll() { if(confirm("ATTENZIONE: Questo cancellerà TUTTA la tua cronologia. Sei sicuro?")) { localStorage.clear(); location.reload(); } }
-
-update();
+	update();
 </script>
-</body> 
+
+</body>
 </html>
