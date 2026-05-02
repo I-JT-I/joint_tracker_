@@ -1147,10 +1147,16 @@ async function importData() {
     if (!jsonRaw) return alert("Incolla prima il JSON nell'area di testo.");
 
     try {
-        const importedData = JSON.parse(jsonRaw);
+        let importedData = JSON.parse(jsonRaw);
 
+        // Se è un oggetto con "smokes_v3", estrai l'array
+        if (importedData.smokes_v3 && Array.isArray(importedData.smokes_v3)) {
+            importedData = importedData.smokes_v3;
+        }
+
+        // Ora controlla se è un array
         if (!Array.isArray(importedData)) {
-            throw new Error("Il formato del backup non è valido (deve essere un array).");
+            throw new Error("Il formato del backup non è valido (deve essere un array o un oggetto con 'smokes_v3').");
         }
 
         if (!confirm(`Stai per importare ${importedData.length} sessioni. Procedere?`)) return;
