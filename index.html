@@ -577,7 +577,7 @@
 			<div class="topbar-email" id="emailDisplay"></div>
 		</div>
 		<div class="topbar-right">
-			<div class="icon-btn" onclick="logout()" title="Logout">⏏</div>
+			<div class="icon-btn" onclick="logout()" title="Logout" style="font-size:13px;font-weight:600;letter-spacing:-0.3px;">Exit</div>
 		</div>
 	</div>
 
@@ -904,7 +904,9 @@
 			document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 			navEl.classList.add('active');
 		}
-		update();
+		renderHistory();
+		renderStats();
+		if (p === 'charts') renderCharts();
 	}
 
 	function toggleAccordion(el) {
@@ -947,7 +949,8 @@
 	function update() {
 		renderHistory();
 		renderStats();
-		renderCharts();
+		const chartsPage = document.getElementById('page-charts');
+		if (chartsPage && chartsPage.classList.contains('active')) renderCharts();
 	}
 
 	function renderHistory() {
@@ -1038,9 +1041,6 @@
 
 	let charts = {};
 	function renderCharts() {
-		const chartsPage = document.getElementById('page-charts');
-		if (!chartsPage || !chartsPage.classList.contains('active')) return;
-
 		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
 		charts = {};
 
