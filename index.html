@@ -428,13 +428,13 @@
 		<div class="card">
 			<h3>Nuovo Inserimento</h3>
 
-			<label>Cosa fumi?</label>
+			<label for="type">Cosa fumi?</label>
 			<select id="type">
 				<option value="fumo">🍫 Hashish (Fumo)</option>
 				<option value="erba">🍃 Marijuana (Erba)</option>
 			</select>
 
-			<label>Quantità</label>
+			<label for="gCont">Quantità</label>
 			<div class="grams-row" id="gCont">
 				<label><input type="radio" name="g" value="0.3" checked> 0.3g</label>
 				<label><input type="radio" name="g" value="0.5"> 0.5g</label>
@@ -443,7 +443,7 @@
 
 			<input type="number" id="customGrams" step="0.1" placeholder="Grammi manuali">
 
-			<label>Data</label>
+			<label for="date">Data</label>
 			<input class="data" type="date" id="date">
 
 			<button class="main-btn action-btn" id="saveBtn" onclick="saveData()">SALVA SESSIONE</button>
@@ -465,7 +465,7 @@
 
 			<div style="margin-top: 20px;">
 				<h3>📥 Importa da Backup</h3>
-				<label>Incolla qui il backup JSON</label>
+				<label for="importArea">Incolla qui il backup JSON</label>
 				<textarea id="importArea" rows="5" placeholder='{"smokes_v3": [...], "bestStreak": 0}'></textarea>
 				<button class="main-btn" onclick="importData()">Importa</button>
 			</div>
