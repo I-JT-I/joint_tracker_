@@ -1164,9 +1164,13 @@ async function importData() {
         // Prepariamo i dati: rimuoviamo gli ID vecchi per evitare conflitti 
         // e forziamo l'user_id dell'utente corrente
         const cleanData = importedData.map(item => {
-            const { id, created_at, ...rest } = item; 
-            return { ...rest, user_id: currentUser.id };
-        });
+    const { id, created_at, ...rest } = item; 
+    return { 
+        ...rest, 
+        user_id: currentUser.id,
+        ts: Math.floor(item.ts) // Converte i decimali in interi
+    };
+});
 
         const { error } = await supabaseClient
             .from('smokes')
