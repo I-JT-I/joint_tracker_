@@ -515,10 +515,25 @@
 </div>
 
 <div id="page-settings" class="page">
-	<div class="card">
-		<h3>⚙️ Impostazioni</h3>
-		<button class="secondary-btn" onclick="logout()">🚪 Logout</button>
-	</div>
+    <div class="card">
+        <h3>⚙️ Gestione Dati</h3>
+        
+        <button class="secondary-btn" onclick="exportData()">📤 Esporta Backup (JSON)</button>
+        
+        <hr>
+        
+        <label>📥 Importa Dati</label>
+        <textarea id="importArea" style="width:100%; height:120px; margin-top:10px; border-radius:12px; border:1px solid #ddd; padding:10px; font-family:monospace; font-size:12px;" placeholder="Incolla qui il codice JSON del tuo backup..."></textarea>
+        <button class="action-btn" onclick="importData()" style="background:#444;">Importa JSON</button>
+        
+        <hr>
+        
+        <button onclick="resetAll()" style="background:none; border:none; color:var(--danger); width:100%; margin-top:20px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Reset completo dati</button>
+    </div>
+
+    <div class="card">
+        <button class="secondary-btn" onclick="logout()" style="background:var(--danger)">🚪 Logout</button>
+    </div>
 </div>
 
 <script>
@@ -917,7 +932,102 @@
 			options: { maintainAspectRatio: false }
 		});
 	}
+// ESPORTA DATI
+async function exportData() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('smokes')
+            .select('*')
+            .order('ts', { ascending: false });
 
+        if (error) throw error;
+
+        const dataStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `jointtracker_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showMessage("Backup scaricato! 💾");
+    } catch (err) {
+        console.error(err);
+        alert("Errore durante l'esportazione.");
+    }
+}
+
+// IMPORTA DATI
+async function importData() {
+    const area = document.getElementById('importArea');
+    const jsonRaw = area.value.trim();
+
+    if (!jsonRaw) return alert("Incolla prima il JSON nell'area di testo.");
+
+    try {
+        const importedData = JSON.parse(jsonRaw);
+
+        if (!Array.isArray(importedData)) {
+            throw new Error("Il formato del backup non è valido (deve essere un array).");
+        }
+
+        if (!confirm(`Stai per importare ${importedData.length} sessioni. Procedere?`)) return;
+
+        // Prepariamo i dati: rimuoviamo gli ID vecchi per evitare conflitti 
+        // e forziamo l'user_id dell'utente corrente
+        const cleanData = importedData.map(item => {
+            const { id, created_at, ...rest } = item; 
+            return { ...rest, user_id: currentUser.id };
+        });
+
+        const { error } = await supabaseClient
+            .from('smokes')
+            .insert(cleanData);
+
+        if (error) throw error;
+
+        alert("Importazione completata con successo! 🎉");
+        area.value = "";
+        await loadData(); // Ricarica la UI
+        showPage('history'); // Porta l'utente a vedere i dati importati
+    } catch (err) {
+        console.error(err);
+        alert("Errore durante l'importazione: " + err.message);
+    }
+}
+
+// RESET TOTALE
+async function resetAll() {
+    const conferma = confirm("ATTENZIONE: Questa operazione cancellerà DEFINITIVAMENTE tutte le tue sessioni salvate. Non potrai tornare indietro. Sei davvero sicuro?");
+    
+    if (conferma) {
+        const confermaFinale = prompt("Per confermare la cancellazione totale, scrivi 'ELIMINA' (tutto maiuscolo):");
+        
+        if (confermaFinale === "ELIMINA") {
+            try {
+                const { error } = await supabaseClient
+                    .from('smokes')
+                    .delete()
+                    .eq('user_id', currentUser.id);
+
+                if (error) throw error;
+
+                alert("Tutti i dati sono stati cancellati.");
+                await loadData();
+                showPage('add');
+            } catch (err) {
+                console.error(err);
+                alert("Errore durante il reset.");
+            }
+        } else {
+            alert("Reset annullato.");
+        }
+    }
+}
 	// Inizializzazione
 	document.getElementById("date").value = new Date().toISOString().split("T")[0];
 
