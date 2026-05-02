@@ -1168,7 +1168,8 @@ async function importData() {
     return { 
         ...rest, 
         user_id: currentUser.id,
-        ts: Math.floor(item.ts) // Converte i decimali in interi
+        ts: Math.floor(item.ts),
+        time: item.time || '12:00' // Se manca, metti '12:00'
     };
 });
 
