@@ -1230,40 +1230,65 @@ function switchSocialTab(tab) {
 // Carica la classifica in base al tab selezionato
 async function loadSocial() {
     const list = document.getElementById('leaderboardList');
+    if (!list) return;
+
     list.innerHTML = '<div class="spinner"></div>';
 
-    let rpcName = currentSocialTab === 'global' ? 'get_global_leaderboard' : 'get_friends_leaderboard';
-    let params = currentSocialTab === 'global' ? undefined : { current_user_id: currentUser.id };
-
-    const { data, error } = await supabaseClient.rpc(rpcName, params);
-
-    if (error) {
-        list.innerHTML = "<p class='error'>Errore caricamento classifica.</p>";
+    // 1. Controllo sicurezza: se non c'è l'utente, non possiamo caricare gli amici
+    if (!currentUser) {
+        list.innerHTML = "<p style='text-align:center;'>Effettua il login per vedere la classifica.</p>";
         return;
     }
 
-    if (data.length === 0) {
-        list.innerHTML = "<p style='text-align:center;'>Nessun dato presente.</p>";
-        return;
-    }
+    const isGlobal = currentSocialTab === 'global';
+    const rpcName = isGlobal ? 'get_global_leaderboard' : 'get_friends_leaderboard';
+    
+    // 2. Prepariamo i parametri in modo pulito
+    const params = isGlobal ? {} : { current_user_id: currentUser.id };
 
-    list.innerHTML = data.map((u, i) => {
-        let rankStr = i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`;
-        let rankClass = i < 3 ? 'top3' : '';
-        // Cliccando sull'utente, si apre il popup con le sue statistiche
-        return `
-            <div class="lb-item" onclick="viewFriendStats('${u.user_id}', '${u.username}')">
-                <div style="display: flex; align-items: center;">
-                    <span class="lb-rank ${rankClass}">${rankStr}</span>
-                    <span style="font-weight: 500;">${u.username} ${u.user_id === currentUser.id ? '(Tu)' : ''}</span>
+    try {
+        const { data, error } = await supabaseClient.rpc(rpcName, params);
+
+        if (error) {
+            console.error("Errore Supabase RPC:", error);
+            list.innerHTML = "<p class='error'>Errore nel recupero dati dal database.</p>";
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            list.innerHTML = `<p style='text-align:center; padding: 20px;'>
+                ${isGlobal ? "Nessun dato globale." : "Non hai ancora amici. Aggiungili con il loro nickname!"}
+            </p>`;
+            return;
+        }
+
+        // 3. Rendering
+        list.innerHTML = data.map((u, i) => {
+            const rankStr = i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`;
+            const rankClass = i < 3 ? 'top3' : '';
+            const isMe = u.user_id === currentUser.id;
+
+            return `
+                <div class="lb-item" onclick="viewFriendStats('${u.user_id}', '${u.username}')" 
+                     style="${isMe ? 'background: rgba(var(--primary-rgb), 0.1);' : ''}">
+                    <div style="display: flex; align-items: center;">
+                        <span class="lb-rank ${rankClass}">${rankStr}</span>
+                        <span style="font-weight: ${isMe ? 'bold' : '500'};">
+                            ${u.username} ${isMe ? '(Tu)' : ''}
+                        </span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-weight: bold; color: var(--primary);">${Number(u.total_g).toFixed(1)}g</span><br>
+                        <small style="color: #999;">${u.total_j} joint</small>
+                    </div>
                 </div>
-                <div style="text-align: right;">
-                    <span style="font-weight: bold; color: var(--primary);">${u.total_g.toFixed(1)}g</span><br>
-                    <small style="color: #999;">${u.total_j} joint</small>
-                </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("Errore generico loadSocial:", err);
+        list.innerHTML = "<p class='error'>Errore di connessione.</p>";
+    }
 }
 
 // Aggiungi un amico tramite Nickname
