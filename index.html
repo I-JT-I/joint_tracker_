@@ -1338,7 +1338,8 @@ async function viewFriendStats(targetId, username) {
     document.getElementById('modalFriendName').innerText = `Statistiche di ${username}`;
     document.getElementById('modaleFumo').innerText = data[0].fumo_g.toFixed(1);
     document.getElementById('modaleErba').innerText = data[0].erba_g.toFixed(1);
-    
+    document.getElementById('modaleJoint').innerText = data[0].totale_j;
+	
     document.getElementById('friendModal').style.display = 'flex';
 }
 
