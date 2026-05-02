@@ -1173,6 +1173,13 @@ async function importData() {
     };
 });
 
+// 🔥 CANCELLA TUTTO PRIMA
+        await supabaseClient
+            .from('smokes')
+            .delete()
+            .eq('user_id', currentUser.id);
+
+        // Poi importa i nuovi
         const { error } = await supabaseClient
             .from('smokes')
             .insert(cleanData);
