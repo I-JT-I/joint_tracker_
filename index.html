@@ -608,10 +608,12 @@ body {
 
 <div id="page-settings" class="page">
 	<div class="card">
-    <h3>👤 Il tuo Profilo</h3>
-    <p>Il tuo Nickname attuale verrà mostrato nelle classifiche.</p>
-    <input type="text" id="usernameInput" placeholder="Scegli un nuovo nickname">
-    <button class="action-btn" onclick="updateProfile()">Salva Nickname</button>
+    <h3>👤 Profilo Social</h3>
+    <p>Il tuo nickname attuale: <strong id="currentUsernameDisplay" style="color: var(--primary);">...</strong></p>
+    
+    <label for="usernameInput">Cambia Nickname</label>
+    <input type="text" id="usernameInput" placeholder="Nuovo nickname">
+    <button class="action-btn" onclick="updateProfile()">Aggiorna Nome</button>
 </div>
     <div class="card">
         <h3>⚙️ Gestione Dati</h3>
@@ -765,32 +767,6 @@ body {
         }, 10);
     }
     return;
-}
-	async function checkLiveUsername(input) {
-    const username = input.value.trim();
-    const statusLabel = document.getElementById('username-status');
-    
-    if (username.length < 3) {
-        statusLabel.innerText = "Troppo corto...";
-        statusLabel.style.color = "orange";
-        return;
-    }
-
-    const { data } = await supabaseClient
-        .from('profiles')
-        .select('username')
-        .eq('username', username)
-        .single();
-
-    if (data) {
-        statusLabel.innerText = "❌ Già preso";
-        statusLabel.style.color = "red";
-        input.style.borderColor = "red";
-    } else {
-        statusLabel.innerText = "✅ Disponibile";
-        statusLabel.style.color = "green";
-        input.style.borderColor = "green";
-    }
 }		
 			currentUser = result.data.user;
 			showApp();
@@ -1358,6 +1334,20 @@ const originalShowPage = showPage;
 showPage = function(p) {
     originalShowPage(p); // Chiama la vecchia logica
     if(p === 'social') loadSocial();
+}
+
+	async function loadUserProfile() {
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('username')
+        .eq('id', currentUser.id)
+        .single();
+
+    if (data && data.username) {
+        document.getElementById('currentUsernameDisplay').innerText = data.username;
+        // Opzionale: riempiamo anche l'input così è pronto per la modifica
+        document.getElementById('usernameInput').value = data.username;
+    }
 }
 	
 
