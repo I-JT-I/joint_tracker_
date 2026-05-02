@@ -912,6 +912,8 @@ body {
     const pageToIndex = { 'add': 0, 'history': 1, 'stats': 2, 'charts': 3, 'settings': 4 };
     const activeBtn = document.querySelectorAll(".menu-content button")[pageToIndex[p]];
     if(activeBtn) activeBtn.classList.add("active-tab");
+	if (p === 'social') loadSocial();
+    if (p === 'settings') loadUserProfile();
 
     update();
 }
