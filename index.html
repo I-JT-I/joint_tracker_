@@ -675,11 +675,20 @@ body {
 	}
 
 	function showApp() {
-		document.getElementById('page-auth').classList.remove('active');
-		document.getElementById('header').style.display = 'flex';
-		document.getElementById('page-add').classList.add('active');
-		document.getElementById('emailDisplay').textContent = currentUser.email;
-	}
+    document.getElementById('page-auth').classList.remove('active');
+    document.getElementById('header').style.display = 'flex';
+    
+    // Mostra la pagina "Aggiungi" e forza l'aggiornamento grafico dei bottoni
+    showPage('add'); 
+    
+    document.getElementById('emailDisplay').textContent = currentUser.email;
+    
+    // Applica graficamente la selezione al tasto 0.3g all'avvio
+    const defaultRadio = document.querySelector('input[name="g"][value="0.3"]');
+    if(defaultRadio) {
+        defaultRadio.parentElement.classList.add('selected');
+    }
+}
 
 	function showError(msg) {
 		const content = document.getElementById('authContent');
@@ -762,19 +771,17 @@ body {
 	}
 
 	function showPage(p) {
-    // Nascondi tutte le pagine e mostra quella selezionata
+    // 1. Gestione Pagine
     document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
     document.getElementById("page-" + p).classList.add("active");
 
-    // Rimuovi la classe active da tutti i bottoni del menu
-    document.querySelectorAll(".menu-content button").forEach(btn => {
-        btn.classList.remove("active-tab");
-    });
-
-    // Aggiungi la classe al bottone cliccato (usiamo l'indice o un selettore specifico)
-    // Se i bottoni sono nell'ordine: add, history, stats, charts, settings
-    const btnIndex = { 'add': 0, 'history': 1, 'stats': 2, 'charts': 3, 'settings': 4 };
-    document.querySelectorAll(".menu-content button")[btnIndex[p]].classList.add("active-tab");
+    // 2. Gestione Colore Tasti Menu
+    document.querySelectorAll(".menu-content button").forEach(btn => btn.classList.remove("active-tab"));
+    
+    // Mappa l'ID pagina all'indice del bottone (0=Add, 1=History, 2=Stats, 3=Charts, 4=Settings)
+    const pageToIndex = { 'add': 0, 'history': 1, 'stats': 2, 'charts': 3, 'settings': 4 };
+    const activeBtn = document.querySelectorAll(".menu-content button")[pageToIndex[p]];
+    if(activeBtn) activeBtn.classList.add("active-tab");
 
     update();
 }
