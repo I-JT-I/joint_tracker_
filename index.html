@@ -822,7 +822,7 @@ function showPage(p) {
 	document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
 	document.getElementById('page-' + p).classList.add('active');
 	document.getElementById('menu').style.display = 'none';
-	update();
+	if (p !== 'charts') update();
 	if (p === 'charts') renderCharts();
 }
 
