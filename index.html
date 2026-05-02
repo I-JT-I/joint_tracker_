@@ -1245,7 +1245,15 @@ async function loadSocial() {
     
     // 2. Prepariamo i parametri in modo pulito
     const params = isGlobal ? {} : { current_user_id: currentUser.id };
+	console.log("Chiamata RPC:", rpcName, params); // Debug: guarda la console del browser (F12)
 
+    const { data, error } = await supabaseClient.rpc(rpcName, params);
+
+    if (error) {
+        console.error("Errore dettagliato:", error); // Fondamentale per capire il problema
+        list.innerHTML = `<p class='error'>Errore tecnico: ${error.message}</p>`;
+        return;
+    }
     try {
         const { data, error } = await supabaseClient.rpc(rpcName, params);
 
