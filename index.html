@@ -420,6 +420,39 @@ body {
 		a:hover {
 			text-decoration: underline;
 		}
+
+		/* Stile per i tab della classifica */
+.tabs-social {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.tabs-social button {
+    flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--primary);
+    background: transparent; color: var(--primary); cursor: pointer; font-weight: bold;
+}
+.tabs-social button.active {
+    background: var(--primary); color: white;
+}
+
+/* Stile per l'elemento della classifica */
+.lb-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px; border-bottom: 1px solid #eee; cursor: pointer;
+}
+.lb-item:hover { background: #f9f9f9; }
+.lb-rank { font-weight: bold; width: 30px; color: #888; }
+.lb-rank.top3 { font-size: 18px; color: #ffca28; }
+
+/* Stile finestra modale per le stats amici */
+.modal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;
+}
+.modal-content {
+    width: 90%; max-width: 400px; margin: 0;
+}
+		
 	</style>
 </head>
 <body>
@@ -446,6 +479,7 @@ body {
     <button onclick="showPage('stats')"><span>📊</span>Stats</button>
     <button onclick="showPage('charts')"><span>📈</span>Grafici</button>
     <button onclick="showPage('settings')"><span>⚙️</span>Dati</button>
+	<button onclick="showPage('social')"><span>🏆</span>Social</button>
 </div>
 </header>
 
@@ -542,7 +576,43 @@ body {
 	</div>
 </div>
 
+	<div id="page-social" class="page">
+    <div class="card">
+        <h3>👥 Aggiungi un Amico</h3>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="friendUsername" placeholder="Nickname dell'amico" style="margin-top: 0;">
+            <button class="action-btn" onclick="addFriend()" style="margin-top: 0; width: 80px;">Aggiungi</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="tabs-social">
+            <button id="tab-global" class="active" onclick="switchSocialTab('global')">🌍 Mondiale</button>
+            <button id="tab-friends" onclick="switchSocialTab('friends')">👥 Amici</button>
+        </div>
+        <div id="leaderboardList"></div>
+    </div>
+</div>
+
+<!-- Finestra popup (Modal) per le statistiche dell'amico -->
+<div id="friendModal" class="modal">
+    <div class="modal-content card">
+        <h3 id="modalFriendName">Statistiche</h3>
+        <div class="stat-grid" style="margin-bottom: 20px;">
+            <div class="stat-box"><big id="modaleFumo">0</big><small>g Fumo</small></div>
+            <div class="stat-box"><big id="modaleErba">0</big><small>g Erba</small></div>
+        </div>
+        <button class="secondary-btn" onclick="closeFriendModal()">Chiudi</button>
+    </div>
+</div>
+
 <div id="page-settings" class="page">
+	<div class="card">
+    <h3>👤 Il tuo Profilo</h3>
+    <p>Il tuo Nickname attuale verrà mostrato nelle classifiche.</p>
+    <input type="text" id="usernameInput" placeholder="Scegli un nuovo nickname">
+    <button class="action-btn" onclick="updateProfile()">Salva Nickname</button>
+</div>
     <div class="card">
         <h3>⚙️ Gestione Dati</h3>
         
@@ -1084,6 +1154,128 @@ async function resetAll() {
 			document.getElementById("customGrams").style.display = e.target.value === "custom" ? "block" : "none";
 		});
 	});
+
+	let currentSocialTab = 'global';
+
+// Cambia tra classifica Globale e Amici
+function switchSocialTab(tab) {
+    currentSocialTab = tab;
+    document.getElementById('tab-global').classList.toggle('active', tab === 'global');
+    document.getElementById('tab-friends').classList.toggle('active', tab === 'friends');
+    loadSocial();
+}
+
+// Carica la classifica in base al tab selezionato
+async function loadSocial() {
+    const list = document.getElementById('leaderboardList');
+    list.innerHTML = '<div class="spinner"></div>';
+
+    let rpcName = currentSocialTab === 'global' ? 'get_global_leaderboard' : 'get_friends_leaderboard';
+    let params = currentSocialTab === 'global' ? undefined : { current_user_id: currentUser.id };
+
+    const { data, error } = await supabaseClient.rpc(rpcName, params);
+
+    if (error) {
+        list.innerHTML = "<p class='error'>Errore caricamento classifica.</p>";
+        return;
+    }
+
+    if (data.length === 0) {
+        list.innerHTML = "<p style='text-align:center;'>Nessun dato presente.</p>";
+        return;
+    }
+
+    list.innerHTML = data.map((u, i) => {
+        let rankStr = i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`;
+        let rankClass = i < 3 ? 'top3' : '';
+        // Cliccando sull'utente, si apre il popup con le sue statistiche
+        return `
+            <div class="lb-item" onclick="viewFriendStats('${u.user_id}', '${u.username}')">
+                <div style="display: flex; align-items: center;">
+                    <span class="lb-rank ${rankClass}">${rankStr}</span>
+                    <span style="font-weight: 500;">${u.username} ${u.user_id === currentUser.id ? '(Tu)' : ''}</span>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-weight: bold; color: var(--primary);">${u.total_g.toFixed(1)}g</span><br>
+                    <small style="color: #999;">${u.total_j} joint</small>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Aggiungi un amico tramite Nickname
+async function addFriend() {
+    const username = document.getElementById('friendUsername').value.trim();
+    if (!username) return alert("Inserisci un nickname");
+
+    // Trova l'ID dell'amico
+    const { data: profiles, error: profileErr } = await supabaseClient
+        .from('profiles')
+        .select('id')
+        .ilike('username', username);
+
+    if (profileErr || profiles.length === 0) return alert("Utente non trovato!");
+    if (profiles[0].id === currentUser.id) return alert("Non puoi aggiungere te stesso!");
+
+    // Salva l'amicizia
+    const { error: insertErr } = await supabaseClient
+        .from('friendships')
+        .insert({ user_id: currentUser.id, friend_id: profiles[0].id });
+
+    if (insertErr && insertErr.code === '23505') {
+        alert("Siete già amici!");
+    } else if (insertErr) {
+        alert("Errore durante l'aggiunta.");
+    } else {
+        showMessage("Amico aggiunto! 🤝");
+        document.getElementById('friendUsername').value = "";
+        if(currentSocialTab === 'friends') loadSocial();
+    }
+}
+
+// Visualizza le statistiche dettagliate di un utente cliccato in classifica
+async function viewFriendStats(targetId, username) {
+    const { data, error } = await supabaseClient.rpc('get_friend_stats', { target_user_id: targetId });
+    
+    if (error || !data || data.length === 0) return alert("Impossibile caricare le statistiche.");
+
+    document.getElementById('modalFriendName').innerText = `Statistiche di ${username}`;
+    document.getElementById('modaleFumo').innerText = data[0].fumo_g.toFixed(1);
+    document.getElementById('modaleErba').innerText = data[0].erba_g.toFixed(1);
+    
+    document.getElementById('friendModal').style.display = 'flex';
+}
+
+function closeFriendModal() {
+    document.getElementById('friendModal').style.display = 'none';
+}
+
+// Aggiorna il proprio Nickname nelle Impostazioni
+async function updateProfile() {
+    const newName = document.getElementById('usernameInput').value.trim();
+    if(newName.length < 3) return alert("Il nickname deve avere almeno 3 caratteri!");
+
+    // Usiamo upsert per sicurezza, nel caso non fosse scattato il trigger di registrazione
+    const { error } = await supabaseClient
+        .from('profiles')
+        .upsert({ id: currentUser.id, username: newName });
+
+    if (error) {
+        alert(error.code === '23505' ? "Nickname già in uso! Scegline un altro." : "Errore salvataggio profilo.");
+    } else {
+        showMessage("Nickname aggiornato! ✅");
+        document.getElementById('usernameInput').value = "";
+    }
+}
+
+// Aggiorna la tua funzione showPage esistente
+const originalShowPage = showPage;
+showPage = function(p) {
+    originalShowPage(p); // Chiama la vecchia logica
+    if(p === 'social') loadSocial();
+}
+	
 
 	checkAuth();
 </script>
