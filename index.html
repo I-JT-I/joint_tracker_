@@ -402,7 +402,9 @@
 	<div class="auth-container">
 		<div class="auth-box">
 			<h2>🌿 JointTracker</h2>
-			<div id="authContent"></div>
+			<div id="authContent">
+				<div class="loading"><div class="spinner"></div><p>Caricamento...</p></div>
+			</div>
 		</div>
 	</div>
 </div>
@@ -522,14 +524,28 @@
 </div>
 
 <script>
-	// Inizializza Supabase
+	// ⚠️ SOSTITUISCI SOLO LA SUPABASE_KEY con quella anon dalla dashboard Supabase
+	// Supabase → Project Settings → API → anon public (inizia con eyJ...)
 	const SUPABASE_URL = 'https://afkxmbxcavwhurmdelfr.supabase.co';
-	const SUPABASE_KEY = 'sb_publishable_1rc0ueZL6Y03qhk5jp_34w_ObCOCpCP';
+	const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFma3htYnhjYXZ3aHVybWRlbGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2Nzc4MzYsImV4cCI6MjA5MzI1MzgzNn0.5W49Evb1GsPQmVzeLggYOFpfE8ecofVZg3eLAaubzBI';
 	
 	const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 	let currentUser = null;
 	let smokes = [];
+
+	// FIX 1: Listener auth state change — reagisce a login/logout in tempo reale
+	supabaseClient.auth.onAuthStateChange(async (event, session) => {
+		if (event === 'SIGNED_IN' && session) {
+			currentUser = session.user;
+			showApp();
+			await loadData();
+		} else if (event === 'SIGNED_OUT') {
+			currentUser = null;
+			smokes = [];
+			showLoginPage();
+		}
+	});
 
 	// Controlla se loggato all'avvio
 	async function checkAuth() {
@@ -550,62 +566,65 @@
 		
 		const content = document.getElementById('authContent');
 		content.innerHTML = `
-			<form onsubmit="handleAuth(event, 'login')">
-				<label for="email">Email</label>
-				<input type="email" id="email" placeholder="tua-email@gmail.com" required>
-				
-				<label for="password">Password</label>
-				<input type="password" id="password" placeholder="Password (min 6 caratteri)" required>
-				
-				<button type="submit" class="main-btn">🔓 Accedi</button>
-			</form>
+			<div id="authError"></div>
+			<label for="email">Email</label>
+			<input type="email" id="email" placeholder="tua-email@gmail.com">
 			
-			<p style="text-align: center; margin-top: 20px; color: #666;">
-				Non hai un account? <a onclick="toggleAuthMode(); return false;">Registrati</a>
+			<label for="password">Password</label>
+			<input type="password" id="password" placeholder="Password (min 6 caratteri)">
+			
+			<button class="main-btn action-btn" onclick="handleAuth('login')">🔓 Accedi</button>
+			
+			<p style="text-align: center; margin-top: 20px; color: #666; font-size: 14px;">
+				Non hai un account? <a onclick="showSignupPage()">Registrati</a>
 			</p>
 		`;
 	}
 
-	function toggleAuthMode() {
+	function showSignupPage() {
 		const content = document.getElementById('authContent');
-		if (content.innerHTML.includes('Registrati')) {
-			// Mostra form registrazione
-			content.innerHTML = `
-				<form onsubmit="handleAuth(event, 'signup')">
-					<label for="email">Email</label>
-					<input type="email" id="email" placeholder="tua-email@gmail.com" required>
-					
-					<label for="password">Password</label>
-					<input type="password" id="password" placeholder="Password (min 6 caratteri)" required>
-					
-					<label for="confirm">Conferma Password</label>
-					<input type="password" id="confirm" placeholder="Ripeti password" required>
-					
-					<button type="submit" class="main-btn">📝 Registrati</button>
-				</form>
-				
-				<p style="text-align: center; margin-top: 20px; color: #666;">
-					Hai già un account? <a onclick="toggleAuthMode(); return false;">Accedi</a>
-				</p>
-			`;
-		} else {
-			showLoginPage();
-		}
+		content.innerHTML = `
+			<div id="authError"></div>
+			<label for="email">Email</label>
+			<input type="email" id="email" placeholder="tua-email@gmail.com">
+			
+			<label for="password">Password</label>
+			<input type="password" id="password" placeholder="Password (min 6 caratteri)">
+			
+			<label for="confirm">Conferma Password</label>
+			<input type="password" id="confirm" placeholder="Ripeti password">
+			
+			<button class="main-btn action-btn" onclick="handleAuth('signup')">📝 Registrati</button>
+			
+			<p style="text-align: center; margin-top: 20px; color: #666; font-size: 14px;">
+				Hai già un account? <a onclick="showLoginPage()">Accedi</a>
+			</p>
+		`;
 	}
 
-	async function handleAuth(e, mode) {
-		e.preventDefault();
-		const email = document.getElementById('email').value;
+	// FIX 2: handleAuth senza <form> — evita problemi di submit e refresh pagina
+	async function handleAuth(mode) {
+		const email = document.getElementById('email').value.trim();
 		const password = document.getElementById('password').value;
 		const confirm = document.getElementById('confirm')?.value;
+		const errorDiv = document.getElementById('authError');
 
-		if (mode === 'signup' && password !== confirm) {
-			showError('Le password non corrispondono!');
+		if (!email || !password) {
+			errorDiv.innerHTML = '<div class="error">Compila tutti i campi!</div>';
 			return;
 		}
 
-		const content = document.getElementById('authContent');
-		content.innerHTML = '<div class="loading"><div class="spinner"></div><p>Un momento...</p></div>';
+		if (mode === 'signup' && password !== confirm) {
+			errorDiv.innerHTML = '<div class="error">Le password non corrispondono!</div>';
+			return;
+		}
+
+		if (password.length < 6) {
+			errorDiv.innerHTML = '<div class="error">La password deve avere almeno 6 caratteri!</div>';
+			return;
+		}
+
+		errorDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Un momento...</p></div>';
 
 		try {
 			let result;
@@ -616,53 +635,65 @@
 			}
 
 			if (result.error) {
-				showError(result.error.message);
-				if (mode === 'login') showLoginPage();
-				else toggleAuthMode();
+				// FIX 3: Traduci gli errori in italiano
+				const errMsg = translateError(result.error.message);
+				errorDiv.innerHTML = `<div class="error">${errMsg}</div>`;
 				return;
 			}
 
-			currentUser = result.data.user;
-			showApp();
-			await loadData();
-			showMessage('Benvenuto! 🎉');
+			// FIX 4: Gestione signup con email confirmation
+			if (mode === 'signup' && !result.data.session) {
+				errorDiv.innerHTML = '<div class="success">✅ Registrazione effettuata! Controlla la tua email per confermare l\'account, poi accedi.</div>';
+				return;
+			}
+
+			// Login OK — onAuthStateChange gestirà il resto
 		} catch (err) {
-			showError(err.message);
+			errorDiv.innerHTML = `<div class="error">Errore: ${err.message}</div>`;
 		}
+	}
+
+	function translateError(msg) {
+		if (msg.includes('Invalid login credentials')) return 'Email o password errati.';
+		if (msg.includes('Email not confirmed')) return 'Email non ancora confermata. Controlla la tua casella.';
+		if (msg.includes('User already registered')) return 'Email già registrata. Prova ad accedere.';
+		if (msg.includes('Password should be')) return 'La password deve avere almeno 6 caratteri.';
+		if (msg.includes('Unable to validate email')) return 'Email non valida.';
+		return msg;
 	}
 
 	function showApp() {
 		document.getElementById('page-auth').classList.remove('active');
 		document.getElementById('header').style.display = 'flex';
-		document.getElementById('page-add').classList.add('active');
-		document.getElementById('emailDisplay').textContent = currentUser.email;
-	}
-
-	function showError(msg) {
-		const content = document.getElementById('authContent');
-		const errorDiv = document.createElement('div');
-		errorDiv.className = 'error';
-		errorDiv.textContent = msg;
-		content.insertBefore(errorDiv, content.firstChild);
+		// Mostra la pagina add solo se non siamo già su un'altra
+		const hasActive = document.querySelector('.page.active:not(#page-auth)');
+		if (!hasActive) {
+			document.getElementById('page-add').classList.add('active');
+		}
+		if (currentUser) {
+			document.getElementById('emailDisplay').textContent = currentUser.email;
+		}
 	}
 
 	function showMessage(msg) {
 		document.getElementById('notif').textContent = msg;
 		document.getElementById('notif').style.display = 'block';
-		setTimeout(() => document.getElementById('notif').style.display = 'none', 2000);
+		setTimeout(() => document.getElementById('notif').style.display = 'none', 2500);
 	}
 
 	async function logout() {
 		await supabaseClient.auth.signOut();
-		currentUser = null;
-		smokes = [];
-		showLoginPage();
+		// onAuthStateChange gestirà showLoginPage()
 	}
 
+	// FIX 5: loadData con filtro esplicito user_id (doppia sicurezza oltre RLS)
 	async function loadData() {
+		if (!currentUser) return;
+
 		const { data, error } = await supabaseClient
 			.from('smokes')
 			.select('*')
+			.eq('user_id', currentUser.id)
 			.order('ts', { ascending: false });
 
 		if (error) {
@@ -675,14 +706,16 @@
 	}
 
 	async function saveData() {
+		if (!currentUser) return;
+
 		const type = document.getElementById("type").value;
 		const gVal = document.querySelector('input[name="g"]:checked').value;
 		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
 
-		if(!grams || grams <= 0) return alert("Inserisci un peso valido");
+		if (!grams || grams <= 0) return alert("Inserisci un peso valido");
 
 		const now = new Date();
-		const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+		const time = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
 		const date = document.getElementById("date").value;
 		const ts = Date.now();
 
@@ -692,7 +725,7 @@
 
 		if (error) {
 			console.error('Errore salvataggio:', error);
-			alert('Errore nel salvataggio. Riprova.');
+			alert('Errore nel salvataggio: ' + error.message);
 			return;
 		}
 
@@ -701,12 +734,17 @@
 	}
 
 	async function deleteItem(ts) {
-		if(!confirm("Vuoi eliminare questo inserimento?")) return;
+		if (!confirm("Vuoi eliminare questo inserimento?")) return;
 
-		const { error } = await supabaseClient.from('smokes').delete().eq('ts', ts);
+		const { error } = await supabaseClient
+			.from('smokes')
+			.delete()
+			.eq('ts', ts)
+			.eq('user_id', currentUser.id); // FIX 6: sicurezza extra in delete
 
 		if (error) {
 			console.error('Errore eliminazione:', error);
+			alert('Errore nell\'eliminazione: ' + error.message);
 			return;
 		}
 
@@ -717,6 +755,15 @@
 		const m = document.getElementById("menu");
 		m.style.display = m.style.display === "block" ? "none" : "block";
 	}
+
+	// FIX 7: Chiudi menu cliccando fuori
+	document.addEventListener('click', (e) => {
+		const menu = document.getElementById('menu');
+		const btn = document.querySelector('.menu-btn');
+		if (menu && !menu.contains(e.target) && e.target !== btn) {
+			menu.style.display = 'none';
+		}
+	});
 
 	function showPage(p) {
 		document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
@@ -758,14 +805,22 @@
 	}
 
 	async function updateBestStreak(currentStreak) {
-		const { data } = await supabaseClient.from('user_stats').select('best_streak').eq('user_id', currentUser.id).single();
+		if (!currentUser) return 0;
+
+		const { data } = await supabaseClient
+			.from('user_stats')
+			.select('best_streak')
+			.eq('user_id', currentUser.id)
+			.single();
 		
 		let best = data?.best_streak || 0;
 		if (currentStreak > best) {
+			// FIX 8: upsert corretto con onConflict
 			await supabaseClient.from('user_stats').upsert({
 				user_id: currentUser.id,
-				best_streak: currentStreak
-			});
+				best_streak: currentStreak,
+				updated_at: new Date().toISOString()
+			}, { onConflict: 'user_id' });
 			best = currentStreak;
 		}
 		return best;
@@ -773,6 +828,7 @@
 
 	function update() {
 		const hList = document.getElementById("historyList");
+		if (!hList) return;
 		hList.innerHTML = "";
 
 		if (smokes.length === 0) {
@@ -832,10 +888,14 @@
 		let totF = 0, totE = 0;
 		smokes.forEach(s => { s.type === 'fumo' ? totF += s.grams : totE += s.grams; });
 
-		document.getElementById("sFumo").innerText = totF.toFixed(2);
-		document.getElementById("sErba").innerText = totE.toFixed(2);
-		document.getElementById("sJTot").innerText = smokes.length;
-		document.getElementById("sGTot").innerText = (totF + totE).toFixed(2);
+		const sFumo = document.getElementById("sFumo");
+		if (sFumo) sFumo.innerText = totF.toFixed(2);
+		const sErba = document.getElementById("sErba");
+		if (sErba) sErba.innerText = totE.toFixed(2);
+		const sJTot = document.getElementById("sJTot");
+		if (sJTot) sJTot.innerText = smokes.length;
+		const sGTot = document.getElementById("sGTot");
+		if (sGTot) sGTot.innerText = (totF + totE).toFixed(2);
 
 		let diffDays = 1;
 		if (smokes.length > 0) {
@@ -844,23 +904,31 @@
 			const today = new Date();
 			diffDays = Math.ceil(Math.abs(today - firstJ) / (1000 * 60 * 60 * 24)) || 1;
 		}
-		document.getElementById("diffDays").innerText = diffDays.toFixed(2);
+		const diffDaysEl = document.getElementById("diffDays");
+		if (diffDaysEl) diffDaysEl.innerText = diffDays.toFixed(2);
 
-		document.getElementById("avgDaily").innerText = (smokes.length / diffDays).toFixed(2);
-		document.getElementById("avgMonthly").innerText = ((smokes.length / diffDays) * 30.44).toFixed(1);
-		document.getElementById("avgYearly").innerText = ((smokes.length / diffDays) * 365.25).toFixed(1);
-		document.getElementById("avgGrams").innerText = ((totF + totE) / diffDays).toFixed(2) + "g";
+		const avgDaily = document.getElementById("avgDaily");
+		if (avgDaily) avgDaily.innerText = (smokes.length / diffDays).toFixed(2);
+		const avgMonthly = document.getElementById("avgMonthly");
+		if (avgMonthly) avgMonthly.innerText = ((smokes.length / diffDays) * 30.44).toFixed(1);
+		const avgYearly = document.getElementById("avgYearly");
+		if (avgYearly) avgYearly.innerText = ((smokes.length / diffDays) * 365.25).toFixed(1);
+		const avgGrams = document.getElementById("avgGrams");
+		if (avgGrams) avgGrams.innerText = ((totF + totE) / diffDays).toFixed(2) + "g";
 
 		const streak = calculateStreak();
 		const box = document.getElementById("streakBox");
-		if (streak >= 3) {
-			document.getElementById("streakDays").innerText = streak;
-			updateBestStreak(streak).then(best => {
-				document.getElementById("bestStreak").innerText = best;
-			});
-			box.style.display = "block";
-		} else {
-			box.style.display = "none";
+		if (box) {
+			if (streak >= 3) {
+				document.getElementById("streakDays").innerText = streak;
+				updateBestStreak(streak).then(best => {
+					const bestEl = document.getElementById("bestStreak");
+					if (bestEl) bestEl.innerText = best;
+				});
+				box.style.display = "grid";
+			} else {
+				box.style.display = "none";
+			}
 		}
 
 		renderCharts(totF, totE);
@@ -868,12 +936,22 @@
 
 	let charts = {};
 	function renderCharts(f, e) {
-		Object.values(charts).forEach(c => c.destroy());
+		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
+		charts = {};
+
+		const pieEl = document.getElementById("cPie");
+		const weightEl = document.getElementById("cWeight");
+		const dailyEl = document.getElementById("cDailyAll");
+		const weekEl = document.getElementById("cWeekDays");
+		const timeEl = document.getElementById("cTime");
+
+		// Solo renderizza se il canvas è visibile
+		if (!pieEl || !pieEl.offsetParent) return;
 
 		let numFumo = smokes.filter(s => s.type === 'fumo').length;
 		let numErba = smokes.filter(s => s.type === 'erba').length;
 
-		charts.pie = new Chart(document.getElementById("cPie"), {
+		charts.pie = new Chart(pieEl, {
 			type: 'doughnut',
 			data: { labels: ['Fumo', 'Erba'], datasets: [{ data: [numFumo, numErba], backgroundColor: ['#795548', '#4CAF50'] }]},
 			options: { maintainAspectRatio: false }
@@ -882,7 +960,7 @@
 		const last7 = [...Array(7)].map((_,i) => { let d = new Date(); d.setDate(d.getDate()-i); return d.toISOString().split('T')[0]; }).reverse();
 		const weightData = last7.map(d => smokes.filter(s => s.date === d).reduce((acc, curr) => acc + curr.grams, 0));
 
-		charts.weight = new Chart(document.getElementById("cWeight"), {
+		charts.weight = new Chart(weightEl, {
 			type: 'line',
 			data: { labels: last7.map(d => d.slice(8)), datasets: [{ label: 'Grammi', data: weightData, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true }]},
 			options: { maintainAspectRatio: false }
@@ -893,7 +971,7 @@
 		const sortedDates = Object.keys(dailyMap).sort();
 		const dailyCounts = sortedDates.map(d => dailyMap[d]);
 
-		charts.dailyAll = new Chart(document.getElementById("cDailyAll"), {
+		charts.dailyAll = new Chart(dailyEl, {
 			type: 'line',
 			data: { labels: sortedDates.map(d => d.split("-").reverse().join("/")), datasets: [{ label: 'Joint', data: dailyCounts, borderColor: '#1b5e20', backgroundColor: 'rgba(27,94,32,0.1)', fill: true, tension: 0.3 }]},
 			options: { maintainAspectRatio: false }
@@ -902,7 +980,7 @@
 		const weekDays = { "Domenica": 0, "Lunedì": 0, "Martedì": 0, "Mercoledì": 0, "Giovedì": 0, "Venerdì": 0, "Sabato": 0 };
 		smokes.forEach(s => { const d = new Date(s.date); const dayIndex = d.getDay(); const names = Object.keys(weekDays); weekDays[names[dayIndex]]++; });
 
-		charts.week = new Chart(document.getElementById("cWeekDays"), {
+		charts.week = new Chart(weekEl, {
 			type: 'bar',
 			data: { labels: Object.keys(weekDays), datasets: [{ label: 'Joint', data: Object.values(weekDays), backgroundColor: '#66bb6a' }]},
 			options: { maintainAspectRatio: false }
@@ -911,7 +989,7 @@
 		const hours = { Notte: 0, Mattina: 0, Pomeriggio: 0, Sera: 0 };
 		smokes.forEach(s => { if (!s.time || typeof s.time !== "string") return; const h = parseInt(s.time.split(':')[0]); if(h >= 0 && h < 6) hours.Notte++; else if(h >= 6 && h < 12) hours.Mattina++; else if(h >= 12 && h < 18) hours.Pomeriggio++; else hours.Sera++; });
 
-		charts.time = new Chart(document.getElementById("cTime"), {
+		charts.time = new Chart(timeEl, {
 			type: 'polarArea',
 			data: { labels: Object.keys(hours), datasets: [{ data: Object.values(hours), backgroundColor: ['#2c3e50','#f1c40f','#e67e22','#2980b9'] }]},
 			options: { maintainAspectRatio: false }
