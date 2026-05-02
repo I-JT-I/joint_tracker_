@@ -1341,16 +1341,9 @@ async function addFriend() {
 
 // Visualizza le statistiche dettagliate di un utente cliccato in classifica
 async function viewFriendStats(targetId, username) {
-    console.log("Cliccato su:", username, targetId); // Debug
-    
     const { data, error } = await supabaseClient.rpc('get_friend_stats', { target_user_id: targetId });
     
-    console.log("Dati ricevuti:", data, "Errore:", error); // Debug
-    
-    if (error || !data || data.length === 0) {
-        alert("Impossibile caricare le statistiche. Errore: " + (error?.message || "Nessun dato"));
-        return;
-    }
+    if (error || !data || data.length === 0) return alert("Impossibile caricare le statistiche.");
 
     document.getElementById('modalFriendName').innerText = `Statistiche di ${username}`;
     document.getElementById('modaleFumo').innerText = data[0].fumo_g.toFixed(1);
@@ -1358,7 +1351,7 @@ async function viewFriendStats(targetId, username) {
     document.getElementById('modaleJoint').innerText = data[0].totale_j;
 	
     document.getElementById('friendModal').style.display = 'flex';
-}}
+}
 
 function closeFriendModal() {
     document.getElementById('friendModal').style.display = 'none';
