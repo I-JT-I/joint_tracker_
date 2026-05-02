@@ -23,374 +23,279 @@
 	
 	<style>
 		:root {
-			--primary: #2e7d32;
-			--bg: #f4f7f6;
-			--white: #ffffff;
-			--danger: #ff5252;
-		}
+    --bg: #000000;
+    --card-bg: #1c1c1e;
+    --card-bg-elevated: #2c2c2e;
+    --primary: #32d74b; /* Verde iOS */
+    --text: #ffffff;
+    --text-sec: #8e8e93;
+    --danger: #ff453a;
+    --glass: rgba(28, 28, 30, 0.75);
+    --border: rgba(255, 255, 255, 0.1);
+}
 
-		* {
-			box-sizing: border-box;
-			-webkit-tap-highlight-color: transparent;
-		}
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
 
-		body {
-			margin: 0;
-			font-family: 'Segoe UI', system-ui, sans-serif;
-			background: var(--bg);
-			color: #333;
-		}
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: 90px; /* Spazio per la bottom navbar */
+}
 
-		header {
-			background: var(--primary);
-			color: white;
-			padding: 15px;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			position: sticky;
-			top: 0;
-			z-index: 1000;
-			box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-		}
+/* Header con Blur */
+header {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 0.5px solid var(--border);
+}
 
-		header h1 {
-			margin: 0;
-			font-size: 24px;
-		}
+header h1 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
 
-		.menu-btn {
-			font-size: 28px;
-			background: none;
-			border: none;
-			color: white;
-			cursor: pointer;
-		}
+/* Pagine e Animazioni */
+.page {
+    display: none;
+    padding: 15px;
+    max-width: 500px;
+    margin: 0 auto;
+    animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-		.menu-content {
-			position: absolute;
-			right: 10px;
-			top: 60px;
-			background: white;
-			border-radius: 12px;
-			box-shadow: 0 5px 25px rgba(0,0,0,0.2);
-			overflow: hidden;
-			display: none;
-			z-index: 1001;
-			width: 200px;
-		}
+.page.active { display: block; }
 
-		.menu-content button {
-			padding: 15px;
-			width: 100%;
-			font-size: 16px;
-			border: none;
-			background: white;
-			text-align: left;
-			border-bottom: 1px solid #f0f0f0;
-			cursor: pointer;
-		}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-		.menu-content button:last-child {
-			border-bottom: none;
-		}
+/* Carte Apple-style */
+.card {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 0.5px solid var(--border);
+}
 
-		.menu-content button:hover {
-			background: #f5f5f5;
-		}
+h3 {
+    margin-top: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-sec);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 15px;
+}
 
-		.menu-content .logout-btn {
-			color: var(--danger);
-			font-weight: bold;
-		}
+/* Form e Input */
+label {
+    display: block;
+    margin-top: 15px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-sec);
+    margin-left: 5px;
+}
 
-		.page {
-			display: none;
-			padding: 15px;
-			max-width: 600px;
-			margin: 0 auto;
-			animation: fadeIn 0.3s ease;
-		}
+input, select, .action-btn, .secondary-btn {
+    width: 100%;
+    font-size: 16px;
+    padding: 12px 16px;
+    margin-top: 8px;
+    border-radius: 12px;
+    border: none;
+    background: var(--card-bg-elevated);
+    color: white;
+}
 
-		.page.active {
-			display: block;
-		}
+input::placeholder { color: #555; }
 
-		@keyframes fadeIn {
-			from { opacity: 0; transform: translateY(5px); }
-			to { opacity: 1; transform: translateY(0); }
-		}
+/* Bottoni */
+button.main-btn, button.action-btn {
+    background: var(--primary);
+    color: #000;
+    font-weight: 600;
+    border: none;
+    margin-top: 24px;
+    padding: 16px;
+    font-size: 17px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
 
-		.card {
-			background: var(--white);
-			border-radius: 16px;
-			padding: 20px;
-			box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-			margin-bottom: 20px;
-		}
+button.main-btn:active, button.action-btn:active {
+    transform: scale(0.97);
+}
 
-		h2, h3 {
-			margin-top: 0;
-			color: var(--primary);
-		}
+button.secondary-btn {
+    background: rgba(255,255,255,0.1);
+    color: var(--text);
+    font-weight: 500;
+}
 
-		label {
-			display: block;
-			margin-top: 15px;
-			font-weight: 600;
-			font-size: 14px;
-			color: #666;
-		}
+/* Griglia per selezione grammi */
+.grams-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
 
-		input, select, button.action-btn {
-			width: 100%;
-			font-size: 16px;
-			padding: 12px;
-			margin-top: 8px;
-			border-radius: 12px;
-			border: 1px solid #ddd;
-		}
+.grams-row label {
+    margin: 0;
+    background: var(--card-bg-elevated);
+    padding: 14px;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    color: white;
+    font-weight: 600;
+}
 
-		input:focus, select:focus {
-			outline: none;
-			border-color: var(--primary);
-			box-shadow: 0 0 0 3px rgba(46,125,50,0.1);
-		}
+.grams-row label.selected {
+    border-color: var(--primary);
+    background: rgba(50, 215, 75, 0.1);
+    color: var(--primary);
+}
 
-		.grams-row {
-			display: flex;
-			gap: 8px;
-			margin-top: 8px;
-		}
+.grams-row input { display: none; }
 
-		.grams-row label {
-			flex: 1;
-			margin: 0;
-			background: #eee;
-			padding: 12px;
-			border-radius: 10px;
-			text-align: center;
-			cursor: pointer;
-			border: 2px solid transparent;
-			font-weight: 500;
-		}
+/* Statistiche */
+.stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
 
-		.grams-row input {
-			display: none;
-		}
+.stat-box {
+    background: var(--card-bg-elevated);
+    padding: 16px;
+    border-radius: 14px;
+    text-align: center;
+}
 
-		.grams-row label.selected {
-			background: #e8f5e9;
-			border-color: var(--primary);
-			color: var(--primary);
-			font-weight: bold;
-		}
+.stat-box big {
+    display: block;
+    font-size: 24px;
+    color: var(--primary);
+    font-weight: 700;
+}
 
-		#customGrams {
-			display: none;
-		}
+.stat-box small {
+    font-size: 11px;
+    color: var(--text-sec);
+    text-transform: uppercase;
+}
 
-		button.main-btn, button.action-btn {
-			background: var(--primary);
-			color: white;
-			border: none;
-			margin-top: 20px;
-			font-weight: bold;
-			cursor: pointer;
-		}
+/* Cronologia Migliorata */
+.month-group {
+    background: var(--card-bg);
+    border-radius: 14px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    border: 0.5px solid var(--border);
+}
 
-		button.main-btn:hover, button.action-btn:hover {
-			background: #1b5e20;
-		}
+.month-header {
+    background: rgba(255,255,255,0.03);
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 15px;
+    border-bottom: 0.5px solid var(--border);
+}
 
-		button.secondary-btn {
-			background: #666;
-			color: white;
-			border: none;
-			padding: 12px;
-			margin-top: 10px;
-			font-weight: bold;
-			cursor: pointer;
-			border-radius: 12px;
-			width: 100%;
-		}
+.day-header {
+    padding: 10px 16px;
+    background: transparent;
+    font-size: 14px;
+    color: var(--text-sec);
+    border-bottom: 0.5px solid rgba(255,255,255,0.05);
+}
 
-		button.secondary-btn:hover {
-			background: #333;
-		}
+.history-item {
+    padding: 12px 16px 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 0.5px solid rgba(255,255,255,0.05);
+}
 
-		/* Auth Pages */
-		.auth-container {
-			max-width: 400px;
-			margin: 50px auto;
-			padding: 20px;
-		}
+/* Bottom Navigation (Tab Bar iOS) */
+.menu-content {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    display: flex !important; /* Forza la visualizzazione orizzontale */
+    background: var(--glass);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    padding: 10px 10px 30px 10px; /* Spazio extra per iPhone */
+    border-top: 0.5px solid var(--border);
+    justify-content: space-around;
+    z-index: 1001;
+}
 
-		.auth-box {
-			background: white;
-			border-radius: 16px;
-			padding: 30px;
-			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-		}
+.menu-content button {
+    background: none !important;
+    border: none !important;
+    color: var(--text-sec);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 500;
+    width: auto;
+    padding: 5px;
+}
 
-		.auth-box h2 {
-			text-align: center;
-			margin-bottom: 30px;
-		}
+.menu-content button span { margin-top: 4px; }
+.menu-content button:active { color: var(--primary); }
 
-		.loading {
-			text-align: center;
-			color: #999;
-			padding: 20px;
-		}
+/* Notifiche Toast */
+#notif {
+    position: fixed;
+    top: 20px; /* Spostata in alto stile notifica push */
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card-bg-elevated);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    border: 0.5px solid var(--border);
+    display: none;
+    z-index: 2000;
+}
 
-		.spinner {
-			border: 4px solid #f3f3f3;
-			border-top: 4px solid var(--primary);
-			border-radius: 50%;
-			width: 30px;
-			height: 30px;
-			animation: spin 1s linear infinite;
-			margin: 0 auto;
-		}
+/* Nascondi il menu hamburger */
+.menu-btn { display: none; }
 
-		@keyframes spin {
-			0% { transform: rotate(0deg); }
-			100% { transform: rotate(360deg); }
-		}
-
-		.error {
-			background: #ffebee;
-			color: var(--danger);
-			padding: 12px;
-			border-radius: 8px;
-			margin-bottom: 15px;
-			font-size: 14px;
-		}
-
-		.success {
-			background: #e8f5e9;
-			color: var(--primary);
-			padding: 12px;
-			border-radius: 8px;
-			margin-bottom: 15px;
-			font-size: 14px;
-		}
-
-		/* Cronologia */
-		.month-group {
-			margin-bottom: 12px;
-			border: 1px solid #eee;
-			border-radius: 12px;
-			overflow: hidden;
-		}
-
-		.month-header {
-			background: #f8f9fa;
-			padding: 12px 15px;
-			font-weight: bold;
-			cursor: pointer;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-		}
-
-		.day-group { border-bottom: 1px solid #f0f0f0; }
-		.day-header { padding: 10px 15px; background: #fff; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; color: #555; }
-		.day-content { display: none; background: #fafafa; }
-		.month-content { display: none; }
-
-		.history-item {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			padding: 10px 15px 10px 30px;
-			border-bottom: 1px solid #f0f0f0;
-			font-size: 14px;
-		}
-
-		.del-btn {
-			color: var(--danger);
-			background: none;
-			border: none;
-			font-size: 18px;
-			padding: 5px;
-			cursor: pointer;
-		}
-
-		.chevron::after { content: ' ▾'; color: #bbb; }
-
-		/* Stats */
-		.stat-grid {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 12px;
-		}
-
-		.stat-box {
-			background: #f8f9fa;
-			padding: 15px;
-			border-radius: 12px;
-			text-align: center;
-			border: 1px solid #eee;
-		}
-
-		.stat-box big {
-			display: block;
-			font-size: 20px;
-			color: var(--primary);
-			font-weight: bold;
-		}
-
-		.stat-box small {
-			font-size: 12px;
-			color: #999;
-		}
-
-		#notif {
-			position: fixed;
-			bottom: 20px;
-			left: 50%;
-			transform: translateX(-50%);
-			background: #333;
-			color: white;
-			padding: 12px 25px;
-			border-radius: 50px;
-			display: none;
-			z-index: 2000;
-		}
-
-		.chart-container {
-			position: relative;
-			height: 250px;
-			width: 100%;
-			margin-top: 10px;
-		}
-
-		hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
-		p { font-size: 11px; color: #999; text-align: center; }
-
-		.user-info {
-			text-align: center;
-			padding: 10px;
-			background: #f0f0f0;
-			border-radius: 8px;
-			margin-bottom: 15px;
-			font-size: 14px;
-		}
-
-		.user-info strong { color: var(--primary); }
-
-		a {
-			color: var(--primary);
-			text-decoration: none;
-			font-weight: bold;
-			cursor: pointer;
-		}
-
-		a:hover {
-			text-decoration: underline;
-		}
+/* Scrollbar invisibile */
+::-webkit-scrollbar { display: none; }
 	</style>
 </head>
 <body>
@@ -412,13 +317,12 @@
 	<h1>🌿 JointTracker</h1>
 	<button class="menu-btn" onclick="toggleMenu()">☰</button>
 	<div class="menu-content" id="menu">
-		<button onclick="showPage('add')">➕ Aggiungi</button>
-		<button onclick="showPage('history')">📜 Cronologia</button>
-		<button onclick="showPage('stats')">📊 Statistiche</button>
-		<button onclick="showPage('charts')">📈 Dashboard</button>
-		<button onclick="showPage('settings')">⚙️ Settings</button>
-		<button class="logout-btn" onclick="logout()">🚪 Logout</button>
-	</div>
+    <button onclick="showPage('add')">➕ <span>Aggiungi</span></button>
+    <button onclick="showPage('history')">📜 <span>Registro</span></button>
+    <button onclick="showPage('stats')">📊 <span>Stats</span></button>
+    <button onclick="showPage('charts')">📈 <span>Grafici</span></button>
+    <button onclick="showPage('settings')">⚙️ <span>Info</span></button>
+</div>
 </header>
 
 <div id="page-add" class="page">
@@ -883,6 +787,8 @@
 
 	let charts = {};
 	function renderCharts(f, e) {
+		Chart.defaults.color = '#8e8e93'; // Colore grigio iOS
+Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
 		Object.values(charts).forEach(c => c.destroy());
 
 		let numFumo = smokes.filter(s => s.type === 'fumo').length;
