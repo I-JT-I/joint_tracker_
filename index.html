@@ -101,7 +101,14 @@
 .menu-content button:last-child {
     border-right: none;
 }
-
+		
+/* Stile per evidenziare la pagina attiva nel menu */
+.menu-content button.active-tab {
+    background: #e8f5e9;
+    color: var(--primary);
+    border-top: 3px solid var(--primary); /* Una riga verde sopra il tasto attivo */
+}
+		
 /* Feedback visivo quando si preme */
 .menu-content button:active {
     background: #e8f5e9; /* Un leggero verde che richiama il tema */
@@ -200,12 +207,13 @@ body {
 			display: none;
 		}
 
-		.grams-row label.selected {
-			background: #e8f5e9;
-			border-color: var(--primary);
-			color: var(--primary);
-			font-weight: bold;
-		}
+		/* Feedback visivo per i grammi (Stato Selezionato) */
+.grams-row label.selected {
+    background: #e8f5e9 !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    font-weight: bold;
+}
 
 		#customGrams {
 			display: none;
