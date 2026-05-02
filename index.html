@@ -1163,27 +1163,19 @@ async function importData() {
 
         // Prepariamo i dati: rimuoviamo gli ID vecchi per evitare conflitti 
         // e forziamo l'user_id dell'utente corrente
-        const cleanData = importedData.map(item => {
+        const cleanData = importedData.map((item, index) => {
     const { id, created_at, ...rest } = item; 
     return { 
         ...rest, 
         user_id: currentUser.id,
-        ts: Math.floor(item.ts),
-        time: item.time || '12:00' // Se manca, metti '12:00'
+        ts: Math.floor(item.ts) + index, // Aggiunge index per rendere ts unico
+        time: item.time || '12:00'
     };
 });
-
-// 🔥 CANCELLA TUTTO PRIMA
-        await supabaseClient
-            .from('smokes')
-            .delete()
-            .eq('user_id', currentUser.id);
-
-        // Poi importa i nuovi
-        const { error } = await supabaseClient
+		const { error } = await supabaseClient
             .from('smokes')
             .insert(cleanData);
-
+		
         if (error) throw error;
 
         alert("Importazione completata con successo! 🎉");
