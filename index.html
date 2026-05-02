@@ -59,50 +59,51 @@
 			font-size: 24px;
 		}
 
-		.menu-btn {
-			font-size: 28px;
-			background: none;
-			border: none;
-			color: white;
-			cursor: pointer;
-		}
+		/* 1. Nascondi il tasto hamburger nel header */
+.menu-btn {
+    display: none;
+}
 
-		.menu-content {
-			position: absolute;
-			right: 10px;
-			top: 60px;
-			background: white;
-			border-radius: 12px;
-			box-shadow: 0 5px 25px rgba(0,0,0,0.2);
-			overflow: hidden;
-			display: none;
-			z-index: 1001;
-			width: 200px;
-		}
+/* 2. Trasforma il menu in una barra fissa in basso */
+.menu-content {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto; /* Sovrascrive il top: 60px precedente */
+    width: 100%;
+    background: white;
+    display: flex !important; /* Lo rendiamo sempre visibile come flexbox */
+    justify-content: space-around;
+    border-radius: 0; /* Rimuoviamo gli angoli arrotondati */
+    box-shadow: 0 -2px 15px rgba(0,0,0,0.1);
+    z-index: 1001;
+    padding-bottom: env(safe-area-inset-bottom); /* Supporto per iPhone moderni */
+}
 
-		.menu-content button {
-			padding: 15px;
-			width: 100%;
-			font-size: 16px;
-			border: none;
-			background: white;
-			text-align: left;
-			border-bottom: 1px solid #f0f0f0;
-			cursor: pointer;
-		}
+/* 3. Imposta i bottoni del menu per lo sviluppo orizzontale */
+.menu-content button {
+    display: flex;
+    flex-direction: column; /* Icona sopra, testo sotto */
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    font-size: 10px; /* Testo piccolo sotto l'emoji */
+    border: none;
+    background: none;
+    flex: 1;
+    border-bottom: none; /* Rimuove il bordo grigio tra i tasti */
+}
 
-		.menu-content button:last-child {
-			border-bottom: none;
-		}
+/* Effetto al tocco */
+.menu-content button:active {
+    background: #f0f0f0;
+}
 
-		.menu-content button:hover {
-			background: #f5f5f5;
-		}
-
-		.menu-content .logout-btn {
-			color: var(--danger);
-			font-weight: bold;
-		}
+/* 4. Aggiungi spazio in fondo alle pagine per non coprire i dati */
+body {
+    padding-bottom: 80px; 
+}
 
 		.page {
 			display: none;
@@ -412,13 +413,12 @@
 	<h1>🌿 JointTracker</h1>
 	<button class="menu-btn" onclick="toggleMenu()">☰</button>
 	<div class="menu-content" id="menu">
-		<button onclick="showPage('add')">➕ Aggiungi</button>
-		<button onclick="showPage('history')">📜 Cronologia</button>
-		<button onclick="showPage('stats')">📊 Statistiche</button>
-		<button onclick="showPage('charts')">📈 Dashboard</button>
-		<button onclick="showPage('settings')">⚙️ Settings</button>
-		<button class="logout-btn" onclick="logout()">🚪 Logout</button>
-	</div>
+    <button onclick="showPage('add')"><span>➕</span>Aggiungi</button>
+    <button onclick="showPage('history')"><span>📜</span>Registro</button>
+    <button onclick="showPage('stats')"><span>📊</span>Stats</button>
+    <button onclick="showPage('charts')"><span>📈</span>Grafici</button>
+    <button onclick="showPage('settings')"><span>⚙️</span>Dati</button>
+</div>
 </header>
 
 <div id="page-add" class="page">
@@ -734,12 +734,10 @@
 	}
 
 	function showPage(p) {
-		document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
-		document.getElementById("page-" + p).classList.add("active");
-		document.getElementById("menu").style.display = "none";
-		update();
-	}
-
+    document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
+    document.getElementById("page-" + p).classList.add("active");
+    update();
+}
 	function toggleAccordion(el) {
 		const content = el.nextElementSibling;
 		const isVisible = content.style.display === "block";
