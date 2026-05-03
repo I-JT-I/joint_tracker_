@@ -643,7 +643,7 @@
 		renderCharts();
 	}
 
-	function updateHistory() {
+function updateHistory() {
 	const hList = document.getElementById("historyList");
 	hList.innerHTML = "";
 
@@ -651,64 +651,104 @@
 		hList.innerHTML = "<p style='text-align:center; color:#999;'>Nessun dato presente.</p>";
 	} else {
 		const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
-		const grouped = {};
+		const byYear = {};
 
+		// Raggruppa per anno → mese → giorno
 		smokes.forEach(s => {
 			const d = new Date(s.date);
-			const mKey = `${months[d.getMonth()]} ${d.getFullYear()}`;
-			if (!grouped[mKey]) grouped[mKey] = {};
-			if (!grouped[mKey][s.date]) grouped[mKey][s.date] = [];
-			grouped[mKey][s.date].push(s);
+			const year = d.getFullYear();
+			const monthIndex = d.getMonth();
+			const monthName = months[monthIndex];
+			const mKey = `${monthName} ${year}`;
+			
+			if (!byYear[year]) byYear[year] = {};
+			if (!byYear[year][mKey]) byYear[year][mKey] = {};
+			if (!byYear[year][mKey][s.date]) byYear[year][mKey][s.date] = [];
+			byYear[year][mKey][s.date].push(s);
 		});
 
-		// 🆕 TROVA L'ULTIMO MESE CON DATI
-		const monthKeys = Object.keys(grouped);
-		const lastMonthKey = monthKeys[monthKeys.length - 1];
+		// Ordina anni in ordine decrescente (più recente primo)
+		const years = Object.keys(byYear).sort((a, b) => b - a);
+		const lastYear = years[0];
 
-		for (let mKey in grouped) {
-			let mGrams = 0;
-			let daysHtml = "";
-			const isLastMonth = (mKey === lastMonthKey); // 🆕 Controlla se è ultimo mese
+		// Loop anni
+		years.forEach(year => {
+			const isLastYear = (year === lastYear);
+			let yearGrams = 0;
+			let monthsHtml = "";
 
-			for (let dKey in grouped[mKey]) {
-				const daySmokes = grouped[mKey][dKey];
-				const dayWeight = daySmokes.reduce((sum, s) => sum + s.grams, 0);
-				mGrams += dayWeight;
+			// Ordina mesi decrescenti (più recente primo)
+			const monthKeys = Object.keys(byYear[year]).sort((a, b) => {
+				const dateA = new Date(Object.keys(byYear[year][a])[0]);
+				const dateB = new Date(Object.keys(byYear[year][b])[0]);
+				return dateB - dateA;
+			});
 
-				const dDisplay = dKey.split('-').reverse().join('/');
+			const lastMonthKeyOfYear = monthKeys[0];
 
-				let itemsHtml = daySmokes.map(s => `
-					<div class="history-item">
-						<div>
-							<span>${s.time} - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g</span>
-							${s.location_name ? `<br><small style="color: #999;">📍 ${s.location_name}</small>` : ''}
+			// Loop mesi
+			monthKeys.forEach(mKey => {
+				const isLastMonth = isLastYear && (mKey === lastMonthKeyOfYear);
+				let mGrams = 0;
+				let daysHtml = "";
+
+				// Ordina giorni decrescenti (più recente primo)
+				const dayKeys = Object.keys(byYear[year][mKey]).sort((a, b) => new Date(b) - new Date(a));
+
+				// Loop giorni
+				dayKeys.forEach(dKey => {
+					const daySmokes = byYear[year][mKey][dKey];
+					const dayWeight = daySmokes.reduce((sum, s) => sum + s.grams, 0);
+					mGrams += dayWeight;
+					yearGrams += dayWeight;
+
+					const dDisplay = dKey.split('-').reverse().join('/');
+
+					let itemsHtml = daySmokes.map(s => `
+						<div class="history-item">
+							<div>
+								<span>${s.time} - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g</span>
+								${s.location_name ? `<br><small style="color: #999;">📍 ${s.location_name}</small>` : ''}
+							</div>
+							<button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
 						</div>
-						<button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
-					</div>
-				`).join('');
+					`).join('');
 
-				daysHtml += `
-					<div class="day-group">
-						<div class="day-header" onclick="toggleAccordion(this)">
-							<span>📅 ${dDisplay}</span>
-							<span>${dayWeight.toFixed(1)}g <span class="chevron">▼</span></span>
+					daysHtml += `
+						<div class="day-group">
+							<div class="day-header" onclick="toggleAccordion(this)">
+								<span>📅 ${dDisplay}</span>
+								<span>${dayWeight.toFixed(1)}g <span class="chevron">▼</span></span>
+							</div>
+							<div class="day-content">${itemsHtml}</div>
+						</div>`;
+				});
+
+				// Se è l'ultimo mese dell'ultimo anno: aperto. Altrimenti chiuso
+				const displayStyle = isLastMonth ? "display: block;" : "display: none;";
+
+				monthsHtml += `
+					<div class="month-group">
+						<div class="month-header" onclick="toggleAccordion(this)">
+							<span>📂 ${mKey}</span>
+							<span>${mGrams.toFixed(1)}g <span class="chevron">▼</span></span>
 						</div>
-						<div class="day-content">${itemsHtml}</div>
+						<div class="month-content" style="${displayStyle}">${daysHtml}</div>
 					</div>`;
-			}
+			});
 
-			// 🆕 Se è l'ultimo mese, mostra aperto. Altrimenti chiuso
-			const displayStyle = isLastMonth ? "display: block;" : "display: none;";
+			// Se è l'ultimo anno: aperto. Altrimenti chiuso
+			const yearDisplayStyle = isLastYear ? "display: block;" : "display: none;";
 
 			hList.innerHTML += `
-				<div class="month-group">
-					<div class="month-header" onclick="toggleAccordion(this)">
-						<span>📂 ${mKey}</span>
-						<span>${mGrams.toFixed(1)}g <span class="chevron">▼</span></span>
+				<div class="year-group">
+					<div class="year-header" onclick="toggleAccordion(this)">
+						<span>📅 ${year}</span>
+						<span>${yearGrams.toFixed(1)}g <span class="chevron">▼</span></span>
 					</div>
-					<div class="month-content" style="${displayStyle}">${daysHtml}</div>
+					<div class="year-content" style="${yearDisplayStyle}">${monthsHtml}</div>
 				</div>`;
-		}
+		});
 	}
 }
 
