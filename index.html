@@ -458,46 +458,7 @@
 		update();
 	}
 
-	async function saveData() {
-    const type = document.getElementById("type").value;
-    const gVal = document.querySelector('input[name="g"]:checked').value;
-    const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
-
-    if(!grams || grams <= 0) return alert("Inserisci un peso valido");
-
-    const now = new Date();
-    const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
-    const date = document.getElementById("date").value;
-    const ts = Date.now();
-
-   console.log("Salvando con posizione:", currentLocation);
-
-const { error } = await supabaseClient.from('smokes').insert({
-    type, 
-    grams, 
-    date, 
-    time, 
-    ts, 
-    user_id: currentUser.id,
-    latitude: currentLocation.lat || null,
-    longitude: currentLocation.lng || null,
-    location_name: currentLocation.name || null
-});
-    if (error) {
-        console.error('Errore salvataggio:', error);
-        alert('Errore nel salvataggio. Riprova.');
-        return;
-    }
-
-    showMessage('Sessione salvata! ✅');
-    
-    // Resetta la posizione
-    currentLocation = { lat: null, lng: null, name: null };
-    document.getElementById('locationDisplay').value = '';
-    
-    await loadData();
-}
-
+	
 	async function deleteItem(ts) {
 		if(!confirm("Vuoi eliminare questo inserimento?")) return;
 
@@ -1268,7 +1229,49 @@ showPage = function(p) {
 		setTimeout(() => initMap(), 100);
 		updateMap();
 	}
+
+	
 }
+	async function saveData() {
+    const type = document.getElementById("type").value;
+    const gVal = document.querySelector('input[name="g"]:checked').value;
+    const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
+
+    if(!grams || grams <= 0) return alert("Inserisci un peso valido");
+
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+    const date = document.getElementById("date").value;
+    const ts = Date.now();
+
+   console.log("Salvando con posizione:", currentLocation);
+
+const { error } = await supabaseClient.from('smokes').insert({
+    type, 
+    grams, 
+    date, 
+    time, 
+    ts, 
+    user_id: currentUser.id,
+    latitude: currentLocation.lat || null,
+    longitude: currentLocation.lng || null,
+    location_name: currentLocation.name || null
+});
+    if (error) {
+        console.error('Errore salvataggio:', error);
+        alert('Errore nel salvataggio. Riprova.');
+        return;
+    }
+
+    showMessage('Sessione salvata! ✅');
+    
+    // Resetta la posizione
+    currentLocation = { lat: null, lng: null, name: null };
+    document.getElementById('locationDisplay').value = '';
+    
+    await loadData();
+}
+
 
 	checkAuth();
 </script>
