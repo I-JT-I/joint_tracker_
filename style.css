@@ -63,8 +63,6 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 8% 0;
-font-size: 3.5vw;
     border: none;
     background: none;
     flex: 1;
@@ -72,6 +70,22 @@ font-size: 3.5vw;
     cursor: pointer;
     transition: background 0.2s;
     border-bottom: none;
+}
+/* Mobile */
+.menu-content button {
+    padding: 6% 0;
+    font-size: 3.5vw;
+}
+
+/* Tablet e desktop */
+@media (min-width: 768px) {
+    .menu-content button {
+        padding: 12px 0;
+        font-size: 14px;
+    }
+    .menu-content {
+        height: 70px;
+    }
 }
 /* Rimuoviamo il bordo dall'ultimo tasto per estetica */
 .menu-content button:last-child {
