@@ -42,42 +42,79 @@
 			font-weight: 600;
 		}
  
-		.menu-btn { display: none; }
- 
-		.menu-content {
-			position: fixed;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			width: 100%;
-			background: rgba(255, 255, 255, 0.95);
-			display: flex !important;
-			justify-content: space-around;
-			z-index: 1001;
-			box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
-			border-top: 1px solid rgba(0,0,0,0.05);
-		}
- 
-		.menu-content button {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-			border: none;
-			background: none;
-			flex: 1;
-			cursor: pointer;
-			transition: all 0.3s ease;
-			padding: 8px 0;
-			font-size: 11px;
-			color: var(--gray-dark);
-		}
- 
-		.menu-content button.active-tab {
-			background: rgba(76, 175, 80, 0.1);
-			color: var(--primary-light);
-			border-top: 3px solid var(--primary-light);
-		}
+		/* ========== MENU DROPDOWN IN ALTO A DESTRA ========== */
+
+.menu-btn { 
+	display: block;
+	background: none;
+	border: none;
+	font-size: 24px;
+	cursor: pointer;
+	color: white;
+	padding: 5px 10px;
+	z-index: 1002;
+}
+
+.menu-content {
+	position: fixed;
+	top: 60px;
+	right: 15px;
+	left: auto;
+	bottom: auto;
+	width: auto;
+	background: rgba(255, 255, 255, 0.98);
+	display: none !important;
+	flex-direction: column;
+	z-index: 1001;
+	box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+	border-radius: 12px;
+	overflow: hidden;
+	border: 1px solid rgba(0,0,0,0.05);
+	min-width: 200px;
+}
+
+.menu-content.active {
+	display: flex !important;
+}
+
+.menu-content button {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	border: none;
+	background: none;
+	flex: none;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	padding: 12px 20px;
+	font-size: 14px;
+	color: var(--gray-dark);
+	border-bottom: 1px solid rgba(0,0,0,0.04);
+	width: 100%;
+	gap: 10px;
+}
+
+.menu-content button:last-child {
+	border-bottom: none;
+}
+
+.menu-content button:hover {
+	background: rgba(76, 175, 80, 0.1);
+	color: var(--primary-light);
+}
+
+.menu-content button.active-tab {
+	background: rgba(76, 175, 80, 0.15);
+	color: var(--primary-light);
+	font-weight: 600;
+	border-left: 4px solid var(--primary-light);
+	padding-left: 16px;
+}
+
+/* Nasconde il padding-bottom dal body quando il menu è in alto */
+body {
+	padding-bottom: 0;
+}
  
 		.page {
 			display: none;
