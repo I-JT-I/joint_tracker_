@@ -245,7 +245,8 @@
 
 	let currentUser = null;
 	let smokes = [];
-
+	let currentLocation = { lat: null, lng: null, name: null };
+	
 	// Controlla se loggato all'avvio
 	async function checkAuth() {
 		const { data: { session } } = await supabaseClient.auth.getSession();
