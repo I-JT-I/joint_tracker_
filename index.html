@@ -396,7 +396,30 @@
 				}
 				return;
 			}
-
+			// 🆕 SE È SIGNUP, MOSTRA MESSAGGIO DI CONFERMA EMAIL
+if (mode === 'signup') {
+	content.innerHTML = `
+		<div style="text-align: center; padding: 30px 20px;">
+			<div style="font-size: 50px; margin-bottom: 20px;">📧</div>
+			<h2 style="color: var(--primary); margin-bottom: 10px;">Conferma la tua Email!</h2>
+			<p style="color: #666; font-size: 16px; line-height: 1.6;">
+				Abbiamo inviato un link di conferma a:<br>
+				<strong style="color: var(--primary);">${email}</strong>
+			</p>
+			<p style="color: #999; font-size: 14px; margin-top: 20px;">
+				Controlla la tua casella di posta (e lo spam) e clicca sul link per completare la registrazione.
+			</p>
+			<hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+			<p style="color: #666; font-size: 13px; margin-bottom: 20px;">
+				Non hai ricevuto l'email?
+			</p>
+			<button onclick="toggleAuthMode()" style="background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px;">
+				← Torna al Login
+			</button>
+		</div>
+	`;
+	return;
+}
 			currentUser = result.data.user;
 			showApp();
 			await loadData();
