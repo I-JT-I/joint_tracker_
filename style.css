@@ -336,6 +336,28 @@
 			padding-left: 10px;
 			padding-top: 10px;
 		}
+
+		.year-group {
+			margin-bottom: 15px;
+		}
+
+		.year-header {
+			background: rgba(46, 125, 50, 0.15);
+			padding: 15px;
+			border-radius: 12px;
+			cursor: pointer;
+			display: flex;
+			justify-content: space-between;
+			font-weight: 700;
+			color: var(--primary-dark);
+			font-size: 16px;
+		}
+
+		.year-content {
+			display: block;
+			padding-left: 10px;
+			padding-top: 10px;
+		}
  
 		.history-item {
 			display: flex;
