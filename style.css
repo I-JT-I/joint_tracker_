@@ -19,32 +19,34 @@
 			margin: 0;
 			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 			color: #000;
-			/* SFONDO BASE SCURISSIMO */
-		    background-color: #080a08; 
-		    overflow-x: hidden;
-			}
-			body::before, body::after {
-			    content: "";
-			    position: fixed;
-			    top: 0;
-			    left: 0;
-			    width: 200%;
-			    height: 200%;
-			    z-index: -1;
-			    filter: blur(70px);
-			    opacity: 0.5; /* Regola questa per aumentare/diminuire l'intensità */
-			}
- 			body::before {
-			    /* Prima onda: verde scuro profondo */
-			    background: radial-gradient(circle, rgba(46, 125, 50, 0.6) 0%, transparent 60%);
-			    animation: ondaScuraUno 25s infinite linear;
-			}
-
-			body::after {
-				/* Seconda onda: verde più luminoso per l'effetto "luce" */
-				background: radial-gradient(circle, rgba(76, 175, 80, 0.4) 0%, transparent 50%);
-				animation: ondaScuraDue 20s infinite linear reverse;
-			}
+			/* Schiarito leggermente il fondo per non "mangiare" le onde */
+			background-color: #0c120c; 
+			overflow-x: hidden;
+		}
+		
+		body::before, body::after {
+			content: "";
+			position: fixed;
+			top: -50%; /* Centriamo meglio le masse di colore */
+			left: -50%;
+			width: 200%;
+			height: 200%;
+			z-index: -1;
+			/* Ridotto il blur: se è troppo alto (70-80px), il colore svanisce */
+			filter: blur(50px); 
+		}
+		
+		body::before {
+			/* Verde più acceso e denso (opacità 0.8) */
+			background: radial-gradient(circle, rgba(46, 125, 50, 0.8) 0%, transparent 60%);
+			animation: ondaScuraUno 20s infinite linear;
+		}
+		
+		body::after {
+			/* Verde smeraldo più luminoso (opacità 0.6) */
+			background: radial-gradient(circle, rgba(76, 175, 80, 0.6) 0%, transparent 50%);
+			animation: ondaScuraDue 15s infinite linear reverse;
+		}
 		header {
 			background: linear-gradient(180deg, rgba(46,125,50,0.95) 0%, rgba(27,94,32,0.98) 100%);
 			color: white;
