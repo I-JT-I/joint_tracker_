@@ -644,65 +644,73 @@
 	}
 
 	function updateHistory() {
-		const hList = document.getElementById("historyList");
-		hList.innerHTML = "";
+	const hList = document.getElementById("historyList");
+	hList.innerHTML = "";
 
-		if (smokes.length === 0) {
-			hList.innerHTML = "<p style='text-align:center; color:#999;'>Nessun dato presente.</p>";
-		} else {
-			const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
-			const grouped = {};
+	if (smokes.length === 0) {
+		hList.innerHTML = "<p style='text-align:center; color:#999;'>Nessun dato presente.</p>";
+	} else {
+		const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+		const grouped = {};
 
-			smokes.forEach(s => {
-				const d = new Date(s.date);
-				const mKey = `${months[d.getMonth()]} ${d.getFullYear()}`;
-				if (!grouped[mKey]) grouped[mKey] = {};
-				if (!grouped[mKey][s.date]) grouped[mKey][s.date] = [];
-				grouped[mKey][s.date].push(s);
-			});
+		smokes.forEach(s => {
+			const d = new Date(s.date);
+			const mKey = `${months[d.getMonth()]} ${d.getFullYear()}`;
+			if (!grouped[mKey]) grouped[mKey] = {};
+			if (!grouped[mKey][s.date]) grouped[mKey][s.date] = [];
+			grouped[mKey][s.date].push(s);
+		});
 
-			for (let mKey in grouped) {
-				let mGrams = 0;
-				let daysHtml = "";
+		// 🆕 TROVA L'ULTIMO MESE CON DATI
+		const monthKeys = Object.keys(grouped);
+		const lastMonthKey = monthKeys[monthKeys.length - 1];
 
-				for (let dKey in grouped[mKey]) {
-					const daySmokes = grouped[mKey][dKey];
-					const dayWeight = daySmokes.reduce((sum, s) => sum + s.grams, 0);
-					mGrams += dayWeight;
+		for (let mKey in grouped) {
+			let mGrams = 0;
+			let daysHtml = "";
+			const isLastMonth = (mKey === lastMonthKey); // 🆕 Controlla se è ultimo mese
 
-					const dDisplay = dKey.split('-').reverse().join('/');
+			for (let dKey in grouped[mKey]) {
+				const daySmokes = grouped[mKey][dKey];
+				const dayWeight = daySmokes.reduce((sum, s) => sum + s.grams, 0);
+				mGrams += dayWeight;
 
-					let itemsHtml = daySmokes.map(s => `
-						<div class="history-item">
-							<div>
-								<span>${s.time} - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g</span>
-								${s.location_name ? `<br><small style="color: #999;">📍 ${s.location_name}</small>` : ''}
-							</div>
-							<button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
+				const dDisplay = dKey.split('-').reverse().join('/');
+
+				let itemsHtml = daySmokes.map(s => `
+					<div class="history-item">
+						<div>
+							<span>${s.time} - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g</span>
+							${s.location_name ? `<br><small style="color: #999;">📍 ${s.location_name}</small>` : ''}
 						</div>
-					`).join('');
+						<button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
+					</div>
+				`).join('');
 
-					daysHtml += `
-						<div class="day-group">
-							<div class="day-header" onclick="toggleAccordion(this)">
-								<span>📅 ${dDisplay}</span>
-								<span>${dayWeight.toFixed(1)}g <span class="chevron">▼</span></span>
-							</div>
-							<div class="day-content">${itemsHtml}</div>
-						</div>`;
-				}
-
-				hList.innerHTML += `
-					<div class="month-group">
-						<div class="month-header" onclick="toggleAccordion(this)">
-							<span>📂 ${mKey}</span>
-							<span>${mGrams.toFixed(1)}g <span class="chevron">▼</span></span>
+				daysHtml += `
+					<div class="day-group">
+						<div class="day-header" onclick="toggleAccordion(this)">
+							<span>📅 ${dDisplay}</span>
+							<span>${dayWeight.toFixed(1)}g <span class="chevron">▼</span></span>
 						</div>
-						<div class="month-content">${daysHtml}</div>
+						<div class="day-content">${itemsHtml}</div>
 					</div>`;
 			}
+
+			// 🆕 Se è l'ultimo mese, mostra aperto. Altrimenti chiuso
+			const displayStyle = isLastMonth ? "display: block;" : "display: none;";
+
+			hList.innerHTML += `
+				<div class="month-group">
+					<div class="month-header" onclick="toggleAccordion(this)">
+						<span>📂 ${mKey}</span>
+						<span>${mGrams.toFixed(1)}g <span class="chevron">▼</span></span>
+					</div>
+					<div class="month-content" style="${displayStyle}">${daysHtml}</div>
+				</div>`;
 		}
 	}
+}
 
 	function updateStats() {
 		let totF = 0, totE = 0;
