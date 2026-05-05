@@ -232,7 +232,19 @@
 		<input type="text" id="usernameInput" placeholder="Nuovo nickname">
 		<button class="action-btn" onclick="updateProfile()">Aggiorna Nome</button>
 	</div>
+		<div class="card">
+    <h3>📍 I tuoi Posti</h3>
+    <p style="font-size: 12px; color: #666;">Salva la posizione attuale per riconoscerla automaticamente in futuro.</p>
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <input type="text" id="newPlaceName" placeholder="Nome (es. Casa, Spot...)" style="margin-top: 0; flex: 1;">
+        <button class="action-btn" onclick="addNewPlace()" style="margin-top: 0; white-space: nowrap;">📍 Salva Qui</button>
+    </div>
 
+    <div id="userPlacesList">
+        <!-- Qui appariranno i posti salvati -->
+    </div>
+</div>
 	<div class="card">
 		<h3>⚙️ Gestione Dati</h3>
 		
@@ -268,6 +280,7 @@
 	let mapMarkers = [];
 	let currentSocialTab = 'global';
 	let charts = {};
+	let userPlaces = []; // Array per i posti caricati dal DB
 
 	// Gestione selezione Fumo/Erba
 document.querySelectorAll('.substance-checkbox-group input[type="checkbox"]').forEach(checkbox => {
@@ -546,7 +559,7 @@ if (mode === 'signup') {
 	if (!hasFumo && !hasErba) {
 		return alert("Seleziona almeno Fumo o Erba!");
 	}
-
+	
 	let fumo_grams = 0;
 	let erba_grams = 0;
 
@@ -578,6 +591,21 @@ if (mode === 'signup') {
 	const date = document.getElementById("date").value;
 	const ts = Date.now();
 	const totalGrams = fumo_grams + erba_grams;
+		
+    // --- 🟢 NUOVA LOGICA: RICONOSCIMENTO POSTO ---
+    let finalLocationName = currentLocation.name || null;
+
+    // Se abbiamo le coordinate e l'utente ha dei posti salvati...
+    if (currentLocation.lat && currentLocation.lng && typeof userPlaces !== 'undefined') {
+        userPlaces.forEach(p => {
+            const d = getDist(currentLocation.lat, currentLocation.lng, p.latitude, p.longitude);
+            // Se sei entro il raggio (default 50 metri), usa il nome personalizzato
+            if (d <= (p.radius || 50)) {
+                finalLocationName = p.name;
+            }
+        });
+    }
+    // --- 🔴 FINE NUOVA LOGICA ---
 
 	const { error } = await supabaseClient.from('smokes').insert({
 		type: (hasFumo && hasErba) ? "fumo-erba" : (hasFumo ? "fumo" : "erba"),
@@ -590,7 +618,7 @@ if (mode === 'signup') {
 		user_id: currentUser.id,
 		latitude: currentLocation.lat || null,
 		longitude: currentLocation.lng || null,
-		location_name: currentLocation.name || null
+		location_name: finalLocationName // 👈 Usiamo il nome trovato (o quello di default)
 	});
 
 	if (error) {
@@ -608,7 +636,6 @@ if (mode === 'signup') {
 	
 	await loadData();
 }
-
 	async function deleteItem(ts) {
 		if(!confirm("Vuoi eliminare questo inserimento?")) return;
 
@@ -716,6 +743,17 @@ function getLocationAuto() {
 		}
 	);
 }
+
+	function getDist(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Raggio Terra in metri
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+	
 	// ========== NAVIGAZIONE PAGINE ==========
 	function showPage(p) {
 		document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
