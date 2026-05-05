@@ -290,22 +290,24 @@
 </div>
 
 	<div class="card">
-		<h3>⚙️ Gestione Dati</h3>
-		
-		<button class="main-btn" onclick="exportData()" style="background: linear-gradient(135deg, #9c27b0 0%, #6a1b9a 100%);">📤 Esporta Backup (JSON)</button>
-		
-		<hr>
-		
-		<label>📥 Importa Dati</label>
-		<textarea id="importArea" placeholder="Incolla qui il codice JSON del tuo backup..."></textarea>
-		<button class="action-btn" onclick="importData()" style="background: #444;">Importa JSON</button>
-		
-		<hr>
-		
-		<button onclick="resetAll()" style="background:none; border:none; color:var(--danger); width:100%; margin-top:20px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Reset completo dati</button>
+		<div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleGestioneDati()">
+			<h3 style="margin:0;">⚙️ Gestione Dati</h3>
+			<span id="chevronGestione" style="font-size:18px; transition: transform 0.3s ease;">▼</span>
+		</div>
+
+		<div id="gestioneDatiPanel" style="display:none; margin-top:15px;">
+			<button class="main-btn" onclick="exportData()" style="background: linear-gradient(135deg, #9c27b0 0%, #6a1b9a 100%);">📤 Esporta Backup (JSON)</button>
+			
+			<hr>
+			
+			<label>📥 Importa Dati</label>
+			<textarea id="importArea" placeholder="Incolla qui il codice JSON del tuo backup..."></textarea>
+			<button class="action-btn" onclick="importData()" style="background: #444;">Importa JSON</button>
+		</div>
 	</div>
 
 	<div class="card">
+		<button onclick="resetAll()" style="background:none; border:none; color:var(--danger); width:100%; margin-bottom:15px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Reset completo dati</button>
 		<button class="secondary-btn" onclick="logout()" style="background:var(--danger)">🚪 Logout</button>
 	</div>
 </div>
@@ -720,6 +722,17 @@ async function addNewPlace() {
         await loadUserPlaces(); // Ricarica la lista per vederlo subito
     }
 }
+
+	function toggleGestioneDati() {
+    const panel = document.getElementById('gestioneDatiPanel');
+    const chevron = document.getElementById('chevronGestione');
+    const isVisible = panel.style.display !== 'none';
+    panel.style.display = isVisible ? 'none' : 'block';
+    chevron.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+
+	
 	function toggleAdvancedSearch() {
     const panel = document.getElementById('advancedPlaceSearch');
     const btn = document.getElementById('btnToggleAdvanced');
