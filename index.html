@@ -500,7 +500,6 @@ if (mode === 'signup') {
 
 	// ========== SALVATAGGIO DATI ==========
 	async function saveData() {
-	// 🆕 PRENDI ENTRAMBI I CHECKBOX
 	const hasFumo = document.getElementById("fumo").checked;
 	const hasErba = document.getElementById("erba").checked;
 	
@@ -508,49 +507,67 @@ if (mode === 'signup') {
 		return alert("Seleziona almeno Fumo o Erba!");
 	}
 
-	// 🆕 CREA UN TIPO COMBINATO
-	let type = "";
+	let fumo_grams = 0;
+	let erba_grams = 0;
+
 	if (hasFumo && hasErba) {
-		type = "fumo-erba"; // Entrambi
-	} else if (hasFumo) {
-		type = "fumo";
-	} else {
-		type = "erba";
-	}
+		const fumoInput = prompt("Quanti grammi di FUMO?", "0.2");
+		const erbaInput = prompt("Quanti grammi di ERBA?", "0.3");
+		
+		fumo_grams = parseFloat(fumoInput) || 0;
+		erba_grams = parseFloat(erbaInput) || 0;
 
-	const gVal = document.querySelector('input[name="g"]:checked').value;
-	const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
-
-	if(!grams || grams <= 0) return alert("Inserisci un peso valido");
-
-		const now = new Date();
-		const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
-		const date = document.getElementById("date").value;
-		const ts = Date.now();
-
-		const { error } = await supabaseClient.from('smokes').insert({
-			type, 
-			grams, 
-			date, 
-			time, 
-			ts, 
-			user_id: currentUser.id,
-			latitude: currentLocation.lat || null,
-			longitude: currentLocation.lng || null,
-			location_name: currentLocation.name || null
-		});
-
-		if (error) {
-			console.error('Errore salvataggio:', error);
-			alert('Errore nel salvataggio. Riprova.');
-			return;
+		if (fumo_grams <= 0 && erba_grams <= 0) {
+			return alert("Inserisci almeno una quantità!");
 		}
+	} else {
+		const gVal = document.querySelector('input[name="g"]:checked').value;
+		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
 
-		showMessage('✅ Sessione salvata!');
-		currentLocation = { lat: null, lng: null, name: null };
-		document.getElementById('locationDisplay').value = '';
-		await loadData();
+		if(!grams || grams <= 0) return alert("Inserisci un peso valido");
+
+		if (hasFumo) {
+			fumo_grams = grams;
+		} else {
+			erba_grams = grams;
+		}
 	}
+
+	const now = new Date();
+	const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+	const date = document.getElementById("date").value;
+	const ts = Date.now();
+	const totalGrams = fumo_grams + erba_grams;
+
+	const { error } = await supabaseClient.from('smokes').insert({
+		type: (hasFumo && hasErba) ? "fumo-erba" : (hasFumo ? "fumo" : "erba"),
+		grams: totalGrams, 
+		fumo_grams: fumo_grams,
+		erba_grams: erba_grams,
+		date, 
+		time, 
+		ts, 
+		user_id: currentUser.id,
+		latitude: currentLocation.lat || null,
+		longitude: currentLocation.lng || null,
+		location_name: currentLocation.name || null
+	});
+
+	if (error) {
+		console.error('Errore salvataggio:', error);
+		alert('Errore nel salvataggio. Riprova.');
+		return;
+	}
+
+	showMessage('✅ Sessione salvata!');
+	currentLocation = { lat: null, lng: null, name: null };
+	document.getElementById('locationDisplay').value = '';
+	document.getElementById("fumo").checked = false;
+	document.getElementById("erba").checked = false;
+	document.querySelectorAll('.substance-checkbox-group label').forEach(l => l.classList.remove('selected'));
+	
+	await loadData();
+}
 
 	async function deleteItem(ts) {
 		if(!confirm("Vuoi eliminare questo inserimento?")) return;
@@ -699,10 +716,14 @@ function getLocationAuto() {
 		mapMarkers = [];
 		
 		const filter = document.querySelector('input[name="mapFilter"]:checked').value;
-		let filteredSmokes = smokes;
-		if (filter !== 'all') {
-			filteredSmokes = smokes.filter(s => s.type === filter || s.type === 'fumo-erba');
-		}
+let filteredSmokes = smokes;
+if (filter !== 'all') {
+	if (filter === 'fumo') {
+		filteredSmokes = smokes.filter(s => s.fumo_grams > 0);
+	} else if (filter === 'erba') {
+		filteredSmokes = smokes.filter(s => s.erba_grams > 0);
+	}
+}
 		
 		let totalGrams = 0, count = 0;
 		let bounds = L.latLngBounds();
@@ -857,8 +878,8 @@ function updateHistory() {
 	function updateStats() {
 		let totF = 0, totE = 0;
 smokes.forEach(s => { 
-	if (s.type === 'fumo' || s.type === 'fumo-erba') totF += s.grams;
-	if (s.type === 'erba' || s.type === 'fumo-erba') totE += s.grams;
+	totF += (s.fumo_grams || 0);
+	totE += (s.erba_grams || 0);
 });
 
 		document.getElementById("sFumo").innerText = totF.toFixed(2);
@@ -937,21 +958,21 @@ smokes.forEach(s => {
 		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
 		charts = {};
 
-		let numFumo = smokes.filter(s => s.type === 'fumo' || s.type === 'fumo-erba').length;
-		let numErba = smokes.filter(s => s.type === 'erba' || s.type === 'fumo-erba').length;
+		let gramsFumo = smokes.reduce((sum, s) => sum + (s.fumo_grams || 0), 0);
+let gramsErba = smokes.reduce((sum, s) => sum + (s.erba_grams || 0), 0);
 
-		// Grafico a ciambella
-		const ctxPie = document.getElementById("cPie");
-		if (ctxPie) {
-			charts.pie = new Chart(ctxPie, {
-				type: 'doughnut',
-				data: { 
-					labels: ['Fumo', 'Erba'], 
-					datasets: [{ 
-						data: [numFumo, numErba], 
-						backgroundColor: ['#795548', '#4CAF50'] 
-					}]
-				},
+// Grafico a ciambella
+const ctxPie = document.getElementById("cPie");
+if (ctxPie) {
+	charts.pie = new Chart(ctxPie, {
+		type: 'doughnut',
+		data: { 
+			labels: ['Fumo', 'Erba'], 
+			datasets: [{ 
+				data: [gramsFumo, gramsErba], 
+				backgroundColor: ['#795548', '#4CAF50'] 
+			}]
+		},
 				options: { maintainAspectRatio: false }
 			});
 		}
