@@ -24,7 +24,11 @@
 	<!-- Leaflet Maps -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-
+	
+	<!-- Leaflet MarkerCluster -->
+	<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+	<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+	<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 	<style>
 		
 	</style>
@@ -736,73 +740,73 @@ function getLocationAuto() {
 	}
 
 	// ========== MAPPA (CORRETTA DAL PRIMO CODICE) ==========
-	function initMap() {
-		if (mapInstance) mapInstance.remove();
-		mapInstance = L.map('mapContainer').setView([45.46, 9.19], 10);
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-			attribution: '© OpenStreetMap', 
-			maxZoom: 19 
-		}).addTo(mapInstance);
-	}
+	let markerClusterGroup = null; // Aggiungi questa variabile globale all'inizio
 
-	function updateMap() {
-		if (!mapInstance) initMap();
-		
-		mapMarkers.forEach(m => mapInstance.removeLayer(m));
-		mapMarkers = [];
-		
-		const filter = document.querySelector('input[name="mapFilter"]:checked').value;
-let filteredSmokes = smokes;
-if (filter !== 'all') {
-	if (filter === 'fumo') {
-		filteredSmokes = smokes.filter(s => s.fumo_grams > 0);
-	} else if (filter === 'erba') {
-		filteredSmokes = smokes.filter(s => s.erba_grams > 0);
-	}
+function initMap() {
+    if (mapInstance) mapInstance.remove();
+    mapInstance = L.map('mapContainer').setView([45.46, 9.19], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+        attribution: '© OpenStreetMap'
+    }).addTo(mapInstance);
+
+    // Inizializziamo il gruppo di cluster
+    markerClusterGroup = L.markerClusterGroup();
+    mapInstance.addLayer(markerClusterGroup);
 }
-		
-		let totalGrams = 0, count = 0;
-		let bounds = L.latLngBounds();
-		
-		filteredSmokes.forEach(smoke => {
-	if (smoke.latitude && smoke.longitude) {
-		let color, icon;
-		if (smoke.type === 'fumo-erba') {
-			color = '#66BB6A';
-			icon = '🍫🍃';
-		} else if (smoke.type === 'erba') {
-			color = '#4CAF50';
-			icon = '🍃';
-		} else {
-			color = '#8B4513';
-			icon = '🍫';
-		}
-				
-				const markerEl = L.divIcon({
-					html: `<div style="background: ${color}; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 3px solid white;">${icon}</div>`,
-					iconSize: [40, 40]
-				});
-				
-				const marker = L.marker([smoke.latitude, smoke.longitude], { icon: markerEl })
-					.bindPopup(`<strong>${smoke.location_name || 'Posizione'}</strong><br>${smoke.date} ${smoke.time}<br>${smoke.grams}g`)
-					.addTo(mapInstance);
-				
-				mapMarkers.push(marker);
-				bounds.extend([smoke.latitude, smoke.longitude]);
-				totalGrams += smoke.grams;
-				count++;
-			}
-		});
-		
-		if (mapMarkers.length > 0) {
-			mapInstance.fitBounds(bounds, { padding: [50, 50] });
-		}
-		
-		document.getElementById('mapStats').innerHTML = `
-			<div class="stat-box"><big>${count}</big><small>Sessioni</small></div>
-			<div class="stat-box"><big>${totalGrams.toFixed(1)}g</big><small>Totale</small></div>
-		`;
-	}
+
+function updateMap() {
+    if (!mapInstance) initMap();
+    
+    // Puliamo i vecchi marker dal gruppo cluster
+    markerClusterGroup.clearLayers();
+    
+    const filter = document.querySelector('input[name="mapFilter"]:checked').value;
+    let filteredSmokes = smokes;
+    
+    if (filter !== 'all') {
+        if (filter === 'fumo') {
+            filteredSmokes = smokes.filter(s => s.fumo_grams > 0);
+        } else if (filter === 'erba') {
+            filteredSmokes = smokes.filter(s => s.erba_grams > 0);
+        }
+    }
+    
+    let totalGrams = 0, count = 0;
+    let bounds = L.latLngBounds();
+    
+    filteredSmokes.forEach(smoke => {
+        if (smoke.latitude && smoke.longitude) {
+            let color, icon;
+            if (smoke.type === 'fumo-erba') { color = '#66BB6A'; icon = '🍫🍃'; }
+            else if (smoke.type === 'erba') { color = '#4CAF50'; icon = '🍃'; }
+            else { color = '#8B4513'; icon = '🍫'; }
+            
+            const markerEl = L.divIcon({
+                html: `<div style="background: ${color}; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 3px solid white;">${icon}</div>`,
+                iconSize: [40, 40]
+            });
+            
+            const marker = L.marker([smoke.latitude, smoke.longitude], { icon: markerEl })
+                .bindPopup(`<strong>${smoke.location_name || 'Posizione'}</strong><br>${smoke.date} ${smoke.time}<br>${smoke.grams}g`);
+            
+            // AGGIUNGIAMO AL CLUSTER INVECE CHE ALLA MAPPA
+            markerClusterGroup.addLayer(marker);
+            
+            bounds.extend([smoke.latitude, smoke.longitude]);
+            totalGrams += smoke.grams;
+            count++;
+        }
+    });
+    
+    if (count > 0) {
+        mapInstance.fitBounds(bounds, { padding: [50, 50] });
+    }
+    
+    document.getElementById('mapStats').innerHTML = `
+        <div class="stat-box"><big>${count}</big><small>Sessioni</small></div>
+        <div class="stat-box"><big>${totalGrams.toFixed(1)}g</big><small>Totale</small></div>
+    `;
+}
 
 	// ========== AGGIORNAMENTO GENERALE ==========
 	function update() {
