@@ -373,9 +373,9 @@ body {
 		}
  
 		.month-content {
-			display: block;
-			padding-left: 10px;
-		}
+    display: none;
+    padding-left: 10px;
+}
  
 		.day-group {
 			margin-top: 10px;
@@ -393,10 +393,10 @@ body {
 		}
  
 		.day-content {
-			display: block;
-			padding-left: 10px;
-			padding-top: 10px;
-		}
+    		display: none;
+   		padding-left: 10px;
+    		padding-top: 10px;
+}
 
 		.year-group {
 			margin-bottom: 15px;
@@ -415,7 +415,7 @@ body {
 		}
 
 		.year-content {
-			display: block;
+			display: none;
 			padding-left: 10px;
 			padding-top: 10px;
 		}
