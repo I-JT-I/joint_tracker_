@@ -74,6 +74,11 @@
 	</label>
 </div>
 
+<!-- MESSAGGIO QUANDO ENTRAMBI SELEZIONATI -->
+<div id="divideMessage" style="display: none; background: rgba(76, 175, 80, 0.15); border: 2px solid var(--primary-light); border-radius: 12px; padding: 12px; margin-top: 10px; text-align: center; font-weight: 600; color: var(--primary-dark);">
+	📊 Dividerai: <span id="divideText"></span>
+</div>
+
 		<label for="gCont">Quantità</label>
 		<div class="grams-row" id="gCont">
 			<label><input type="radio" name="g" value="0.3" checked> 0.3g</label>
@@ -271,6 +276,37 @@ document.querySelectorAll('.substance-checkbox-group input[type="checkbox"]').fo
 		}
 	});
 });
+
+	// Mostra messaggio quando entrambi selezionati
+document.getElementById("fumo").addEventListener('change', updateDivideMessage);
+document.getElementById("erba").addEventListener('change', updateDivideMessage);
+
+function updateDivideMessage() {
+	const hasFumo = document.getElementById("fumo").checked;
+	const hasErba = document.getElementById("erba").checked;
+	const msgDiv = document.getElementById("divideMessage");
+	
+	if (hasFumo && hasErba) {
+		const gVal = document.querySelector('input[name="g"]:checked').value;
+		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) || 0.5 : parseFloat(gVal);
+		
+		// Dividi a metà (personalizza come vuoi)
+		const fumo = (grams / 2).toFixed(1);
+		const erba = (grams / 2).toFixed(1);
+		
+		msgDiv.style.display = "block";
+		document.getElementById("divideText").textContent = `${fumo}g 🍫 + ${erba}g 🍃`;
+	} else {
+		msgDiv.style.display = "none";
+	}
+}
+
+// Aggiorna il messaggio anche quando cambiano i grammi
+document.querySelectorAll('input[name="g"]').forEach(r => {
+	r.addEventListener('change', updateDivideMessage);
+});
+
+document.getElementById("customGrams").addEventListener('input', updateDivideMessage);
 	// ========== AUTENTICAZIONE ==========
 	async function checkAuth() {
 		const { data: { session } } = await supabaseClient.auth.getSession();
