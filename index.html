@@ -677,7 +677,6 @@ function updateHistory() {
 		const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
 		const byYear = {};
 
-		// Raggruppa per anno → mese → giorno
 		smokes.forEach(s => {
 			const d = new Date(s.date);
 			const year = d.getFullYear();
@@ -691,33 +690,27 @@ function updateHistory() {
 			byYear[year][mKey][s.date].push(s);
 		});
 
-		// Ordina anni in ordine decrescente (più recente primo)
+		// ANNI DECRESCENTI
 		const years = Object.keys(byYear).sort((a, b) => b - a);
-		const lastYear = years[0];
 
-		// Loop anni
 		years.forEach(year => {
-			const isLastYear = (year === lastYear);
 			let yearGrams = 0;
 			let monthsHtml = "";
 
-			const monthKeys = Object.keys(byYear[year]).sort((a, b) => {
-	const dateA = new Date(Object.keys(byYear[year][a])[0]);
-	const dateB = new Date(Object.keys(byYear[year][b])[0]);
-	return dateA - dateB;
-});
+			// MESI DECRESCENTI (più recente primo)
+			const monthKeysWithDates = Object.keys(byYear[year]).map(mKey => {
+				const firstDateOfMonth = Math.max(...Object.keys(byYear[year][mKey]).map(d => new Date(d).getTime()));
+				return { mKey, firstDateOfMonth };
+			});
+			const monthKeys = monthKeysWithDates.sort((a, b) => b.firstDateOfMonth - a.firstDateOfMonth).map(x => x.mKey);
 
-			const lastMonthKeyOfYear = monthKeys[0];
-
-			// Loop mesi
 			monthKeys.forEach(mKey => {
-				const isLastMonth = isLastYear && (mKey === lastMonthKeyOfYear);
 				let mGrams = 0;
 				let daysHtml = "";
 
-				// Ordina giorni decrescenti (più recente primo)
-				const dayKeys = Object.keys(byYear[year][mKey]).sort((a, b) => new Date(a) - new Date(b));
-				// Loop giorni
+				// GIORNI DECRESCENTI (più recente primo)
+				const dayKeys = Object.keys(byYear[year][mKey]).sort((a, b) => new Date(b) - new Date(a));
+				
 				dayKeys.forEach(dKey => {
 					const daySmokes = byYear[year][mKey][dKey];
 					const dayWeight = daySmokes.reduce((sum, s) => sum + s.grams, 0);
@@ -726,49 +719,49 @@ function updateHistory() {
 
 					const dDisplay = dKey.split('-').reverse().join('/');
 
-					let itemsHtml = daySmokes.map(s => `
+					// SESSIONI DECRESCENTI PER ORA
+					const sortedSmokes = [...daySmokes].sort((a, b) => b.time.localeCompare(a.time));
+
+					let itemsHtml = sortedSmokes.map(s => `
 						<div class="history-item">
 							<div>
-								<span>${s.time} - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g</span>
+								<span style="font-weight: bold; color: #2e7d32;">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g
 								${s.location_name ? `<br><small style="color: #999;">📍 ${s.location_name}</small>` : ''}
 							</div>
 							<button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
 						</div>
 					`).join('');
 
+					// TUTTO CHIUSO (display: none)
 					daysHtml += `
 						<div class="day-group">
 							<div class="day-header" onclick="toggleAccordion(this)">
 								<span>📅 ${dDisplay}</span>
 								<span>${dayWeight.toFixed(1)}g <span class="chevron">▼</span></span>
 							</div>
-							<div class="day-content">${itemsHtml}</div>
+							<div class="day-content" style="display: none;">${itemsHtml}</div>
 						</div>`;
 				});
 
-				// Se è l'ultimo mese dell'ultimo anno: aperto. Altrimenti chiuso
-				const displayStyle = isLastMonth ? "display: block;" : "display: none;";
-
+				// TUTTO CHIUSO (display: none)
 				monthsHtml += `
 					<div class="month-group">
 						<div class="month-header" onclick="toggleAccordion(this)">
 							<span>📂 ${mKey}</span>
 							<span>${mGrams.toFixed(1)}g <span class="chevron">▼</span></span>
 						</div>
-						<div class="month-content" style="${displayStyle}">${daysHtml}</div>
+						<div class="month-content" style="display: none;">${daysHtml}</div>
 					</div>`;
 			});
 
-			// Se è l'ultimo anno: aperto. Altrimenti chiuso
-			const yearDisplayStyle = isLastYear ? "display: block;" : "display: none;";
-
+			// TUTTO CHIUSO (display: none)
 			hList.innerHTML += `
 				<div class="year-group">
 					<div class="year-header" onclick="toggleAccordion(this)">
 						<span>📅 ${year}</span>
 						<span>${yearGrams.toFixed(1)}g <span class="chevron">▼</span></span>
 					</div>
-					<div class="year-content" style="${yearDisplayStyle}">${monthsHtml}</div>
+					<div class="year-content" style="display: none;">${monthsHtml}</div>
 				</div>`;
 		});
 	}
