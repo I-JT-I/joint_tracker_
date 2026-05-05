@@ -52,15 +52,15 @@
 	<h1>🌿 JointTracker</h1>
 	<button class="menu-btn" onclick="toggleMenu()">☰</button>
 	<div class="menu-content" id="menu">
-		<button onclick="showPage('stats')"><span style="font-size:18px;">📊</span>Stats</button>
-		<button onclick="showPage('charts')"><span style="font-size:18px;">📈</span>Grafici</button>
-		<button onclick="showPage('history')"><span style="font-size:18px;">📜</span>Registro</button>
-		<button onclick="showPage('add')"><span style="font-size:18px;">➕</span>Aggiungi</button>
-		<button onclick="showPage('map')"><span style="font-size:18px;">🗺️</span>Mappa</button>
-		<button onclick="showPage('social')"><span style="font-size:18px;">🏆</span>Social</button>
-		<button onclick="showPage('stock')"><span style="font-size:18px;">🛒</span>Scorte</button>
-		<button onclick="showPage('settings')"><span style="font-size:18px;">⚙️</span>Dati</button>
-	</div>
+    <button onclick="showPage('add')"><span style="font-size:18px;">➕</span>Aggiungi</button>
+    <button onclick="showPage('history')"><span style="font-size:18px;">📜</span>Registro</button>
+    <button onclick="showPage('stats')"><span style="font-size:18px;">📊</span>Stats</button>
+    <button onclick="showPage('charts')"><span style="font-size:18px;">📈</span>Grafici</button>
+    <button onclick="showPage('map')"><span style="font-size:18px;">🗺️</span>Mappa</button>
+    <button onclick="showPage('social')"><span style="font-size:18px;">🏆</span>Social</button>
+    <button onclick="showPage('stock')"><span style="font-size:18px;">🛒</span>Scorte</button>
+    <button onclick="showPage('settings')"><span style="font-size:18px;">⚙️</span>Dati</button>
+</div>
 </header>
 
 <!-- PAGINA AGGIUNGI -->
@@ -1171,7 +1171,7 @@ async function addPlaceFromMap() {
 		document.getElementById("page-" + p).classList.add("active");
 
 		document.querySelectorAll(".menu-content button").forEach(btn => btn.classList.remove("active-tab"));
-		const pageToIndex = { 'stats': 0, 'charts': 1, 'history': 2, 'add': 3, 'map': 4, 'social': 5, 'stock': 6, 'settings': 7 };
+		const pageToIndex = { 'add': 0, 'history': 1, 'stats': 2, 'charts': 3, 'map': 4, 'social': 5, 'stock': 6, 'settings': 7 };
 		const activeBtn = document.querySelectorAll(".menu-content button")[pageToIndex[p]];
 		if(activeBtn) activeBtn.classList.add("active-tab");
 
