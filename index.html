@@ -1101,7 +1101,7 @@ smokes.forEach(s => {
 	}
 
 	async function updateBestStreak(currentStreak) {
-		const { data } = await supabaseClient.from('user_stats').select('best_streak').eq('user_id', currentUser.id).single();
+		const { data } = await supabaseClient.from('user_stats').select('best_streak').eq('user_id', currentUser.id).maybeSingle();
 		
 		let best = data?.best_streak || 0;
 		if (currentStreak > best) {
