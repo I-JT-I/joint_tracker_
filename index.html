@@ -113,6 +113,14 @@
     </div>
 </div>
 
+<!-- TOGGLE NON MIA -->
+<div id="notMineToggle" style="display:none; margin-top: 12px;">
+    <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; background: rgba(255,152,0,0.08); border: 1px solid rgba(255,152,0,0.3); border-radius:12px; padding:12px; cursor:pointer;">
+        <span style="font-size:14px; font-weight:600; color:#E65100;">👥 Non è mia (non scala dalla scorta)</span>
+        <input type="checkbox" id="notMineCheck" style="width:20px; height:20px; margin:0; padding:0; border:none; background:none; cursor:pointer; accent-color: #FF9800;">
+    </label>
+</div>
+
 		<label>Quantità</label>
 		<div class="grams-row" id="gCont">
 			<label><input type="radio" name="g" value="0.3" checked> 0.3g</label>
@@ -449,24 +457,27 @@ document.getElementById("fumo").addEventListener('change', updateDivideMessage);
 document.getElementById("erba").addEventListener('change', updateDivideMessage);
 
 function updateDivideMessage() {
-	const hasFumo = document.getElementById("fumo").checked;
-	const hasErba = document.getElementById("erba").checked;
-	const msgDiv = document.getElementById("divideMessage");
-	
-	if (hasFumo && hasErba) {
-		const gVal = document.querySelector('input[name="g"]:checked').value;
-		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) || 0.5 : parseFloat(gVal);
-		
-		// Dividi a metà (personalizza come vuoi)
-		const fumo = (grams / 2).toFixed(1);
-		const erba = (grams / 2).toFixed(1);
-		
-		msgDiv.style.display = "block";
-		document.getElementById("divideText").textContent = `${fumo}g 🍫 + ${erba}g 🍃`;
-	} else {
-		msgDiv.style.display = "none";
-	}
+    const hasFumo = document.getElementById("fumo").checked;
+    const hasErba = document.getElementById("erba").checked;
+    const msgDiv = document.getElementById("divideMessage");
+    const notMineToggle = document.getElementById("notMineToggle");
+
+    // Mostra il toggle "non mia" se almeno uno è selezionato
+    notMineToggle.style.display = (hasFumo || hasErba) ? "block" : "none";
+    if (!hasFumo && !hasErba) document.getElementById("notMineCheck").checked = false;
+
+    if (hasFumo && hasErba) {
+        const gVal = document.querySelector('input[name="g"]:checked').value;
+        const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) || 0.5 : parseFloat(gVal);
+        const fumo = (grams / 2).toFixed(1);
+        const erba = (grams / 2).toFixed(1);
+        msgDiv.style.display = "block";
+        document.getElementById("divideText").textContent = `${fumo}g 🍫 + ${erba}g 🍃`;
+    } else {
+        msgDiv.style.display = "none";
+    }
 }
+
 
 // Aggiorna il messaggio anche quando cambiano i grammi
 document.querySelectorAll('input[name="g"]').forEach(r => {
@@ -768,6 +779,7 @@ if (mode === 'signup') {
 		latitude: currentLocation.lat || null,
 		longitude: currentLocation.lng || null,
 		location_name: finalLocationName // 👈 Usiamo il nome trovato (o quello di default)
+		not_mine: document.getElementById("notMineCheck").checked,
 	});
 
 	if (error) {
@@ -781,6 +793,8 @@ if (mode === 'signup') {
 	document.getElementById('locationDisplay').value = '';
 	document.getElementById("fumo").checked = false;
 	document.getElementById("erba").checked = false;
+	document.getElementById("notMineCheck").checked = false;
+	document.getElementById("notMineToggle").style.display = "none";
 	document.querySelectorAll('.substance-checkbox-group label').forEach(l => l.classList.remove('selected'));
 	
 	await loadData();
@@ -1346,14 +1360,15 @@ function updateHistory() {
 					const sortedSmokes = [...daySmokes].sort((a, b) => b.time.localeCompare(a.time));
 
 					let itemsHtml = sortedSmokes.map(s => `
-						<div class="history-item">
-							<div>
-								<span style="font-weight: bold; color: #2e7d32;">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${s.grams}g
-								${s.location_name ? `<br><small style="color: #999;">📍 ${s.location_name}</small>` : ''}
-							</div>
-							<button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
-						</div>
-					`).join('');
+    <div class="history-item">
+        <div>
+            <span style="font-weight: bold; color: #2e7d32;">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${s.grams}g
+            ${s.not_mine ? `<span style="background:rgba(255,152,0,0.15); color:#E65100; font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">👥 non mia</span>` : ''}
+            ${s.location_name ? `<br><small style="color: #999;">📍 ${s.location_name}</small>` : ''}
+        </div>
+        <button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
+    </div>
+`).join('');
 
 					// TUTTO CHIUSO (display: none)
 					daysHtml += `
@@ -1933,18 +1948,62 @@ async function loadPurchases() {
 }
 
 // ========== CALCOLO GRAMMI CONSUMATI DA UNA DATA ==========
-function gramsConsumedSince(type, sinceDate) {
+// Calcola i grammi consumati tra due date (esclude sessioni "non mia")
+function gramsConsumedSince(type, sinceDate, untilDate = null) {
     return smokes
-        .filter(s => s.date >= sinceDate)
+        .filter(s => {
+            if (s.not_mine) return false; // escludi sessioni non tue
+            if (s.date < sinceDate) return false;
+            if (untilDate && s.date > untilDate) return false;
+            return true;
+        })
         .reduce((sum, s) => sum + (type === 'fumo' ? (s.fumo_grams || 0) : (s.erba_grams || 0)), 0);
+}
+
+// Dato un tipo, restituisce lista acquisti aperti ordinati dal più vecchio (FIFO)
+function getOpenPurchasesFIFO(type) {
+    return purchases
+        .filter(p => p.type === type && !p.is_closed)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
+// Calcola i grammi consumati per uno specifico acquisto (FIFO)
+// Scala dal più vecchio: il consumo del 2° parte solo dopo che il 1° è esaurito
+function gramsConsumedForPurchase(purchase) {
+    const type = purchase.type;
+    const openFIFO = getOpenPurchasesFIFO(type);
+    const idx = openFIFO.findIndex(p => p.id === purchase.id);
+    if (idx === -1) return 0;
+
+    // Consumo totale dal giorno del primo acquisto aperto
+    const oldestDate = openFIFO[0].date;
+    const totalConsumed = gramsConsumedSince(type, oldestDate);
+
+    // Somma i grammi degli acquisti più vecchi (quelli prima di questo nella lista FIFO)
+    let gramsBeforeThis = 0;
+    for (let i = 0; i < idx; i++) {
+        gramsBeforeThis += parseFloat(openFIFO[i].grams);
+    }
+
+    // Quanto è stato consumato "dentro" questo acquisto
+    const consumedIntoThis = Math.max(0, totalConsumed - gramsBeforeThis);
+    return Math.min(consumedIntoThis, parseFloat(purchase.grams));
+}
+
+// Grammi rimanenti per un acquisto specifico
+function gramsRemainingForPurchase(purchase) {
+    const consumed = gramsConsumedForPurchase(purchase);
+    return Math.max(0, parseFloat(purchase.grams) - consumed);
 }
 
 // ========== RENDER PAGINA STOCK ==========
 function renderStockPage() {
-    renderStockCard('fumo', activeFumoStock);
-    renderStockCard('erba', activeErbaStock);
+    renderStockCard('fumo');
+    renderStockCard('erba');
     renderPurchaseHistory();
 }
+
+
 
 function renderStockCard(type, stock) {
     const emoji = type === 'fumo' ? '🍫' : '🍃';
@@ -1953,63 +2012,83 @@ function renderStockCard(type, stock) {
     const displayEl = document.getElementById(`stock${type.charAt(0).toUpperCase()+type.slice(1)}Display`);
     const closeBtn = document.getElementById(`btnClose${type.charAt(0).toUpperCase()+type.slice(1)}`);
 
-    if (!stock) {
+    const openPurchases = getOpenPurchasesFIFO(type);
+
+    if (openPurchases.length === 0) {
         displayEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px;">Nessuna scorta attiva</p>`;
         if (closeBtn) closeBtn.style.display = 'none';
         return;
     }
 
-    const consumed = gramsConsumedSince(type, stock.date);
-    const remaining = Math.max(0, stock.grams - consumed);
-    const pct = Math.min(100, Math.max(0, (remaining / stock.grams) * 100));
-    const priceStr = stock.price ? ` · €${stock.price}` : '';
+    // Nascondi il vecchio tasto globale (ora è inline per acquisto)
+    if (closeBtn) closeBtn.style.display = 'none';
 
-    const barColor = pct > 50 ? '#4CAF50' : pct > 20 ? '#FF9800' : '#f44336';
+    let html = '';
 
-    displayEl.innerHTML = `
-        <div style="background:${colorLight}; border-radius:12px; padding:14px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span style="font-size:13px; color:#666;">Acquistati il ${stock.date.split('-').reverse().join('/')}</span>
-                <span style="font-weight:700; color:${color};">${stock.grams}g${priceStr}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <span style="font-size:13px; color:#666;">Consumati</span>
-                <span style="font-weight:600; color:#555;">${consumed.toFixed(2)}g</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span style="font-size:14px; font-weight:700; color:${color};">Rimanenti</span>
-                <span style="font-size:18px; font-weight:800; color:${color};">${remaining.toFixed(2)}g</span>
-            </div>
-            <div style="background:rgba(0,0,0,0.08); border-radius:8px; height:10px; overflow:hidden;">
-                <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:8px; transition: width 0.5s ease;"></div>
-            </div>
-            <div style="text-align:right; font-size:11px; color:#999; margin-top:4px;">${pct.toFixed(0)}% rimanente</div>
-        </div>
-    `;
+    openPurchases.forEach((p, idx) => {
+        const isOldest = idx === 0;
+        const consumed = gramsConsumedForPurchase(p);
+        const remaining = gramsRemainingForPurchase(p);
+        const pct = Math.min(100, Math.max(0, (remaining / parseFloat(p.grams)) * 100));
+        const priceStr = p.price ? ` · €${p.price}` : '';
+        const barColor = pct > 50 ? '#4CAF50' : pct > 20 ? '#FF9800' : '#f44336';
 
-    if (closeBtn) closeBtn.style.display = 'block';
+        const oldestLabel = isOldest && openPurchases.length > 1
+            ? `<span style="background:rgba(255,152,0,0.15); color:#E65100; font-size:11px; padding:2px 8px; border-radius:20px; margin-left:6px;">In uso</span>`
+            : '';
+
+        html += `
+            <div style="background:${colorLight}; border-radius:12px; padding:14px; margin-bottom:${idx < openPurchases.length-1 ? '12px' : '0'};">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-size:13px; color:#666;">
+                        ${emoji} Acquisto del ${p.date.split('-').reverse().join('/')}${oldestLabel}
+                    </span>
+                    <span style="font-weight:700; color:${color};">${p.grams}g${priceStr}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:13px; color:#666;">Consumati</span>
+                    <span style="font-weight:600; color:#555;">${consumed.toFixed(2)}g</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-size:14px; font-weight:700; color:${color};">Rimanenti</span>
+                    <span style="font-size:18px; font-weight:800; color:${color};">${remaining.toFixed(2)}g</span>
+                </div>
+                <div style="background:rgba(0,0,0,0.08); border-radius:8px; height:10px; overflow:hidden;">
+                    <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:8px; transition: width 0.5s ease;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                    <span style="font-size:11px; color:#999;">${pct.toFixed(0)}% rimanente</span>
+                    ${isOldest ? `<button onclick="closeStock('${type}', ${p.id})" style="background:none; border:none; color:var(--danger); font-size:12px; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0;">⚠️ Ho finito questa scorta</button>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    displayEl.innerHTML = html;
 }
+
+
 
 // ========== MINI WIDGET PAGINA AGGIUNGI ==========
 function renderMiniWidget() {
     const widget = document.getElementById('miniStockWidget');
     if (!widget) return;
 
-    const hasFumo = !!activeFumoStock;
-    const hasErba = !!activeErbaStock;
+    const openFumo = getOpenPurchasesFIFO('fumo');
+    const openErba = getOpenPurchasesFIFO('erba');
 
-    if (!hasFumo && !hasErba) {
+    if (openFumo.length === 0 && openErba.length === 0) {
         widget.style.display = 'none';
         return;
     }
 
     widget.style.display = 'block';
 
-    // FUMO
-    if (hasFumo) {
-        const consumed = gramsConsumedSince('fumo', activeFumoStock.date);
-        const remaining = Math.max(0, activeFumoStock.grams - consumed);
-        const pct = Math.min(100, (remaining / activeFumoStock.grams) * 100);
+    // FUMO — scala dal più vecchio
+    if (openFumo.length > 0) {
+        const oldest = openFumo[0];
+        const remaining = gramsRemainingForPurchase(oldest);
+        const pct = Math.min(100, (remaining / parseFloat(oldest.grams)) * 100);
         document.getElementById('miniFumoGrams').textContent = remaining.toFixed(2) + 'g';
         document.getElementById('miniFumoBar').style.width = pct + '%';
     } else {
@@ -2017,11 +2096,11 @@ function renderMiniWidget() {
         document.getElementById('miniFumoBar').style.width = '0%';
     }
 
-    // ERBA
-    if (hasErba) {
-        const consumed = gramsConsumedSince('erba', activeErbaStock.date);
-        const remaining = Math.max(0, activeErbaStock.grams - consumed);
-        const pct = Math.min(100, (remaining / activeErbaStock.grams) * 100);
+    // ERBA — scala dal più vecchio
+    if (openErba.length > 0) {
+        const oldest = openErba[0];
+        const remaining = gramsRemainingForPurchase(oldest);
+        const pct = Math.min(100, (remaining / parseFloat(oldest.grams)) * 100);
         document.getElementById('miniErbaGrams').textContent = remaining.toFixed(2) + 'g';
         document.getElementById('miniErbaBar').style.width = pct + '%';
     } else {
@@ -2044,24 +2123,39 @@ function renderPurchaseHistory() {
         const emoji = p.type === 'fumo' ? '🍫' : '🍃';
         const label = p.type === 'fumo' ? 'Fumo' : 'Erba';
         const priceStr = p.price ? ` · <span style="color:#FF9800;">€${p.price}</span>` : '';
+
         const statusStr = p.is_closed
             ? `<span style="background:rgba(0,0,0,0.06); color:#999; font-size:11px; padding:2px 8px; border-radius:20px;">Chiusa</span>`
             : `<span style="background:rgba(76,175,80,0.12); color:var(--primary); font-size:11px; padding:2px 8px; border-radius:20px;">Attiva</span>`;
 
-        const consumed = p.is_closed
-            ? '–'
-            : gramsConsumedSince(p.type, p.date).toFixed(2) + 'g consumati';
+        let consumedStr = '–';
+        let barHtml = '';
+
+        if (!p.is_closed) {
+            const consumed = gramsConsumedForPurchase(p);
+            const remaining = gramsRemainingForPurchase(p);
+            const pct = Math.min(100, Math.max(0, (remaining / parseFloat(p.grams)) * 100));
+            const barColor = pct > 50 ? '#4CAF50' : pct > 20 ? '#FF9800' : '#f44336';
+            consumedStr = `${consumed.toFixed(2)}g consumati · ${remaining.toFixed(2)}g rimanenti`;
+            barHtml = `
+                <div style="background:rgba(0,0,0,0.08); border-radius:6px; height:6px; overflow:hidden; margin-top:6px;">
+                    <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:6px; transition: width 0.5s ease;"></div>
+                </div>
+            `;
+        }
 
         return `
-            <div style="display:flex; justify-content:space-between; align-items:center;
-                        padding:12px; border-bottom:1px solid rgba(0,0,0,0.05);">
-                <div>
-                    <span style="font-weight:700;">${emoji} ${label}</span>
-                    ${statusStr}<br>
-                    <small style="color:#999;">${p.date.split('-').reverse().join('/')} · ${p.grams}g${priceStr}</small><br>
-                    <small style="color:#aaa;">${consumed}</small>
+            <div style="padding:12px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <span style="font-weight:700;">${emoji} ${label}</span>
+                        ${statusStr}<br>
+                        <small style="color:#999;">${p.date.split('-').reverse().join('/')} · ${p.grams}g${priceStr}</small><br>
+                        <small style="color:#aaa;">${consumedStr}</small>
+                    </div>
+                    <button onclick="deletePurchase(${p.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:18px;">🗑️</button>
                 </div>
-                <button onclick="deletePurchase(${p.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:18px;">🗑️</button>
+                ${barHtml}
             </div>
         `;
     }).join('');
@@ -2120,42 +2214,38 @@ async function deletePurchase(id) {
 }
 
 // ========== CHIUSURA SCORTA + CONTROLLO DISCREPANZA ==========
-function closeStock(type) {
-    const stock = type === 'fumo' ? activeFumoStock : activeErbaStock;
+function closeStock(type, purchaseId) {
+    const stock = purchases.find(p => p.id === purchaseId);
     if (!stock) return;
 
-    const consumed = gramsConsumedSince(type, stock.date);
-    const diff = consumed - stock.grams;
+    const consumed = gramsConsumedForPurchase(stock);
+    const diff = consumed - parseFloat(stock.grams);
     const absDiff = Math.abs(diff);
-    const threshold = 0.3; // soglia minima in grammi per segnalare
+    const threshold = 0.3;
 
     pendingCloseStock = { type, stock, consumed, diff };
 
-    // Sessioni del periodo per correzione manuale
     sessionsToFix = smokes.filter(s => {
+        if (s.not_mine) return false;
         const gram = type === 'fumo' ? s.fumo_grams : s.erba_grams;
         return s.date >= stock.date && gram > 0;
     });
 
     if (absDiff <= threshold) {
-        // Tutto ok, chiudi direttamente
         confirmCloseStock();
         return;
     }
 
-    // Costruisci messaggio discrepanza
     let msg = '';
     if (diff > 0) {
         msg = `Hai registrato <strong>${consumed.toFixed(2)}g</strong> di ${type} nelle sessioni,
                ma ne avevi comprati solo <strong>${stock.grams}g</strong>.<br><br>
-               Differenza: <strong style="color:var(--danger);">+${absDiff.toFixed(2)}g in eccesso</strong> 
-               (hai segnato più di quanto possibile fisicamente).<br><br>
+               Differenza: <strong style="color:var(--danger);">+${absDiff.toFixed(2)}g in eccesso</strong>.<br><br>
                Come vuoi procedere?`;
     } else {
         msg = `Hai registrato <strong>${consumed.toFixed(2)}g</strong> di ${type},
                ma ne avevi comprati <strong>${stock.grams}g</strong>.<br><br>
-               Differenza: <strong style="color:#FF9800;">${absDiff.toFixed(2)}g non contabilizzati</strong>
-               (potresti aver fumato senza registrare, o aver segnato meno del reale).<br><br>
+               Differenza: <strong style="color:#FF9800;">${absDiff.toFixed(2)}g non contabilizzati</strong>.<br><br>
                Come vuoi procedere?`;
     }
 
