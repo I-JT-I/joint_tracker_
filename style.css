@@ -554,6 +554,56 @@ body {
 			box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 		}
 
+/* ========== CHECKBOX FUMO/ERBA ========== */
+.substance-checkbox-group {
+	display: flex;
+	gap: 10px;
+	margin-top: 8px;
+}
+
+.substance-checkbox-group label {
+	flex: 1;
+	margin: 0;
+	background: rgba(229, 229, 234, 0.6);
+	padding: 12px;
+	border-radius: 12px;
+	text-align: center;
+	cursor: pointer;
+	border: 2px solid transparent;
+	font-weight: 500;
+	font-size: 14px;
+	transition: all 0.3s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+}
+
+.substance-checkbox-group label:hover {
+	background: rgba(229, 229, 234, 0.8);
+}
+
+.substance-checkbox-group label.selected {
+	background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+	border-color: var(--primary-light);
+	color: var(--primary-light);
+	font-weight: 600;
+}
+
+.substance-checkbox-group input[type="checkbox"] {
+	width: auto;
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: none;
+	cursor: pointer;
+}
+
+.substance-checkbox-group input[type="checkbox"]:focus {
+	outline: none;
+	box-shadow: none;
+}
+
 /* FIX DATA CENTRATA SU IPHONE */
 input[type="date"] {
 	font-size: 14px;
