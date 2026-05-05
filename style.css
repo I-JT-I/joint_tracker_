@@ -559,6 +559,12 @@ body {
 .marker-cluster-medium { background-color: rgba(46, 125, 50, 0.6); }
 .marker-cluster-medium div { background-color: rgba(46, 125, 50, 0.9); color: white; }
 
+/* Aggiungi questo nel tuo blocco <style> */
+.leaflet-div-icon {
+    background: transparent !important;
+    border: none !important;
+}
+
 /* ========== CHECKBOX FUMO/ERBA ========== */
 .substance-checkbox-group {
 	display: flex;
