@@ -237,6 +237,7 @@
 	
 	<div class="card">
     <h3>📍 I tuoi Posti</h3>
+		
     <p style="font-size: 12px; color: #666;">Salva la posizione attuale per riconoscerla automaticamente in futuro.</p>
     
     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
@@ -247,6 +248,9 @@
     <div id="userPlacesList">
         <!-- Qui appariranno i posti salvati -->
     </div>
+		<hr>
+	<button class="action-btn" onclick="fixOldSessions()" style="width:100%;">🔧 Aggiorna sessioni vecchie</button>
+	<p id="fixStatus" style="font-size:12px; color:#666; text-align:center; margin-top:8px;"></p>
 	</div>
 
 	
@@ -852,6 +856,50 @@ if (recognizedPlace) {
               Math.sin(dLon/2) * Math.sin(dLon/2);
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
+
+	
+	async function fixOldSessions() {
+    const statusEl = document.getElementById('fixStatus');
+    statusEl.textContent = "🔄 Controllo in corso...";
+
+    if (userPlaces.length === 0) {
+        statusEl.textContent = "❌ Nessun posto salvato da usare come riferimento.";
+        return;
+    }
+
+    let updated = 0;
+    let toUpdate = [];
+
+    smokes.forEach(s => {
+        if (!s.latitude || !s.longitude) return;
+
+        userPlaces.forEach(p => {
+            const d = getDist(s.latitude, s.longitude, p.latitude, p.longitude);
+            if (d <= 50 && s.location_name !== p.name) {
+                toUpdate.push({ id: s.id, newName: p.name });
+            }
+        });
+    });
+
+    if (toUpdate.length === 0) {
+        statusEl.textContent = "✅ Nessuna sessione da aggiornare.";
+        return;
+    }
+
+    for (const item of toUpdate) {
+        const { error } = await supabaseClient
+            .from('smokes')
+            .update({ location_name: item.newName })
+            .eq('id', item.id);
+
+        if (!error) updated++;
+    }
+
+    await loadData();
+    statusEl.textContent = `✅ Aggiornate ${updated} sessioni!`;
+    showMessage(`✅ ${updated} sessioni aggiornate!`);
+}
+
 	
 	// ========== NAVIGAZIONE PAGINE ==========
 	function showPage(p) {
