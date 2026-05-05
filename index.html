@@ -855,8 +855,10 @@ function getLocationAuto() {
 		}
 
 		if (p === 'social') loadSocial();
-		if (p === 'settings') loadUserProfile();
-
+		if (p === 'settings') {
+		    loadUserProfile();
+		    loadUserPlaces();
+		}
 		update();
 	}
 
