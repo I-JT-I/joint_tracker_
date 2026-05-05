@@ -256,8 +256,12 @@
     <input type="text" id="newPlaceName" placeholder="Nome (es. Casa, Spot...)">
 
     <!-- Metodo 1: GPS attuale -->
-    <button class="action-btn" onclick="addNewPlace()" style="width:100%; margin-top:10px;">📍 Usa posizione attuale</button>
-<div id="userPlacesList" style="margin-top: 15px;"></div>
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="action-btn" onclick="addNewPlace()" style="flex:1;">📍 Usa posizione attuale</button>
+        <button class="action-btn" onclick="toggleAdvancedSearch()" id="btnToggleAdvanced" style="flex:1;">🗺️ Cerca sulla mappa</button>
+    </div>
+	<div id="userPlacesList" style="margin-top: 15px;"></div>
+    <div id="advancedPlaceSearch" style="display:none;">
     <hr>
 
     <!-- Metodo 2: Cerca indirizzo -->
@@ -275,7 +279,7 @@
     </div>
 
     <button class="action-btn" id="btnSaveFromMap" onclick="addPlaceFromMap()" style="width:100%; margin-top:10px; display:none;">📌 Salva punto sulla mappa</button>
-
+    </div>
 	</div>
 
 	<div class="card">
@@ -716,7 +720,18 @@ async function addNewPlace() {
         await loadUserPlaces(); // Ricarica la lista per vederlo subito
     }
 }
+	function toggleAdvancedSearch() {
+    const panel = document.getElementById('advancedPlaceSearch');
+    const btn = document.getElementById('btnToggleAdvanced');
+    const isVisible = panel.style.display !== 'none';
+    panel.style.display = isVisible ? 'none' : 'block';
+    btn.textContent = isVisible ? '🗺️ Cerca sulla mappa' : '✖ Chiudi mappa';
+    if (!isVisible) {
+        setTimeout(() => initAddPlaceMap(), 150);
+    }
+}
 
+	
 // 2. Funzione per caricare i posti dal database
 async function loadUserPlaces() {
     if (!currentUser) return;
@@ -1039,7 +1054,6 @@ async function addPlaceFromMap() {
 		if (p === 'settings') {
 		    loadUserProfile();
 		    loadUserPlaces();
-			setTimeout(() => initAddPlaceMap(), 150);
 		}
 		update();
 	}
