@@ -554,6 +554,11 @@ body {
 			box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 		}
 
+.marker-cluster-small { background-color: rgba(76, 175, 80, 0.6); }
+.marker-cluster-small div { background-color: rgba(76, 175, 80, 0.9); color: white; }
+.marker-cluster-medium { background-color: rgba(46, 125, 50, 0.6); }
+.marker-cluster-medium div { background-color: rgba(46, 125, 50, 0.9); color: white; }
+
 /* ========== CHECKBOX FUMO/ERBA ========== */
 .substance-checkbox-group {
 	display: flex;
