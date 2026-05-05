@@ -554,16 +554,28 @@ body {
 			box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 		}
 
+/* FIX DATA CENTRATA SU IPHONE */
 input[type="date"] {
 	font-size: 14px;
 	padding: 10px;
 	width: 100%;
+	text-align: center;
+}
+
+@media (max-width: 480px) {
+	input[type="date"] {
+		font-size: 13px;
+		padding: 8px;
+		width: calc(100% - 16px);
+		margin: 8px auto !important;
+		display: block !important;
+	}
 }
 
 @media (max-width: 375px) {
 	input[type="date"] {
-		font-size: 12px;
-		padding: 8px;
+		font-size: 11px;
+		padding: 6px;
 	}
 }
 
