@@ -79,11 +79,21 @@
 </div>
 
 <!-- MESSAGGIO QUANDO ENTRAMBI SELEZIONATI -->
-<div id="divideMessage" style="display: none; background: rgba(76, 175, 80, 0.15); border: 2px solid var(--primary-light); border-radius: 12px; padding: 12px; margin-top: 10px; text-align: center; font-weight: 600; color: var(--primary-dark);">
-	📊 Dividerai: <span id="divideText"></span>
+<div id="divideMessage" style="display: none; background: rgba(76, 175, 80, 0.15); border: 2px solid var(--primary-light); border-radius: 12px; padding: 12px; margin-top: 10px;">
+    <p style="text-align:center; font-weight: 600; color: var(--primary-dark); margin: 0 0 10px;">📊 Quanti grammi per ciascuno?</p>
+    <div style="display: flex; gap: 10px;">
+        <div style="flex:1;">
+            <label style="margin-top:0; font-size:12px;">🍫 Fumo (g)</label>
+            <input type="number" id="fumoGramsInput" step="0.1" value="0.2" min="0" style="margin-top:4px;">
+        </div>
+        <div style="flex:1;">
+            <label style="margin-top:0; font-size:12px;">🍃 Erba (g)</label>
+            <input type="number" id="erbaGramsInput" step="0.1" value="0.3" min="0" style="margin-top:4px;">
+        </div>
+    </div>
 </div>
 
-		<label for="gCont">Quantità</label>
+		<label>Quantità</label>
 		<div class="grams-row" id="gCont">
 			<label><input type="radio" name="g" value="0.3" checked> 0.3g</label>
 			<label><input type="radio" name="g" value="0.5"> 0.5g</label>
@@ -247,7 +257,7 @@
 
     <!-- Metodo 1: GPS attuale -->
     <button class="action-btn" onclick="addNewPlace()" style="width:100%; margin-top:10px;">📍 Usa posizione attuale</button>
-
+<div id="userPlacesList" style="margin-top: 15px;"></div>
     <hr>
 
     <!-- Metodo 2: Cerca indirizzo -->
@@ -264,9 +274,17 @@
         📌 Punto selezionato
     </div>
 
-    <button class="action-btn" onclick="addPlaceFromMap()" style="width:100%; margin-top:1
+    <button class="action-btn" id="btnSaveFromMap" onclick="addPlaceFromMap()" style="width:100%; margin-top:10px; display:none;">📌 Salva punto sulla mappa</button>
 
 	</div>
+
+	<div class="card">
+    <h3>🔄 Aggiorna Sessioni Vecchie</h3>
+    <p style="font-size: 12px; color: #666;">Collega le sessioni passate ai posti salvati in base alla posizione GPS.</p>
+    <button class="action-btn" onclick="fixOldSessions()" style="width:100%;">🔄 Aggiorna Sessioni</button>
+    <p id="fixStatus" style="font-size: 13px; text-align:center; margin-top: 10px; color: var(--primary);"></p>
+</div>
+
 	<div class="card">
 		<h3>⚙️ Gestione Dati</h3>
 		
@@ -587,14 +605,12 @@ if (mode === 'signup') {
 	let erba_grams = 0;
 
 	if (hasFumo && hasErba) {
-		const fumoInput = prompt("Quanti grammi di FUMO?", "0.2");
-		const erbaInput = prompt("Quanti grammi di ERBA?", "0.3");
-		
-		fumo_grams = parseFloat(fumoInput) || 0;
-		erba_grams = parseFloat(erbaInput) || 0;
+    fumo_grams = parseFloat(document.getElementById("fumoGramsInput").value) || 0;
+    erba_grams = parseFloat(document.getElementById("erbaGramsInput").value) || 0;
 
-		if (fumo_grams <= 0 && erba_grams <= 0) {
-			return alert("Inserisci almeno una quantità!");
+    if (fumo_grams <= 0 && erba_grams <= 0) {
+        return alert("Inserisci almeno una quantità!");
+    }
 		}
 	} else {
 		const gVal = document.querySelector('input[name="g"]:checked').value;
