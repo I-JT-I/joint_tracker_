@@ -516,8 +516,8 @@ if (mode === 'signup') {
 		}
 
 		// 🆕 AUTO GEOLOCALIZZAZIONE AL CARICAMENTO
+	await loadUserPlaces();
 	getLocationAuto();
-	loadUserPlaces();
 	}
 
 	function showError(msg) {
@@ -804,20 +804,36 @@ function getLocationAuto() {
 			displayEl.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 			displayEl.style.color = "#2e7d32"; // Verde quando trovata
 
-			try {
-				const response = await fetch(
-					`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-				);
-				const data = await response.json();
-				
-				if (data.address) {
-					const city = data.address.city || data.address.town || data.address.village || "Posizione";
-					currentLocation.name = city;
-					displayEl.value = city;
-				}
-			} catch (err) {
-				console.log("Reverse geocoding non disponibile");
-			}
+			let recognizedPlace = null;
+if (userPlaces && userPlaces.length > 0) {
+    userPlaces.forEach(p => {
+        const d = getDist(lat, lng, p.latitude, p.longitude);
+        if (d <= 50) {
+            recognizedPlace = p.name;
+        }
+    });
+}
+
+if (recognizedPlace) {
+    currentLocation.name = recognizedPlace;
+    displayEl.value = "📍 " + recognizedPlace;
+    displayEl.style.color = "#2e7d32";
+} else {
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+        );
+        const data = await response.json();
+        
+        if (data.address) {
+            const city = data.address.city || data.address.town || data.address.village || "Posizione";
+            currentLocation.name = city;
+            displayEl.value = city;
+        }
+    } catch (err) {
+        console.log("Reverse geocoding non disponibile");
+    }
+}
 		},
 		(error) => {
 			displayEl.value = "❌ Errore"; // Rosso se errore
