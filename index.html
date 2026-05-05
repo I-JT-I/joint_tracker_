@@ -85,7 +85,7 @@
 		<label>📍 Localizzazione</label>
 		<div style="display: flex; gap: 10px; margin-top: 8px;">
 			<button type="button" class="main-btn" onclick="getLocation()" style="margin-top: 0; flex: 1;">📍 Prendi</button>
-			<input type="text" id="locationDisplay" placeholder="Posizione..." style="margin-top: 0; flex: 1; background: rgba(76, 175, 80, 0.08);" readonly>
+			<input type="text" id="locationDisplay" placeholder="🔄 Cercando..." style="margin-top: 0; flex: 1; background: rgba(76, 175, 80, 0.08);" readonly>
 		</div>
 
 		<button class="main-btn" onclick="saveData()">SALVA SESSIONE</button>
@@ -586,11 +586,15 @@ if (mode === 'signup') {
 			}
 		);
 	}
-// AUTO GEOLOCALIZZAZIONE (senza feedback)
 function getLocationAuto() {
 	if (!navigator.geolocation) {
 		return;
 	}
+
+	// 🆕 MOSTRA CHE STA CERCANDO
+	const displayEl = document.getElementById('locationDisplay');
+	displayEl.value = "🔄 Cercando...";
+	displayEl.style.color = "#FF9800";
 
 	navigator.geolocation.getCurrentPosition(
 		async (position) => {
@@ -598,7 +602,8 @@ function getLocationAuto() {
 			const lng = position.coords.longitude;
 
 			currentLocation = { lat, lng, name: null };
-			document.getElementById('locationDisplay').value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+			displayEl.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+			displayEl.style.color = "#2e7d32"; // Verde quando trovata
 
 			try {
 				const response = await fetch(
@@ -609,13 +614,15 @@ function getLocationAuto() {
 				if (data.address) {
 					const city = data.address.city || data.address.town || data.address.village || "Posizione";
 					currentLocation.name = city;
-					document.getElementById('locationDisplay').value = city;
+					displayEl.value = city;
 				}
 			} catch (err) {
 				console.log("Reverse geocoding non disponibile");
 			}
 		},
 		(error) => {
+			displayEl.value = "❌ Errore"; // Rosso se errore
+			displayEl.style.color = "#ff3b30";
 			console.log("Geolocalizzazione: " + error.message);
 		}
 	);
