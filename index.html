@@ -778,7 +778,7 @@ if (mode === 'signup') {
 		user_id: currentUser.id,
 		latitude: currentLocation.lat || null,
 		longitude: currentLocation.lng || null,
-		location_name: finalLocationName // 👈 Usiamo il nome trovato (o quello di default)
+		location_name: finalLocationName, // 👈 Usiamo il nome trovato (o quello di default)
 		not_mine: document.getElementById("notMineCheck").checked,
 	});
 
