@@ -64,11 +64,15 @@
 		<div class="user-info">Loggato come <strong id="emailDisplay"></strong></div>
 		<h3>➕ Nuovo Inserimento</h3>
 
-		<label for="type">Cosa fumi?</label>
-		<select id="type">
-			<option value="fumo">🍫 Hashish (Fumo)</option>
-			<option value="erba">🍃 Marijuana (Erba)</option>
-		</select>
+		<label>Cosa fumi?</label>
+<div class="substance-checkbox-group" id="substanceGroup">
+	<label>
+		<input type="checkbox" id="fumo" value="fumo"> 🍫 Fumo
+	</label>
+	<label>
+		<input type="checkbox" id="erba" value="erba"> 🍃 Erba
+	</label>
+</div>
 
 		<label for="gCont">Quantità</label>
 		<div class="grams-row" id="gCont">
@@ -256,6 +260,17 @@
 	let currentSocialTab = 'global';
 	let charts = {};
 
+	// Gestione selezione Fumo/Erba
+document.querySelectorAll('.substance-checkbox-group input[type="checkbox"]').forEach(checkbox => {
+	checkbox.addEventListener('change', function() {
+		const label = this.parentElement;
+		if (this.checked) {
+			label.classList.add('selected');
+		} else {
+			label.classList.remove('selected');
+		}
+	});
+});
 	// ========== AUTENTICAZIONE ==========
 	async function checkAuth() {
 		const { data: { session } } = await supabaseClient.auth.getSession();
@@ -485,11 +500,28 @@ if (mode === 'signup') {
 
 	// ========== SALVATAGGIO DATI ==========
 	async function saveData() {
-		const type = document.getElementById("type").value;
-		const gVal = document.querySelector('input[name="g"]:checked').value;
-		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
+	// 🆕 PRENDI ENTRAMBI I CHECKBOX
+	const hasFumo = document.getElementById("fumo").checked;
+	const hasErba = document.getElementById("erba").checked;
+	
+	if (!hasFumo && !hasErba) {
+		return alert("Seleziona almeno Fumo o Erba!");
+	}
 
-		if(!grams || grams <= 0) return alert("Inserisci un peso valido");
+	// 🆕 CREA UN TIPO COMBINATO
+	let type = "";
+	if (hasFumo && hasErba) {
+		type = "fumo-erba"; // Entrambi
+	} else if (hasFumo) {
+		type = "fumo";
+	} else {
+		type = "erba";
+	}
+
+	const gVal = document.querySelector('input[name="g"]:checked').value;
+	const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
+
+	if(!grams || grams <= 0) return alert("Inserisci un peso valido");
 
 		const now = new Date();
 		const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
@@ -667,15 +699,27 @@ function getLocationAuto() {
 		mapMarkers = [];
 		
 		const filter = document.querySelector('input[name="mapFilter"]:checked').value;
-		let filteredSmokes = filter === 'all' ? smokes : smokes.filter(s => s.type === filter);
+		let filteredSmokes = smokes;
+		if (filter !== 'all') {
+			filteredSmokes = smokes.filter(s => s.type === filter || s.type === 'fumo-erba');
+		}
 		
 		let totalGrams = 0, count = 0;
 		let bounds = L.latLngBounds();
 		
 		filteredSmokes.forEach(smoke => {
-			if (smoke.latitude && smoke.longitude) {
-				const color = smoke.type === 'erba' ? '#4CAF50' : '#8B4513';
-				const icon = smoke.type === 'erba' ? '🍃' : '🍫';
+	if (smoke.latitude && smoke.longitude) {
+		let color, icon;
+		if (smoke.type === 'fumo-erba') {
+			color = '#66BB6A';
+			icon = '🍫🍃';
+		} else if (smoke.type === 'erba') {
+			color = '#4CAF50';
+			icon = '🍃';
+		} else {
+			color = '#8B4513';
+			icon = '🍫';
+		}
 				
 				const markerEl = L.divIcon({
 					html: `<div style="background: ${color}; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 3px solid white;">${icon}</div>`,
@@ -768,7 +812,7 @@ function updateHistory() {
 					let itemsHtml = sortedSmokes.map(s => `
 						<div class="history-item">
 							<div>
-								<span style="font-weight: bold; color: #2e7d32;">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : '🍃'}</b> ${s.grams}g
+								<span style="font-weight: bold; color: #2e7d32;">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${s.grams}g
 								${s.location_name ? `<br><small style="color: #999;">📍 ${s.location_name}</small>` : ''}
 							</div>
 							<button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
@@ -812,7 +856,10 @@ function updateHistory() {
 
 	function updateStats() {
 		let totF = 0, totE = 0;
-		smokes.forEach(s => { s.type === 'fumo' ? totF += s.grams : totE += s.grams; });
+smokes.forEach(s => { 
+	if (s.type === 'fumo' || s.type === 'fumo-erba') totF += s.grams;
+	if (s.type === 'erba' || s.type === 'fumo-erba') totE += s.grams;
+});
 
 		document.getElementById("sFumo").innerText = totF.toFixed(2);
 		document.getElementById("sErba").innerText = totE.toFixed(2);
@@ -890,8 +937,8 @@ function updateHistory() {
 		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
 		charts = {};
 
-		let numFumo = smokes.filter(s => s.type === 'fumo').length;
-		let numErba = smokes.filter(s => s.type === 'erba').length;
+		let numFumo = smokes.filter(s => s.type === 'fumo' || s.type === 'fumo-erba').length;
+		let numErba = smokes.filter(s => s.type === 'erba' || s.type === 'fumo-erba').length;
 
 		// Grafico a ciambella
 		const ctxPie = document.getElementById("cPie");
