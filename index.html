@@ -653,6 +653,83 @@ if (mode === 'signup') {
 		await loadData();
 	}
 
+	// 1. Funzione per salvare un nuovo posto preferito
+async function addNewPlace() {
+    const nameInput = document.getElementById('newPlaceName');
+    const name = nameInput.value.trim();
+    
+    if (!name) {
+        return alert("Inserisci un nome per questo posto!");
+    }
+    
+    if (!currentLocation.lat || !currentLocation.lng) {
+        return alert("Devi prima prendere la posizione GPS!");
+    }
+
+    const { error } = await supabaseClient.from('places').insert({
+        name: name,
+        latitude: currentLocation.lat,
+        longitude: currentLocation.lng,
+        user_id: currentUser.id
+    });
+
+    if (error) {
+        console.error('Errore salvataggio posto:', error);
+        alert('Errore nel salvataggio del posto.');
+    } else {
+        nameInput.value = "";
+        showMessage("✅ Posto salvato correttamente!");
+        await loadUserPlaces(); // Ricarica la lista per vederlo subito
+    }
+}
+
+// 2. Funzione per caricare i posti dal database
+async function loadUserPlaces() {
+    if (!currentUser) return;
+    
+    const { data, error } = await supabaseClient
+        .from('places')
+        .select('*')
+        .order('name', { ascending: true });
+
+    if (!error) {
+        userPlaces = data || [];
+        renderUserPlaces();
+    }
+}
+
+// 3. Funzione per mostrare la lista nell'interfaccia
+function renderUserPlaces() {
+    const list = document.getElementById('userPlacesList');
+    if (!list) return;
+
+    if (userPlaces.length === 0) {
+        list.innerHTML = '<p style="font-size: 12px; color: #8e8e93; text-align: center;">Nessun posto salvato.</p>';
+        return;
+    }
+
+    list.innerHTML = userPlaces.map(p => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; margin-bottom: 5px;">
+            <span style="font-size: 14px; font-weight: 500;">${p.name}</span>
+            <button onclick="deletePlace(${p.id})" style="background: none; border: none; color: #ff3b30; cursor: pointer; font-size: 16px;">🗑️</button>
+        </div>
+    `).join('');
+}
+
+// 4. Funzione per eliminare un posto
+async function deletePlace(id) {
+    if (!confirm("Vuoi davvero eliminare questo posto?")) return;
+
+    const { error } = await supabaseClient
+        .from('places')
+        .delete()
+        .eq('id', id);
+
+    if (!error) {
+        await loadUserPlaces();
+    }
+}
+
 	// ========== GEOLOCALIZZAZIONE ==========
 	function getLocation() {
 		if (!navigator.geolocation) {
