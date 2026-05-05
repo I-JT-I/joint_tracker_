@@ -143,6 +143,10 @@
 		</div>
 
 		<p style="font-size: 12px; color: #999; margin-top: 10px;">*Il calcolo parte dalla tua prima J inserita. (<span id="diffDays">0</span> giorni fa)</p>
+		<div class="card">
+		    <h3>📍 I tuoi Posti</h3>
+		    <div id="statsPlaces"></div>
+		</div>
 	</div>
 </div>
 
@@ -1176,6 +1180,8 @@ smokes.forEach(s => {
 		} else {
 			box.style.display = "none";
 		}
+
+		updateStatsPlaces();
 	}
 
 	function calculateStreak() {
@@ -1217,6 +1223,67 @@ smokes.forEach(s => {
 		}
 		return best;
 	}
+
+	function updateStatsPlaces() {
+    const el = document.getElementById('statsPlaces');
+    if (!el) return;
+
+    // Raggruppa tutte le sessioni per location_name
+    const grouped = {};
+    smokes.forEach(s => {
+        const name = s.location_name || '❓ Sconosciuta';
+        if (!grouped[name]) grouped[name] = { j: 0, fumo: 0, erba: 0 };
+        grouped[name].j++;
+        grouped[name].fumo += s.fumo_grams || 0;
+        grouped[name].erba += s.erba_grams || 0;
+    });
+
+    if (Object.keys(grouped).length === 0) {
+        el.innerHTML = '<p style="text-align:center; color:#999; font-size:13px;">Nessun dato con posizione.</p>';
+        return;
+    }
+
+    const savedNames = userPlaces.map(p => p.name);
+
+    // Dividi in salvati e altri
+    const saved = Object.entries(grouped).filter(([name]) => savedNames.includes(name));
+    const others = Object.entries(grouped).filter(([name]) => !savedNames.includes(name));
+
+    // Ordina per numero di joint decrescente
+    saved.sort((a, b) => b[1].j - a[1].j);
+    others.sort((a, b) => b[1].j - a[1].j);
+
+    const renderRow = ([name, data], isSaved) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; 
+                    padding: 12px; margin-bottom: 8px; border-radius: 12px;
+                    background: ${isSaved ? 'rgba(76,175,80,0.08)' : 'rgba(0,0,0,0.03)'};
+                    border: 1px solid ${isSaved ? 'rgba(76,175,80,0.2)' : 'rgba(0,0,0,0.05)'};">
+            <div>
+                <span style="font-weight:600; font-size:14px;">${isSaved ? '📍' : '🌍'} ${name}</span><br>
+                <small style="color:#999;">🍫 ${data.fumo.toFixed(1)}g &nbsp; 🍃 ${data.erba.toFixed(1)}g</small>
+            </div>
+            <div style="text-align:right;">
+                <span style="font-size:18px; font-weight:700; color:var(--primary);">${data.j}</span><br>
+                <small style="color:#999;">joint</small>
+            </div>
+        </div>
+    `;
+
+    let html = '';
+
+    if (saved.length > 0) {
+        html += saved.map(e => renderRow(e, true)).join('');
+    }
+
+    if (others.length > 0) {
+        if (saved.length > 0) {
+            html += '<hr style="margin: 12px 0;">';
+        }
+        html += others.map(e => renderRow(e, false)).join('');
+    }
+
+    el.innerHTML = html;
+}
 
 	function renderCharts() {
 		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
