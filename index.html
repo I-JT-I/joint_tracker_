@@ -58,6 +58,7 @@
 		<button onclick="showPage('add')"><span style="font-size:18px;">➕</span>Aggiungi</button>
 		<button onclick="showPage('map')"><span style="font-size:18px;">🗺️</span>Mappa</button>
 		<button onclick="showPage('social')"><span style="font-size:18px;">🏆</span>Social</button>
+		<button onclick="showPage('stock')"><span style="font-size:18px;">🛒</span>Scorte</button>
 		<button onclick="showPage('settings')"><span style="font-size:18px;">⚙️</span>Dati</button>
 	</div>
 </header>
@@ -66,6 +67,25 @@
 <div id="page-add" class="page">
 	<div class="card">
 		<div class="user-info">Loggato come <strong id="emailDisplay"></strong></div>
+		<!-- MINI SCORTA WIDGET -->
+<div id="miniStockWidget" style="display:none; margin-bottom: 15px;">
+  <div style="display:flex; gap:10px;">
+    <div style="flex:1; background: rgba(139,69,19,0.08); border:1px solid rgba(139,69,19,0.2); border-radius:12px; padding:10px;">
+      <div style="font-size:11px; font-weight:600; color:#795548; margin-bottom:6px;">🍫 Fumo rimanente</div>
+      <div style="font-size:15px; font-weight:700; color:#5D4037;" id="miniFumoGrams">–</div>
+      <div style="background:rgba(139,69,19,0.15); border-radius:6px; height:6px; margin-top:6px; overflow:hidden;">
+        <div id="miniFumoBar" style="height:100%; background:#795548; border-radius:6px; transition: width 0.5s ease; width:0%;"></div>
+      </div>
+    </div>
+    <div style="flex:1; background: rgba(76,175,80,0.08); border:1px solid rgba(76,175,80,0.2); border-radius:12px; padding:10px;">
+      <div style="font-size:11px; font-weight:600; color:var(--primary); margin-bottom:6px;">🍃 Erba rimanente</div>
+      <div style="font-size:15px; font-weight:700; color:var(--primary-dark);" id="miniErbaGrams">–</div>
+      <div style="background:rgba(76,175,80,0.15); border-radius:6px; height:6px; margin-top:6px; overflow:hidden;">
+        <div id="miniErbaBar" style="height:100%; background:var(--primary-light); border-radius:6px; transition: width 0.5s ease; width:0%;"></div>
+      </div>
+    </div>
+  </div>
+</div>
 		<h3>➕ Nuovo Inserimento</h3>
 
 		<label>Cosa fumi?</label>
@@ -235,6 +255,90 @@
 		<button class="secondary-btn" onclick="closeFriendModal()">Chiudi</button>
 	</div>
 </div>
+
+
+<!-- PAGINA SCORTE -->
+<div id="page-stock" class="page">
+
+  <!-- SCORTA ATTIVA FUMO -->
+  <div class="card">
+    <h3>🍫 Scorta Fumo</h3>
+    <div id="stockFumoDisplay">
+      <p style="text-align:center; color:#999; font-size:13px;">Nessuna scorta attiva</p>
+    </div>
+    <button class="action-btn" onclick="openBuyModal('fumo')" style="width:100%; margin-top:10px;">+ Registra acquisto</button>
+    <button id="btnCloseFumo" onclick="closeStock('fumo')" style="display:none; background:none; border:none; color:var(--danger); width:100%; margin-top:8px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Ho finito la scorta di fumo</button>
+  </div>
+
+  <!-- SCORTA ATTIVA ERBA -->
+  <div class="card">
+    <h3>🍃 Scorta Erba</h3>
+    <div id="stockErbaDisplay">
+      <p style="text-align:center; color:#999; font-size:13px;">Nessuna scorta attiva</p>
+    </div>
+    <button class="action-btn" onclick="openBuyModal('erba')" style="width:100%; margin-top:10px;">+ Registra acquisto</button>
+    <button id="btnCloseErba" onclick="closeStock('erba')" style="display:none; background:none; border:none; color:var(--danger); width:100%; margin-top:8px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Ho finito la scorta di erba</button>
+  </div>
+
+  <!-- STORICO ACQUISTI -->
+  <div class="card">
+    <h3>📋 Storico Acquisti</h3>
+    <div id="purchaseHistory"><p style="text-align:center; color:#999; font-size:13px;">Nessun acquisto registrato.</p></div>
+  </div>
+
+</div>
+
+<!-- MODAL ACQUISTO -->
+<div id="buyModal" class="modal">
+  <div class="modal-content card">
+    <h3 id="buyModalTitle">Registra acquisto</h3>
+
+    <label>Grammi acquistati</label>
+    <input type="number" id="buyGrams" step="0.1" min="0.1" placeholder="es. 5">
+
+    <label>Prezzo (opzionale)</label>
+    <div style="position:relative;">
+      <input type="number" id="buyPrice" step="0.5" min="0" placeholder="es. 30" style="padding-right:40px;">
+      <span style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:#999; font-size:14px; margin-top:4px;">€</span>
+    </div>
+
+    <label>Data acquisto</label>
+    <input type="date" id="buyDate">
+
+    <div style="display:flex; gap:10px; margin-top:15px;">
+      <button class="secondary-btn" onclick="closeBuyModal()" style="flex:1; margin-top:0;">Annulla</button>
+      <button class="main-btn" onclick="savePurchase()" style="flex:1; margin-top:0;">💾 Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DISCREPANZA -->
+<div id="discrepancyModal" class="modal">
+  <div class="modal-content card">
+    <h3>⚠️ Discrepanza rilevata</h3>
+    <p id="discrepancyText" style="font-size:14px; line-height:1.6; color:#555;"></p>
+
+    <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+      <button class="main-btn" onclick="fixProportional()" style="margin-top:0;">⚖️ Scala proporzionalmente</button>
+      <button class="action-btn" onclick="fixManual()" style="margin-top:0; background: linear-gradient(135deg,#FF9800,#E65100);">✏️ Correggi manualmente</button>
+      <button class="secondary-btn" onclick="confirmCloseStock()" style="margin-top:0;">Ignora e chiudi comunque</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CORREZIONE MANUALE -->
+<div id="manualFixModal" class="modal">
+  <div class="modal-content card" style="max-height:80vh; overflow-y:auto;">
+    <h3>✏️ Correggi sessioni</h3>
+    <p style="font-size:12px; color:#999; margin-bottom:15px;" id="manualFixHint"></p>
+    <div id="manualFixList"></div>
+    <div style="display:flex; gap:10px; margin-top:15px;">
+      <button class="secondary-btn" onclick="closeManualFix()" style="flex:1; margin-top:0;">Annulla</button>
+      <button class="main-btn" onclick="saveManualFix()" style="flex:1; margin-top:0;">💾 Salva correzioni</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- PAGINA IMPOSTAZIONI -->
 <div id="page-settings" class="page">
@@ -558,6 +662,7 @@ if (mode === 'signup') {
 
 		// 🆕 AUTO GEOLOCALIZZAZIONE AL CARICAMENTO
 	await loadUserPlaces();
+	await loadPurchases();
 	getLocationAuto();
 	}
 
@@ -1052,7 +1157,7 @@ async function addPlaceFromMap() {
 		document.getElementById("page-" + p).classList.add("active");
 
 		document.querySelectorAll(".menu-content button").forEach(btn => btn.classList.remove("active-tab"));
-		const pageToIndex = { 'stats': 0, 'charts': 1, 'history': 2, 'add': 3, 'map': 4, 'social': 5, 'settings': 6 };
+		const pageToIndex = { 'stats': 0, 'charts': 1, 'history': 2, 'add': 3, 'map': 4, 'social': 5, 'stock': 6, 'settings': 7 };
 		const activeBtn = document.querySelectorAll(".menu-content button")[pageToIndex[p]];
 		if(activeBtn) activeBtn.classList.add("active-tab");
 
@@ -1064,6 +1169,7 @@ async function addPlaceFromMap() {
 		}
 
 		if (p === 'social') loadSocial();
+		if (p === 'stock') loadPurchases();
 		if (p === 'settings') {
 		    loadUserProfile();
 		    loadUserPlaces();
@@ -1800,6 +1906,372 @@ if (ctxPie) {
 			document.getElementById('usernameInput').value = data.username;
 		}
 	}
+
+		
+		// ========== SCORTE / ACQUISTI ==========
+let purchases = [];
+let activeFumoStock = null;
+let activeErbaStock = null;
+let currentBuyType = null;
+let pendingCloseStock = null; // scorta in attesa di chiusura (usato dai modal)
+let sessionsToFix = []; // sessioni del periodo da correggere
+
+async function loadPurchases() {
+    const { data, error } = await supabaseClient
+        .from('purchases')
+        .select('*')
+        .order('date', { ascending: false });
+
+    if (error) { console.error('Errore caricamento acquisti:', error); return; }
+
+    purchases = data || [];
+    activeFumoStock = purchases.find(p => p.type === 'fumo' && !p.is_closed) || null;
+    activeErbaStock = purchases.find(p => p.type === 'erba' && !p.is_closed) || null;
+
+    renderStockPage();
+    renderMiniWidget();
+}
+
+// ========== CALCOLO GRAMMI CONSUMATI DA UNA DATA ==========
+function gramsConsumedSince(type, sinceDate) {
+    return smokes
+        .filter(s => s.date >= sinceDate)
+        .reduce((sum, s) => sum + (type === 'fumo' ? (s.fumo_grams || 0) : (s.erba_grams || 0)), 0);
+}
+
+// ========== RENDER PAGINA STOCK ==========
+function renderStockPage() {
+    renderStockCard('fumo', activeFumoStock);
+    renderStockCard('erba', activeErbaStock);
+    renderPurchaseHistory();
+}
+
+function renderStockCard(type, stock) {
+    const emoji = type === 'fumo' ? '🍫' : '🍃';
+    const color = type === 'fumo' ? '#795548' : 'var(--primary-dark)';
+    const colorLight = type === 'fumo' ? 'rgba(139,69,19,0.1)' : 'rgba(76,175,80,0.1)';
+    const displayEl = document.getElementById(`stock${type.charAt(0).toUpperCase()+type.slice(1)}Display`);
+    const closeBtn = document.getElementById(`btnClose${type.charAt(0).toUpperCase()+type.slice(1)}`);
+
+    if (!stock) {
+        displayEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px;">Nessuna scorta attiva</p>`;
+        if (closeBtn) closeBtn.style.display = 'none';
+        return;
+    }
+
+    const consumed = gramsConsumedSince(type, stock.date);
+    const remaining = Math.max(0, stock.grams - consumed);
+    const pct = Math.min(100, Math.max(0, (remaining / stock.grams) * 100));
+    const priceStr = stock.price ? ` · €${stock.price}` : '';
+
+    const barColor = pct > 50 ? '#4CAF50' : pct > 20 ? '#FF9800' : '#f44336';
+
+    displayEl.innerHTML = `
+        <div style="background:${colorLight}; border-radius:12px; padding:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:13px; color:#666;">Acquistati il ${stock.date.split('-').reverse().join('/')}</span>
+                <span style="font-weight:700; color:${color};">${stock.grams}g${priceStr}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:13px; color:#666;">Consumati</span>
+                <span style="font-weight:600; color:#555;">${consumed.toFixed(2)}g</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:14px; font-weight:700; color:${color};">Rimanenti</span>
+                <span style="font-size:18px; font-weight:800; color:${color};">${remaining.toFixed(2)}g</span>
+            </div>
+            <div style="background:rgba(0,0,0,0.08); border-radius:8px; height:10px; overflow:hidden;">
+                <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:8px; transition: width 0.5s ease;"></div>
+            </div>
+            <div style="text-align:right; font-size:11px; color:#999; margin-top:4px;">${pct.toFixed(0)}% rimanente</div>
+        </div>
+    `;
+
+    if (closeBtn) closeBtn.style.display = 'block';
+}
+
+// ========== MINI WIDGET PAGINA AGGIUNGI ==========
+function renderMiniWidget() {
+    const widget = document.getElementById('miniStockWidget');
+    if (!widget) return;
+
+    const hasFumo = !!activeFumoStock;
+    const hasErba = !!activeErbaStock;
+
+    if (!hasFumo && !hasErba) {
+        widget.style.display = 'none';
+        return;
+    }
+
+    widget.style.display = 'block';
+
+    // FUMO
+    if (hasFumo) {
+        const consumed = gramsConsumedSince('fumo', activeFumoStock.date);
+        const remaining = Math.max(0, activeFumoStock.grams - consumed);
+        const pct = Math.min(100, (remaining / activeFumoStock.grams) * 100);
+        document.getElementById('miniFumoGrams').textContent = remaining.toFixed(2) + 'g';
+        document.getElementById('miniFumoBar').style.width = pct + '%';
+    } else {
+        document.getElementById('miniFumoGrams').textContent = '–';
+        document.getElementById('miniFumoBar').style.width = '0%';
+    }
+
+    // ERBA
+    if (hasErba) {
+        const consumed = gramsConsumedSince('erba', activeErbaStock.date);
+        const remaining = Math.max(0, activeErbaStock.grams - consumed);
+        const pct = Math.min(100, (remaining / activeErbaStock.grams) * 100);
+        document.getElementById('miniErbaGrams').textContent = remaining.toFixed(2) + 'g';
+        document.getElementById('miniErbaBar').style.width = pct + '%';
+    } else {
+        document.getElementById('miniErbaGrams').textContent = '–';
+        document.getElementById('miniErbaBar').style.width = '0%';
+    }
+}
+
+// ========== STORICO ACQUISTI ==========
+function renderPurchaseHistory() {
+    const el = document.getElementById('purchaseHistory');
+    if (!el) return;
+
+    if (purchases.length === 0) {
+        el.innerHTML = '<p style="text-align:center; color:#999; font-size:13px;">Nessun acquisto registrato.</p>';
+        return;
+    }
+
+    el.innerHTML = purchases.map(p => {
+        const emoji = p.type === 'fumo' ? '🍫' : '🍃';
+        const label = p.type === 'fumo' ? 'Fumo' : 'Erba';
+        const priceStr = p.price ? ` · <span style="color:#FF9800;">€${p.price}</span>` : '';
+        const statusStr = p.is_closed
+            ? `<span style="background:rgba(0,0,0,0.06); color:#999; font-size:11px; padding:2px 8px; border-radius:20px;">Chiusa</span>`
+            : `<span style="background:rgba(76,175,80,0.12); color:var(--primary); font-size:11px; padding:2px 8px; border-radius:20px;">Attiva</span>`;
+
+        const consumed = p.is_closed
+            ? '–'
+            : gramsConsumedSince(p.type, p.date).toFixed(2) + 'g consumati';
+
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center;
+                        padding:12px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                <div>
+                    <span style="font-weight:700;">${emoji} ${label}</span>
+                    ${statusStr}<br>
+                    <small style="color:#999;">${p.date.split('-').reverse().join('/')} · ${p.grams}g${priceStr}</small><br>
+                    <small style="color:#aaa;">${consumed}</small>
+                </div>
+                <button onclick="deletePurchase(${p.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:18px;">🗑️</button>
+            </div>
+        `;
+    }).join('');
+}
+
+// ========== MODAL ACQUISTO ==========
+function openBuyModal(type) {
+    currentBuyType = type;
+    document.getElementById('buyModalTitle').textContent =
+        `Registra acquisto ${type === 'fumo' ? '🍫 Fumo' : '🍃 Erba'}`;
+    document.getElementById('buyGrams').value = '';
+    document.getElementById('buyPrice').value = '';
+    document.getElementById('buyDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('buyModal').style.display = 'flex';
+}
+
+function closeBuyModal() {
+    document.getElementById('buyModal').style.display = 'none';
+    currentBuyType = null;
+}
+
+async function savePurchase() {
+    const grams = parseFloat(document.getElementById('buyGrams').value);
+    const price = parseFloat(document.getElementById('buyPrice').value) || null;
+    const date = document.getElementById('buyDate').value;
+
+    if (!grams || grams <= 0) return alert('Inserisci una quantità valida!');
+    if (!date) return alert('Inserisci una data!');
+
+    // Se c'è già una scorta attiva dello stesso tipo, chiedi conferma
+    const existing = currentBuyType === 'fumo' ? activeFumoStock : activeErbaStock;
+    if (existing) {
+        if (!confirm(`Hai già una scorta di ${currentBuyType} attiva. Vuoi aggiungere un nuovo acquisto separato?`)) return;
+    }
+
+    const { error } = await supabaseClient.from('purchases').insert({
+        user_id: currentUser.id,
+        type: currentBuyType,
+        grams,
+        price,
+        date,
+        is_closed: false
+    });
+
+    if (error) { alert('Errore nel salvataggio.'); return; }
+
+    closeBuyModal();
+    showMessage('✅ Acquisto registrato!');
+    await loadPurchases();
+}
+
+async function deletePurchase(id) {
+    if (!confirm('Vuoi eliminare questo acquisto?')) return;
+    const { error } = await supabaseClient.from('purchases').delete().eq('id', id);
+    if (!error) { showMessage('🗑️ Acquisto eliminato'); await loadPurchases(); }
+}
+
+// ========== CHIUSURA SCORTA + CONTROLLO DISCREPANZA ==========
+function closeStock(type) {
+    const stock = type === 'fumo' ? activeFumoStock : activeErbaStock;
+    if (!stock) return;
+
+    const consumed = gramsConsumedSince(type, stock.date);
+    const diff = consumed - stock.grams;
+    const absDiff = Math.abs(diff);
+    const threshold = 0.3; // soglia minima in grammi per segnalare
+
+    pendingCloseStock = { type, stock, consumed, diff };
+
+    // Sessioni del periodo per correzione manuale
+    sessionsToFix = smokes.filter(s => {
+        const gram = type === 'fumo' ? s.fumo_grams : s.erba_grams;
+        return s.date >= stock.date && gram > 0;
+    });
+
+    if (absDiff <= threshold) {
+        // Tutto ok, chiudi direttamente
+        confirmCloseStock();
+        return;
+    }
+
+    // Costruisci messaggio discrepanza
+    let msg = '';
+    if (diff > 0) {
+        msg = `Hai registrato <strong>${consumed.toFixed(2)}g</strong> di ${type} nelle sessioni,
+               ma ne avevi comprati solo <strong>${stock.grams}g</strong>.<br><br>
+               Differenza: <strong style="color:var(--danger);">+${absDiff.toFixed(2)}g in eccesso</strong> 
+               (hai segnato più di quanto possibile fisicamente).<br><br>
+               Come vuoi procedere?`;
+    } else {
+        msg = `Hai registrato <strong>${consumed.toFixed(2)}g</strong> di ${type},
+               ma ne avevi comprati <strong>${stock.grams}g</strong>.<br><br>
+               Differenza: <strong style="color:#FF9800;">${absDiff.toFixed(2)}g non contabilizzati</strong>
+               (potresti aver fumato senza registrare, o aver segnato meno del reale).<br><br>
+               Come vuoi procedere?`;
+    }
+
+    document.getElementById('discrepancyText').innerHTML = msg;
+    document.getElementById('discrepancyModal').style.display = 'flex';
+}
+
+// Scala tutte le sessioni proporzionalmente
+async function fixProportional() {
+    if (!pendingCloseStock) return;
+    const { type, stock, consumed } = pendingCloseStock;
+
+    if (consumed === 0) { confirmCloseStock(); return; }
+
+    const factor = stock.grams / consumed; // es. 0.85 se hai segnato troppo
+
+    for (const s of sessionsToFix) {
+        const oldGram = type === 'fumo' ? (s.fumo_grams || 0) : (s.erba_grams || 0);
+        const newGram = parseFloat((oldGram * factor).toFixed(2));
+        const newTotal = parseFloat(((s.grams || 0) - oldGram + newGram).toFixed(2));
+
+        const updateObj = type === 'fumo'
+            ? { fumo_grams: newGram, grams: newTotal }
+            : { erba_grams: newGram, grams: newTotal };
+
+        await supabaseClient.from('smokes').update(updateObj).eq('id', s.id);
+    }
+
+    document.getElementById('discrepancyModal').style.display = 'none';
+    showMessage('⚖️ Sessioni ricalcolate!');
+    await loadData();
+    confirmCloseStock();
+}
+
+// Mostra lista sessioni modificabili manualmente
+function fixManual() {
+    document.getElementById('discrepancyModal').style.display = 'none';
+    const { type, stock } = pendingCloseStock;
+
+    document.getElementById('manualFixHint').textContent =
+        `Modifica i grammi di ${type} per ciascuna sessione del periodo. Totale acquistato: ${stock.grams}g`;
+
+    const listEl = document.getElementById('manualFixList');
+    listEl.innerHTML = sessionsToFix.map(s => {
+        const gram = type === 'fumo' ? (s.fumo_grams || 0) : (s.erba_grams || 0);
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center;
+                        padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                <div>
+                    <span style="font-weight:600;">${s.date.split('-').reverse().join('/')}</span>
+                    <span style="color:#999; font-size:12px;"> ${s.time}</span><br>
+                    <small style="color:#aaa;">Totale sessione: ${s.grams}g</small>
+                </div>
+                <input type="number" step="0.01" min="0"
+                       data-id="${s.id}"
+                       data-type="${type}"
+                       data-total="${s.grams}"
+                       data-old="${gram}"
+                       value="${gram}"
+                       style="width:80px; text-align:center; margin:0; font-weight:700; color:var(--primary-dark);">
+            </div>
+        `;
+    }).join('');
+
+    document.getElementById('manualFixModal').style.display = 'flex';
+}
+
+async function saveManualFix() {
+    const inputs = document.querySelectorAll('#manualFixList input[data-id]');
+
+    for (const input of inputs) {
+        const id = input.dataset.id;
+        const type = input.dataset.type;
+        const oldTotal = parseFloat(input.dataset.total);
+        const oldGram = parseFloat(input.dataset.old);
+        const newGram = parseFloat(input.value) || 0;
+        const newTotal = parseFloat((oldTotal - oldGram + newGram).toFixed(2));
+
+        const updateObj = type === 'fumo'
+            ? { fumo_grams: newGram, grams: newTotal }
+            : { erba_grams: newGram, grams: newTotal };
+
+        await supabaseClient.from('smokes').update(updateObj).eq('id', id);
+    }
+
+    closeManualFix();
+    showMessage('✅ Sessioni corrette!');
+    await loadData();
+    confirmCloseStock();
+}
+
+function closeManualFix() {
+    document.getElementById('manualFixModal').style.display = 'none';
+}
+
+// Chiusura effettiva della scorta nel DB
+async function confirmCloseStock() {
+    document.getElementById('discrepancyModal').style.display = 'none';
+    if (!pendingCloseStock) return;
+
+    const { stock } = pendingCloseStock;
+
+    const { error } = await supabaseClient
+        .from('purchases')
+        .update({ is_closed: true, closed_at: new Date().toISOString().split('T')[0] })
+        .eq('id', stock.id);
+
+    if (error) { alert('Errore nella chiusura della scorta.'); return; }
+
+    showMessage('✅ Scorta chiusa!');
+    pendingCloseStock = null;
+    sessionsToFix = [];
+    await loadPurchases();
+}
+		
+
 
 	// ========== INIZIALIZZAZIONE ==========
 	document.getElementById("date").value = new Date().toISOString().split("T")[0];
