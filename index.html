@@ -121,6 +121,24 @@
     </label>
 </div>
 
+<!-- SESSIONE CONDIVISA -->
+<div style="margin-top:12px;">
+    <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; background: rgba(76,175,80,0.08); border: 1px solid rgba(76,175,80,0.3); border-radius:12px; padding:12px; cursor:pointer;">
+        <span style="font-size:14px; font-weight:600; color:var(--primary-dark);">👥 Sessione condivisa con amici</span>
+        <input type="checkbox" id="sharedSessionCheck" onchange="toggleSharedSession()" style="width:20px; height:20px; margin:0; accent-color: var(--primary-light);">
+    </label>
+</div>
+
+<div id="sharedSessionPanel" style="display:none; margin-top:10px;">
+    <label style="margin-top:0;">Cerca amico o nickname</label>
+    <div style="display:flex; gap:10px;">
+        <input type="text" id="participantSearch" placeholder="Nickname..." style="margin-top:0; flex:1;">
+        <button class="action-btn" onclick="searchParticipant()" style="margin-top:0;">Cerca</button>
+    </div>
+    <div id="participantChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
+    <div id="contributorsPanel" style="margin-top:12px;"></div>
+</div>
+
 		<label>Quantità</label>
 		<div class="grams-row" id="gCont">
 			<label><input type="radio" name="g" value="0.3" checked> 0.3g</label>
@@ -260,6 +278,7 @@
 			<div class="stat-box"><big id="modaleFumo">0</big><small>g Fumo</small></div>
 			<div class="stat-box"><big id="modaleErba">0</big><small>g Erba</small></div>
 		</div>
+		<p id="modaleShared" style="text-align:center; font-size:13px; color:#999; margin-top:-8px; margin-bottom:15px;"></p>
 		<button class="secondary-btn" onclick="closeFriendModal()">Chiudi</button>
 	</div>
 </div>
@@ -439,6 +458,7 @@
 	let currentSocialTab = 'global';
 	let charts = {};
 	let userPlaces = []; // Array per i posti caricati dal DB
+	let sessionParticipants = []; // { user_id, username }
 
 	// Gestione selezione Fumo/Erba
 document.querySelectorAll('.substance-checkbox-group input[type="checkbox"]').forEach(checkbox => {
@@ -476,6 +496,89 @@ function updateDivideMessage() {
     } else {
         msgDiv.style.display = "none";
     }
+}
+
+function toggleSharedSession() {
+    const checked = document.getElementById('sharedSessionCheck').checked;
+    document.getElementById('sharedSessionPanel').style.display = checked ? 'block' : 'none';
+    if (!checked) {
+        sessionParticipants = [];
+        renderParticipantChips();
+    }
+}
+
+async function searchParticipant() {
+    const input = document.getElementById('participantSearch');
+    const query = input.value.trim();
+    if (!query) return;
+
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('id, username')
+        .ilike('username', query)
+        .neq('id', currentUser.id);
+
+    if (error || !data || data.length === 0) {
+        return alert("Nessun utente trovato con questo nickname.");
+    }
+
+    const match = data.find(u => u.username.toLowerCase() === query.toLowerCase()) || data[0];
+
+    if (sessionParticipants.some(p => p.user_id === match.id)) {
+        return alert("Già aggiunto alla sessione.");
+    }
+
+    sessionParticipants.push({ user_id: match.id, username: match.username });
+    input.value = "";
+    renderParticipantChips();
+}
+
+function removeParticipant(id) {
+    sessionParticipants = sessionParticipants.filter(p => p.user_id !== id);
+    renderParticipantChips();
+}
+
+function renderParticipantChips() {
+    const el = document.getElementById('participantChips');
+    if (!el) return;
+    el.innerHTML = sessionParticipants.map(p => `
+        <span class="participant-chip">👤 ${p.username} <button onclick="removeParticipant('${p.user_id}')">✕</button></span>
+    `).join('');
+    renderContributorsPanel();
+}
+
+function renderContributorsPanel() {
+    const panel = document.getElementById('contributorsPanel');
+    if (!panel) return;
+    if (sessionParticipants.length === 0) { panel.innerHTML = ''; return; }
+
+    const hasFumo = document.getElementById("fumo").checked;
+    const hasErba = document.getElementById("erba").checked;
+    const all = [{ user_id: currentUser.id, username: 'Tu' }, ...sessionParticipants];
+
+    let html = '<p style="font-size:12px; color:#999; margin-top:0;">Chi ha portato la roba? (per scalare la scorta giusta)</p>';
+
+    if (hasFumo) {
+        html += `<label style="margin-top:8px; font-size:12px;">🍫 Fumo portato da:</label><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;">`;
+        html += all.map(p => `
+            <label style="display:flex; align-items:center; gap:4px; font-size:13px; font-weight:normal; margin-top:0;">
+                <input type="checkbox" class="contrib-fumo" value="${p.user_id}" checked onchange="renderContributorsPanel()" style="width:auto;"> ${p.username}
+            </label>
+        `).join('');
+        html += `</div>`;
+    }
+
+    if (hasErba) {
+        html += `<label style="margin-top:8px; font-size:12px;">🍃 Erba portata da:</label><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;">`;
+        html += all.map(p => `
+            <label style="display:flex; align-items:center; gap:4px; font-size:13px; font-weight:normal; margin-top:0;">
+                <input type="checkbox" class="contrib-erba" value="${p.user_id}" checked onchange="renderContributorsPanel()" style="width:auto;"> ${p.username}
+            </label>
+        `).join('');
+        html += `</div>`;
+    }
+
+    panel.innerHTML = html;
 }
 
 
@@ -716,6 +819,9 @@ if (mode === 'signup') {
 
 	// ========== SALVATAGGIO DATI ==========
 	async function saveData() {
+	if (isLocatingNow) {
+		if (!confirm("📍 Sto ancora cercando la posizione. Salvare comunque senza aspettare?")) return;
+	}
 	const hasFumo = document.getElementById("fumo").checked;
 	const hasErba = document.getElementById("erba").checked;
 	
@@ -727,77 +833,100 @@ if (mode === 'signup') {
 	let erba_grams = 0;
 
 	if (hasFumo && hasErba) {
-    fumo_grams = parseFloat(document.getElementById("fumoGramsInput").value) || 0;
-    erba_grams = parseFloat(document.getElementById("erbaGramsInput").value) || 0;
-
-    if (fumo_grams <= 0 && erba_grams <= 0) {
-        return alert("Inserisci almeno una quantità!");
+		fumo_grams = parseFloat(document.getElementById("fumoGramsInput").value) || 0;
+		erba_grams = parseFloat(document.getElementById("erbaGramsInput").value) || 0;
+		if (fumo_grams <= 0 && erba_grams <= 0) {
+			return alert("Inserisci almeno una quantità!");
 		}
 	} else {
 		const gVal = document.querySelector('input[name="g"]:checked').value;
 		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
-
 		if(!grams || grams <= 0) return alert("Inserisci un peso valido");
-
-		if (hasFumo) {
-			fumo_grams = grams;
-		} else {
-			erba_grams = grams;
-		}
+		if (hasFumo) fumo_grams = grams; else erba_grams = grams;
 	}
 
 	const now = new Date();
 	const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
 	const date = document.getElementById("date").value;
 	const ts = Date.now();
-	const totalGrams = fumo_grams + erba_grams;
-		
-    // --- 🟢 NUOVA LOGICA: RICONOSCIMENTO POSTO ---
-    let finalLocationName = currentLocation.name || null;
 
-    // Se abbiamo le coordinate e l'utente ha dei posti salvati...
-    if (currentLocation.lat && currentLocation.lng && typeof userPlaces !== 'undefined') {
-        userPlaces.forEach(p => {
-            const d = getDist(currentLocation.lat, currentLocation.lng, p.latitude, p.longitude);
-            // Se sei entro il raggio (default 50 metri), usa il nome personalizzato
-            if (d <= (p.radius || 50)) {
-                finalLocationName = p.name;
-            }
-        });
-    }
-    // --- 🔴 FINE NUOVA LOGICA ---
+	let finalLocationName = currentLocation.name || null;
+	if (currentLocation.lat && currentLocation.lng && typeof userPlaces !== 'undefined') {
+		userPlaces.forEach(p => {
+			const d = getDist(currentLocation.lat, currentLocation.lng, p.latitude, p.longitude);
+			if (d <= (p.radius || 50)) finalLocationName = p.name;
+		});
+	}
 
-	const { error } = await supabaseClient.from('smokes').insert({
-		type: (hasFumo && hasErba) ? "fumo-erba" : (hasFumo ? "fumo" : "erba"),
-		grams: totalGrams, 
-		fumo_grams: fumo_grams,
-		erba_grams: erba_grams,
-		date, 
-		time, 
-		ts, 
-		user_id: currentUser.id,
-		latitude: currentLocation.lat || null,
-		longitude: currentLocation.lng || null,
-		location_name: finalLocationName, // 👈 Usiamo il nome trovato (o quello di default)
-		not_mine: document.getElementById("notMineCheck").checked,
-	});
+	const isShared = document.getElementById('sharedSessionCheck')?.checked && sessionParticipants.length > 0;
 
-	if (error) {
-		console.error('Errore salvataggio:', error);
-		alert('Errore nel salvataggio. Riprova.');
-		return;
+	if (isShared) {
+		const all = [{ user_id: currentUser.id }, ...sessionParticipants];
+		const fumoContribs = Array.from(document.querySelectorAll('.contrib-fumo:checked')).map(el => el.value);
+		const erbaContribs = Array.from(document.querySelectorAll('.contrib-erba:checked')).map(el => el.value);
+
+		const fumoPerContrib = fumoContribs.length > 0 ? fumo_grams / fumoContribs.length : 0;
+		const erbaPerContrib = erbaContribs.length > 0 ? erba_grams / erbaContribs.length : 0;
+		const myFumoShare = fumo_grams / all.length;
+		const myErbaShare = erba_grams / all.length;
+
+		const participants = all.map(p => ({
+			user_id: p.user_id,
+			fumo_grams: fumoContribs.includes(p.user_id) ? fumoPerContrib : 0,
+			erba_grams: erbaContribs.includes(p.user_id) ? erbaPerContrib : 0,
+			my_fumo_grams: myFumoShare,
+			my_erba_grams: myErbaShare,
+			not_mine: !fumoContribs.includes(p.user_id) && !erbaContribs.includes(p.user_id)
+		}));
+
+		const { error } = await supabaseClient.rpc('create_shared_session', {
+			p_date: date, p_time: time, p_ts: ts,
+			p_latitude: currentLocation.lat || null,
+			p_longitude: currentLocation.lng || null,
+			p_location_name: finalLocationName,
+			p_participants: participants
+		});
+
+		if (error) {
+			console.error('Errore salvataggio condiviso:', error);
+			alert('Errore nel salvataggio della sessione condivisa.');
+			return;
+		}
+	} else {
+		const { error } = await supabaseClient.from('smokes').insert({
+			type: (hasFumo && hasErba) ? "fumo-erba" : (hasFumo ? "fumo" : "erba"),
+			grams: fumo_grams + erba_grams,
+			fumo_grams, erba_grams,
+			my_fumo_grams: fumo_grams,
+			my_erba_grams: erba_grams,
+			date, time, ts,
+			user_id: currentUser.id,
+			latitude: currentLocation.lat || null,
+			longitude: currentLocation.lng || null,
+			location_name: finalLocationName,
+			not_mine: document.getElementById("notMineCheck").checked,
+		});
+
+		if (error) {
+			console.error('Errore salvataggio:', error);
+			alert('Errore nel salvataggio. Riprova.');
+			return;
+		}
 	}
 
 	showMessage('✅ Sessione salvata!');
-	currentLocation = { lat: null, lng: null, name: null };
-	document.getElementById('locationDisplay').value = '';
 	document.getElementById("fumo").checked = false;
 	document.getElementById("erba").checked = false;
 	document.getElementById("notMineCheck").checked = false;
 	document.getElementById("notMineToggle").style.display = "none";
 	document.querySelectorAll('.substance-checkbox-group label').forEach(l => l.classList.remove('selected'));
+	sessionParticipants = [];
+	document.getElementById('sharedSessionCheck').checked = false;
+	document.getElementById('sharedSessionPanel').style.display = 'none';
+	renderParticipantChips();
 	
 	await loadData();
+	getLocationAuto();
 }
 	async function deleteItem(ts) {
 		if(!confirm("Vuoi eliminare questo inserimento?")) return;
@@ -1480,7 +1609,7 @@ smokes.forEach(s => {
 			await supabaseClient.from('user_stats').upsert({
 				user_id: currentUser.id,
 				best_streak: currentStreak
-			});
+			}, { onConflict: 'user_id' });
 			best = currentStreak;
 		}
 		return best;
@@ -1496,8 +1625,8 @@ smokes.forEach(s => {
         const name = s.location_name || '❓ Sconosciuta';
         if (!grouped[name]) grouped[name] = { j: 0, fumo: 0, erba: 0 };
         grouped[name].j++;
-        grouped[name].fumo += s.fumo_grams || 0;
-        grouped[name].erba += s.erba_grams || 0;
+        grouped[name].fumo += (s.my_fumo_grams ?? s.fumo_grams ?? 0);
+        grouped[name].erba += (s.my_erba_grams ?? s.erba_grams ?? 0);
     });
 
     if (Object.keys(grouped).length === 0) {
@@ -1551,8 +1680,8 @@ smokes.forEach(s => {
 		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
 		charts = {};
 
-		let gramsFumo = smokes.reduce((sum, s) => sum + (s.fumo_grams || 0), 0);
-let gramsErba = smokes.reduce((sum, s) => sum + (s.erba_grams || 0), 0);
+		let gramsFumo = smokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0), 0);
+let gramsErba = smokes.reduce((sum, s) => sum + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
 
 // Grafico a ciambella
 const ctxPie = document.getElementById("cPie");
@@ -1883,6 +2012,14 @@ if (ctxPie) {
 		document.getElementById('modalFriendName').innerText = `📊 Statistiche di ${username}`;
 		document.getElementById('modaleFumo').innerText = data[0].fumo_g.toFixed(1);
 		document.getElementById('modaleErba').innerText = data[0].erba_g.toFixed(1);
+
+		const { data: shared } = await supabaseClient.rpc('get_shared_stats', { target_user_id: targetId });
+		const sharedEl = document.getElementById('modaleShared');
+		if (sharedEl && shared && shared[0]) {
+			sharedEl.innerText = `👥 ${shared[0].sessions_together} sessioni insieme · ${Number(shared[0].grams_together).toFixed(1)}g`;
+		} else if (sharedEl) {
+			sharedEl.innerText = "";
+		}
 		
 		document.getElementById('friendModal').style.display = 'flex';
 	}

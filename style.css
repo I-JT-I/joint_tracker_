@@ -652,3 +652,25 @@ input[type="date"] {
     50% { transform: translate(-10%, -30%) rotate(-180deg); }
     100% { transform: translate(20%, 10%) rotate(-360deg); }
 }
+
+/* ========== CHIP PARTECIPANTI SESSIONE CONDIVISA ========== */
+.participant-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	background: rgba(76,175,80,0.15);
+	color: var(--primary-dark);
+	padding: 6px 10px;
+	border-radius: 20px;
+	font-size: 13px;
+	font-weight: 600;
+}
+.participant-chip button {
+	background: none;
+	border: none;
+	color: var(--danger);
+	cursor: pointer;
+	font-size: 14px;
+	padding: 0;
+	line-height: 1;
+}
