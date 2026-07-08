@@ -37,6 +37,12 @@
 
 <div id="notif">✅</div>
 
+<!-- BANNER PROMEMORIA -->
+<div id="reminderBanner" style="display:none; position:sticky; top:0; z-index:999; background:linear-gradient(135deg,#FF9800,#E65100); color:white; padding:12px 15px; text-align:center; font-size:13px; font-weight:600;">
+	<span id="reminderBannerText"></span>
+	<button onclick="dismissReminderBanner()" style="background:none; border:none; color:white; font-weight:bold; margin-left:10px; cursor:pointer; font-size:14px;">✕</button>
+</div>
+
 <!-- PAGINA LOGIN -->
 <div id="page-auth" class="page active">
 	<div class="auth-container">
@@ -382,6 +388,25 @@
 		<button class="action-btn" onclick="updateProfile()">Aggiorna Nome</button>
 	</div>
 
+	<div class="card">
+		<h3>🔔 Promemoria</h3>
+		<label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+			<span style="font-size:14px; font-weight:600; color:#555;">Attiva promemoria giornaliero</span>
+			<input type="checkbox" id="reminderEnabledCheck" style="width:20px; height:20px; margin:0; accent-color: var(--primary-light);">
+		</label>
+
+		<label for="reminderTimeInput">Orario promemoria</label>
+		<input type="time" id="reminderTimeInput" value="20:00">
+
+		<button class="action-btn" onclick="saveReminderSettings()" style="width:100%; margin-top:15px;">💾 Salva Preferenze</button>
+
+		<hr>
+
+		<p style="font-size:12px; color:#666;">Per ricevere notifiche push anche ad app chiusa, attivale sul dispositivo:</p>
+		<button class="action-btn" id="btnEnablePush" onclick="enablePushNotifications()" style="width:100%; background: linear-gradient(135deg, #FF9800, #E65100);">🔔 Attiva Notifiche Push</button>
+		<p id="pushStatus" style="font-size:12px; text-align:center; margin-top:8px; color:#999;"></p>
+	</div>
+
 
 	
 	<div class="card">
@@ -465,6 +490,9 @@
 	let sessionParticipants = []; // { user_id, username }
 	let isLocatingNow = false;
 
+	const VAPID_PUBLIC_KEY = 'BE2yG7kWhMrni1qk-uilMqHc7uGL92CZE6UaLt-sbTTHsDr4lDP6qiqnSJsxachx5kUJ7C-0dO46UeSjxOUwiG0';
+	let userReminderSettings = { reminder_enabled: true, reminder_time: '20:00:00' };
+	
 	// Gestione selezione Fumo/Erba
 document.querySelectorAll('.substance-checkbox-group input[type="checkbox"]').forEach(checkbox => {
 	checkbox.addEventListener('change', function() {
@@ -864,6 +892,7 @@ if (mode === 'signup') {
 		// 🆕 AUTO GEOLOCALIZZAZIONE AL CARICAMENTO
 	await loadUserPlaces();
 	await loadPurchases();
+	await loadReminderSettings();
 	getLocationAuto();
 	}
 
@@ -1407,6 +1436,7 @@ async function addPlaceFromMap() {
 		if (p === 'settings') {
 		    loadUserProfile();
 		    loadUserPlaces();
+		    loadReminderSettings();
 		}
 		update();
 	}
@@ -1522,6 +1552,7 @@ function updateMap() {
 		updateHistory();
 		updateStats();
 		renderCharts();
+		checkReminderBanner();
 	}
 
 function updateHistory() {
@@ -2165,6 +2196,128 @@ if (ctxPie) {
 		}
 	}
 
+// ========== PROMEMORIA (banner in-app) ==========
+function checkReminderBanner() {
+	const banner = document.getElementById('reminderBanner');
+	const textEl = document.getElementById('reminderBannerText');
+	if (!banner || !textEl) return;
+
+	if (sessionStorage.getItem('reminderDismissed') === 'today') {
+		banner.style.display = 'none';
+		return;
+	}
+
+	const today = new Date().toISOString().split('T')[0];
+	const hasToday = smokes.some(s => s.date === today);
+
+	if (hasToday) {
+		banner.style.display = 'none';
+		return;
+	}
+
+	const streak = calculateStreak();
+	if (streak >= 1) {
+		textEl.textContent = `🔥 Rischi di perdere lo streak di ${streak} giorni! Non hai ancora segnato oggi.`;
+	} else {
+		textEl.textContent = `📝 Non hai ancora segnato nulla oggi.`;
+	}
+	banner.style.display = 'block';
+}
+
+function dismissReminderBanner() {
+	sessionStorage.setItem('reminderDismissed', 'today');
+	document.getElementById('reminderBanner').style.display = 'none';
+}
+
+// ========== IMPOSTAZIONI PROMEMORIA ==========
+async function loadReminderSettings() {
+	const { data } = await supabaseClient
+		.from('profiles')
+		.select('reminder_enabled, reminder_time')
+		.eq('id', currentUser.id)
+		.single();
+
+	if (data) {
+		userReminderSettings = data;
+		document.getElementById('reminderEnabledCheck').checked = data.reminder_enabled;
+		if (data.reminder_time) {
+			document.getElementById('reminderTimeInput').value = data.reminder_time.slice(0, 5);
+		}
+	}
+}
+
+async function saveReminderSettings() {
+	const enabled = document.getElementById('reminderEnabledCheck').checked;
+	const time = document.getElementById('reminderTimeInput').value;
+
+	const { error } = await supabaseClient
+		.from('profiles')
+		.update({ reminder_enabled: enabled, reminder_time: time })
+		.eq('id', currentUser.id);
+
+	if (error) {
+		alert('Errore nel salvataggio delle preferenze.');
+	} else {
+		showMessage('✅ Preferenze salvate!');
+	}
+}
+
+// ========== NOTIFICHE PUSH ==========
+function urlBase64ToUint8Array(base64String) {
+	const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+	const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+	const rawData = atob(base64);
+	const outputArray = new Uint8Array(rawData.length);
+	for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+	return outputArray;
+}
+
+async function enablePushNotifications() {
+	const statusEl = document.getElementById('pushStatus');
+
+	if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+		statusEl.textContent = '❌ Il tuo browser non supporta le notifiche push.';
+		return;
+	}
+
+	try {
+		statusEl.textContent = '⏳ Attivazione in corso...';
+
+		const registration = await navigator.serviceWorker.register('/sw.js');
+		await navigator.serviceWorker.ready;
+
+		const permission = await Notification.requestPermission();
+		if (permission !== 'granted') {
+			statusEl.textContent = '❌ Permesso negato. Abilita le notifiche dalle impostazioni del browser.';
+			return;
+		}
+
+		const subscription = await registration.pushManager.subscribe({
+			userVisibleOnly: true,
+			applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+		});
+
+		const subJson = subscription.toJSON();
+
+		const { error } = await supabaseClient.from('push_subscriptions').upsert({
+			user_id: currentUser.id,
+			endpoint: subJson.endpoint,
+			p256dh: subJson.keys.p256dh,
+			auth: subJson.keys.auth
+		}, { onConflict: 'endpoint' });
+
+		if (error) {
+			statusEl.textContent = '❌ Errore nel salvataggio della sottoscrizione.';
+			console.error(error);
+			return;
+		}
+
+		statusEl.textContent = '✅ Notifiche push attivate su questo dispositivo!';
+	} catch (err) {
+		console.error(err);
+		statusEl.textContent = '❌ Errore durante l\'attivazione.';
+	}
+}	
 		
 		// ========== SCORTE / ACQUISTI ==========
 let purchases = [];
