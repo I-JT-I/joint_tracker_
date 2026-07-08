@@ -483,6 +483,7 @@ document.getElementById("erba").addEventListener('change', updateDivideMessage);
 function updateDivideMessage() {
     const hasFumo = document.getElementById("fumo").checked;
     const hasErba = document.getElementById("erba").checked;
+    if (typeof renderContributorsPanel === 'function') renderContributorsPanel();
     const msgDiv = document.getElementById("divideMessage");
     const notMineToggle = document.getElementById("notMineToggle");
 
@@ -606,26 +607,61 @@ function renderContributorsPanel() {
     const hasErba = document.getElementById("erba").checked;
     const all = [{ user_id: currentUser.id, username: 'Tu' }, ...sessionParticipants];
 
-    let html = '<p style="font-size:12px; color:#999; margin-top:0;">Chi ha portato la roba? (per scalare la scorta giusta)</p>';
+    let fumoTotal = 0, erbaTotal = 0;
+    if (hasFumo && hasErba) {
+        fumoTotal = parseFloat(document.getElementById("fumoGramsInput")?.value) || 0;
+        erbaTotal = parseFloat(document.getElementById("erbaGramsInput")?.value) || 0;
+    } else {
+        const gVal = document.querySelector('input[name="g"]:checked')?.value;
+        const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams")?.value) : parseFloat(gVal);
+        if (hasFumo) fumoTotal = grams || 0;
+        if (hasErba) erbaTotal = grams || 0;
+    }
+
+    let html = '<p style="font-size:12px; color:#999; margin-top:0;">Chi ha portato la roba, e quanto? Puoi modificare i grammi a mano.</p>';
+
+    const isFirstRender = document.querySelectorAll('.contrib-fumo, .contrib-erba').length === 0;
 
     if (hasFumo) {
-        html += `<label style="margin-top:8px; font-size:12px;">🍫 Fumo portato da:</label><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;">`;
+        const prevChecked = Array.from(document.querySelectorAll('.contrib-fumo:checked')).map(el => el.value);
+        const activeIds = isFirstRender ? all.map(p => p.user_id) : prevChecked;
+        const share = activeIds.length > 0 ? (fumoTotal / activeIds.length).toFixed(2) : '0.00';
+
+        html += `<label style="margin-top:10px; font-size:12px;">🍫 Fumo portato da:</label>`;
         html += all.map(p => `
-            <label style="display:flex; align-items:center; gap:4px; font-size:13px; font-weight:normal; margin-top:0;">
-                <input type="checkbox" class="contrib-fumo" value="${p.user_id}" checked onchange="renderContributorsPanel()" style="width:auto;"> ${p.username}
-            </label>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                <label style="display:flex; align-items:center; gap:4px; font-size:13px; font-weight:normal; flex:1; margin-top:0;">
+                    <input type="checkbox" class="contrib-fumo" value="${p.user_id}"
+                        ${activeIds.includes(p.user_id) ? 'checked' : ''}
+                        onchange="renderContributorsPanel()" style="width:auto;"> ${p.username}
+                </label>
+                <input type="number" step="0.01" min="0" class="contrib-fumo-amt" data-user="${p.user_id}"
+                    value="${activeIds.includes(p.user_id) ? share : '0.00'}"
+                    style="width:70px; margin:0; padding:6px; font-size:13px; text-align:center;">
+                <span style="font-size:12px; color:#999;">g</span>
+            </div>
         `).join('');
-        html += `</div>`;
     }
 
     if (hasErba) {
-        html += `<label style="margin-top:8px; font-size:12px;">🍃 Erba portata da:</label><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;">`;
+        const prevChecked = Array.from(document.querySelectorAll('.contrib-erba:checked')).map(el => el.value);
+        const activeIds = isFirstRender ? all.map(p => p.user_id) : prevChecked;
+        const share = activeIds.length > 0 ? (erbaTotal / activeIds.length).toFixed(2) : '0.00';
+
+        html += `<label style="margin-top:14px; font-size:12px;">🍃 Erba portata da:</label>`;
         html += all.map(p => `
-            <label style="display:flex; align-items:center; gap:4px; font-size:13px; font-weight:normal; margin-top:0;">
-                <input type="checkbox" class="contrib-erba" value="${p.user_id}" checked onchange="renderContributorsPanel()" style="width:auto;"> ${p.username}
-            </label>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                <label style="display:flex; align-items:center; gap:4px; font-size:13px; font-weight:normal; flex:1; margin-top:0;">
+                    <input type="checkbox" class="contrib-erba" value="${p.user_id}"
+                        ${activeIds.includes(p.user_id) ? 'checked' : ''}
+                        onchange="renderContributorsPanel()" style="width:auto;"> ${p.username}
+                </label>
+                <input type="number" step="0.01" min="0" class="contrib-erba-amt" data-user="${p.user_id}"
+                    value="${activeIds.includes(p.user_id) ? share : '0.00'}"
+                    style="width:70px; margin:0; padding:6px; font-size:13px; text-align:center;">
+                <span style="font-size:12px; color:#999;">g</span>
+            </div>
         `).join('');
-        html += `</div>`;
     }
 
     panel.innerHTML = html;
@@ -915,17 +951,21 @@ if (mode === 'signup') {
 		const fumoContribs = Array.from(document.querySelectorAll('.contrib-fumo:checked')).map(el => el.value);
 		const erbaContribs = Array.from(document.querySelectorAll('.contrib-erba:checked')).map(el => el.value);
 
-		const fumoPerContrib = fumoContribs.length > 0 ? fumo_grams / fumoContribs.length : 0;
-		const erbaPerContrib = erbaContribs.length > 0 ? erba_grams / erbaContribs.length : 0;
-		const myFumoShare = fumo_grams / all.length;
-		const myErbaShare = erba_grams / all.length;
+		const fumoAmounts = {};
+		document.querySelectorAll('.contrib-fumo-amt').forEach(el => {
+			fumoAmounts[el.dataset.user] = parseFloat(el.value) || 0;
+		});
+		const erbaAmounts = {};
+		document.querySelectorAll('.contrib-erba-amt').forEach(el => {
+			erbaAmounts[el.dataset.user] = parseFloat(el.value) || 0;
+		});
 
 		const participants = all.map(p => ({
 			user_id: p.user_id,
-			fumo_grams: fumoContribs.includes(p.user_id) ? fumoPerContrib : 0,
-			erba_grams: erbaContribs.includes(p.user_id) ? erbaPerContrib : 0,
-			my_fumo_grams: myFumoShare,
-			my_erba_grams: myErbaShare,
+			fumo_grams: fumoContribs.includes(p.user_id) ? (fumoAmounts[p.user_id] || 0) : 0,
+			erba_grams: erbaContribs.includes(p.user_id) ? (erbaAmounts[p.user_id] || 0) : 0,
+			my_fumo_grams: fumo_grams,
+			my_erba_grams: erba_grams,
 			not_mine: !fumoContribs.includes(p.user_id) && !erbaContribs.includes(p.user_id)
 		}));
 
