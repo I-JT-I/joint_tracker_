@@ -136,6 +136,10 @@
         <button class="action-btn" onclick="searchParticipant()" style="margin-top:0;">Cerca</button>
     </div>
     <div id="participantChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
+
+    <label style="margin-top:15px; font-size:12px;">I tuoi amici</label>
+    <div id="friendsQuickList" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;"></div>
+
     <div id="contributorsPanel" style="margin-top:12px;"></div>
 </div>
 
@@ -501,10 +505,56 @@ function updateDivideMessage() {
 function toggleSharedSession() {
     const checked = document.getElementById('sharedSessionCheck').checked;
     document.getElementById('sharedSessionPanel').style.display = checked ? 'block' : 'none';
-    if (!checked) {
+    if (checked) {
+        renderFriendsQuickList();
+    } else {
         sessionParticipants = [];
         renderParticipantChips();
     }
+}
+
+async function getMyFriendsList() {
+    const { data: friendships, error } = await supabaseClient
+        .from('friendships')
+        .select('friend_id')
+        .eq('user_id', currentUser.id);
+
+    if (error || !friendships || friendships.length === 0) return [];
+
+    const friendIds = friendships.map(f => f.friend_id);
+
+    const { data: profilesData } = await supabaseClient
+        .from('profiles')
+        .select('id, username')
+        .in('id', friendIds);
+
+    return profilesData || [];
+}
+
+async function renderFriendsQuickList() {
+    const el = document.getElementById('friendsQuickList');
+    if (!el) return;
+    el.innerHTML = '<p style="font-size:12px; color:#999;">Caricamento...</p>';
+
+    const friends = await getMyFriendsList();
+
+    if (friends.length === 0) {
+        el.innerHTML = '<p style="font-size:12px; color:#999;">Non hai ancora amici. Aggiungili dalla pagina Social.</p>';
+        return;
+    }
+
+    el.innerHTML = friends.map(f => `
+        <button type="button" onclick="quickAddParticipant('${f.id}','${f.username}')"
+            style="background:rgba(76,175,80,0.12); border:1px solid rgba(76,175,80,0.3); color:var(--primary-dark); border-radius:20px; padding:6px 12px; font-size:13px; cursor:pointer;">
+            + ${f.username}
+        </button>
+    `).join('');
+}
+
+function quickAddParticipant(id, username) {
+    if (sessionParticipants.some(p => p.user_id === id)) return;
+    sessionParticipants.push({ user_id: id, username });
+    renderParticipantChips();
 }
 
 async function searchParticipant() {
