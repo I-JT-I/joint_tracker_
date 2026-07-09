@@ -43,6 +43,11 @@
 	<button onclick="dismissReminderBanner()" style="background:none; border:none; color:white; font-weight:bold; margin-left:10px; cursor:pointer; font-size:14px;">✕</button>
 </div>
 
+<!-- BANNER OFFLINE -->
+<div id="offlineBanner" style="display:none; position:sticky; top:0; z-index:998; background:#555; color:white; padding:10px 15px; text-align:center; font-size:13px; font-weight:600;">
+	📡 Sei offline — stai vedendo gli ultimi dati salvati. Le modifiche verranno sincronizzate al ritorno della connessione.
+</div>
+
 <!-- PAGINA LOGIN -->
 <div id="page-auth" class="page active">
 	<div class="auth-container">
@@ -489,6 +494,7 @@
 	let userPlaces = []; // Array per i posti caricati dal DB
 	let sessionParticipants = []; // { user_id, username }
 	let isLocatingNow = false;
+	let isOnline = navigator.onLine;
 
 	const VAPID_PUBLIC_KEY = 'BE2yG7kWhMrni1qk-uilMqHc7uGL92CZE6UaLt-sbTTHsDr4lDP6qiqnSJsxachx5kUJ7C-0dO46UeSjxOUwiG0';
 	let userReminderSettings = { reminder_enabled: true, reminder_time: '20:00:00' };
@@ -910,6 +916,77 @@ if (mode === 'signup') {
 		setTimeout(() => document.getElementById('notif').style.display = 'none', 2000);
 	}
 
+	// ========== OFFLINE: rilevamento e banner ==========
+function updateOnlineStatus() {
+	isOnline = navigator.onLine;
+	const banner = document.getElementById('offlineBanner');
+	if (!banner) return;
+	banner.style.display = isOnline ? 'none' : 'block';
+
+	if (isOnline) {
+		flushPendingSessions();
+	}
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// ========== OFFLINE: cache locale degli ultimi dati caricati ==========
+function cacheLocalData(key, data) {
+	try {
+		localStorage.setItem('jt_cache_' + key, JSON.stringify(data));
+	} catch (e) {
+		console.log('Impossibile salvare cache locale:', e);
+	}
+}
+
+function getLocalCache(key) {
+	try {
+		const raw = localStorage.getItem('jt_cache_' + key);
+		return raw ? JSON.parse(raw) : null;
+	} catch (e) {
+		return null;
+	}
+}
+
+// ========== OFFLINE: coda di sessioni non ancora sincronizzate ==========
+function getPendingSessions() {
+	try {
+		const raw = localStorage.getItem('jt_pending_sessions');
+		return raw ? JSON.parse(raw) : [];
+	} catch (e) {
+		return [];
+	}
+}
+
+function addPendingSession(payload) {
+	const pending = getPendingSessions();
+	pending.push(payload);
+	localStorage.setItem('jt_pending_sessions', JSON.stringify(pending));
+}
+
+async function flushPendingSessions() {
+	const pending = getPendingSessions();
+	if (pending.length === 0) return;
+
+	showMessage(`🔄 Sincronizzazione di ${pending.length} sessioni in sospeso...`);
+
+	const stillFailed = [];
+	for (const payload of pending) {
+		const { error } = await supabaseClient.from('smokes').insert(payload);
+		if (error) stillFailed.push(payload);
+	}
+
+	localStorage.setItem('jt_pending_sessions', JSON.stringify(stillFailed));
+
+	if (stillFailed.length === 0) {
+		showMessage('✅ Tutte le sessioni sono state sincronizzate!');
+		await loadData();
+	} else {
+		showMessage(`⚠️ ${stillFailed.length} sessioni non sincronizzate, riproverò più tardi.`);
+	}
+}
+
 	async function logout() {
 		await supabaseClient.auth.signOut();
 		currentUser = null;
@@ -926,10 +1003,17 @@ if (mode === 'signup') {
 
 		if (error) {
 			console.error('Errore caricamento dati:', error);
+			const cached = getLocalCache('smokes');
+			if (cached) {
+				smokes = cached;
+				update();
+				showMessage('📡 Offline: dati non aggiornati');
+			}
 			return;
 		}
 
 		smokes = data || [];
+		cacheLocalData('smokes', smokes);
 		update();
 	}
 
@@ -1013,7 +1097,7 @@ if (mode === 'signup') {
 			return;
 		}
 	} else {
-		const { error } = await supabaseClient.from('smokes').insert({
+		const payload = {
 			type: (hasFumo && hasErba) ? "fumo-erba" : (hasFumo ? "fumo" : "erba"),
 			grams: fumo_grams + erba_grams,
 			fumo_grams, erba_grams,
@@ -1025,12 +1109,19 @@ if (mode === 'signup') {
 			longitude: currentLocation.lng || null,
 			location_name: finalLocationName,
 			not_mine: document.getElementById("notMineCheck").checked,
-		});
+		};
 
-		if (error) {
-			console.error('Errore salvataggio:', error);
-			alert('Errore nel salvataggio. Riprova.');
-			return;
+		if (!navigator.onLine) {
+			addPendingSession(payload);
+			showMessage('📡 Offline: sessione salvata in locale, si sincronizzerà da sola');
+		} else {
+			const { error } = await supabaseClient.from('smokes').insert(payload);
+
+			if (error) {
+				// rete instabile: non perdere la sessione, mettila in coda
+				addPendingSession(payload);
+				showMessage('⚠️ Connessione instabile: sessione salvata in locale, riproverò a sincronizzare');
+			}
 		}
 	}
 
@@ -2333,9 +2424,21 @@ async function loadPurchases() {
         .select('*')
         .order('date', { ascending: false });
 
-    if (error) { console.error('Errore caricamento acquisti:', error); return; }
+    if (error) {
+        console.error('Errore caricamento acquisti:', error);
+        const cached = getLocalCache('purchases');
+        if (cached) {
+            purchases = cached;
+            activeFumoStock = purchases.find(p => p.type === 'fumo' && !p.is_closed) || null;
+            activeErbaStock = purchases.find(p => p.type === 'erba' && !p.is_closed) || null;
+            renderStockPage();
+            renderMiniWidget();
+        }
+        return;
+    }
 
     purchases = data || [];
+    cacheLocalData('purchases', purchases);
     activeFumoStock = purchases.find(p => p.type === 'fumo' && !p.is_closed) || null;
     activeErbaStock = purchases.find(p => p.type === 'erba' && !p.is_closed) || null;
 
@@ -2799,6 +2902,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 });
 	
+
+	// ========== SERVICE WORKER: registrazione per il caching offline ==========
+	if ('serviceWorker' in navigator) {
+		navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW non registrato:', err));
+	}
+	updateOnlineStatus();
 
 	checkAuth();
 </script>
