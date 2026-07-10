@@ -17,10 +17,29 @@
 	let isOnline = navigator.onLine;
 	let notifications = [];
 	let sharedPeriod = 'month';
-
+    let activeBreak = null;
+    let allBreaks = [];
 	const VAPID_PUBLIC_KEY = 'BE2yG7kWhMrni1qk-uilMqHc7uGL92CZE6UaLt-sbTTHsDr4lDP6qiqnSJsxachx5kUJ7C-0dO46UeSjxOUwiG0';
 	let userReminderSettings = { reminder_enabled: true, reminder_time: '20:00:00' };
-	
+	let unlockedAchievements = [];
+let friendsCountCache = 0;
+
+const ACHIEVEMENTS = [
+	{ key: 'first_session', icon: '🌱', title: 'Prima Volta', desc: 'Segna la tua prima sessione', check: () => smokes.length >= 1 },
+	{ key: 'sessions_10', icon: '🔥', title: 'Decina', desc: '10 sessioni totali', check: () => smokes.length >= 10 },
+	{ key: 'sessions_100', icon: '💯', title: 'Centurione', desc: '100 sessioni totali', check: () => smokes.length >= 100 },
+	{ key: 'sessions_500', icon: '🏆', title: 'Veterano', desc: '500 sessioni totali', check: () => smokes.length >= 500 },
+	{ key: 'streak_7', icon: '📅', title: 'Settimana Piena', desc: 'Streak di 7 giorni', check: () => calculateStreak() >= 7 },
+	{ key: 'streak_30', icon: '🗓️', title: 'Mese di Ferro', desc: 'Streak di 30 giorni', check: () => calculateStreak() >= 30 },
+	{ key: 'streak_100', icon: '💎', title: 'Inarrestabile', desc: 'Streak di 100 giorni', check: () => calculateStreak() >= 100 },
+	{ key: 'first_purchase', icon: '🛒', title: 'Rifornito', desc: 'Registra il tuo primo acquisto', check: () => typeof purchases !== 'undefined' && purchases.length >= 1 },
+	{ key: 'first_friend', icon: '🤝', title: 'Non Più Solo', desc: 'Aggiungi il tuo primo amico', check: () => friendsCountCache >= 1 },
+	{ key: 'first_shared', icon: '👥', title: 'Condivisione', desc: 'Fai la tua prima sessione condivisa', check: () => smokes.some(s => Array.isArray(s.shared_with) && s.shared_with.length > 0) },
+	{ key: 'explorer', icon: '🗺️', title: 'Esploratore', desc: 'Salva 5 posti diversi', check: () => userPlaces.length >= 5 },
+	{ key: 'globe_trotter', icon: '🌍', title: 'Giramondo', desc: 'Sessioni in 5 posti diversi', check: () => new Set(smokes.map(s => s.location_name).filter(Boolean)).size >= 5 },
+];
+
+
 	// Gestione selezione Fumo/Erba
 document.querySelectorAll('.substance-checkbox-group input[type="checkbox"]').forEach(checkbox => {
 	checkbox.addEventListener('change', function() {
@@ -422,6 +441,8 @@ if (mode === 'signup') {
 	await loadPurchases();
 	await loadReminderSettings();
 	await loadNotifications();
+	await loadAchievements();
+	await loadBreaks();
 	subscribeToNotifications();
 	getLocationAuto();
 	}
@@ -1168,6 +1189,7 @@ function updateMap() {
 		updateStats();
 		renderCharts();
 		checkReminderBanner();
+		if (typeof checkAchievements === 'function' && unlockedAchievements) checkAchievements();
 	}
 
 function updateHistory() {
@@ -1911,6 +1933,173 @@ if (ctxPie) {
 			document.getElementById('usernameInput').value = data.username;
 		}
 	}
+
+
+    async function loadAchievements() {
+	const { data, error } = await supabaseClient
+		.from('achievements_unlocked')
+		.select('achievement_key');
+
+	if (!error) {
+		unlockedAchievements = (data || []).map(a => a.achievement_key);
+	}
+
+	const { count } = await supabaseClient
+		.from('friendships')
+		.select('id', { count: 'exact', head: true })
+		.eq('user_id', currentUser.id);
+	friendsCountCache = count || 0;
+
+	await checkAchievements();
+	renderAchievements();
+}
+
+async function checkAchievements() {
+	for (const ach of ACHIEVEMENTS) {
+		if (unlockedAchievements.includes(ach.key)) continue;
+		if (ach.check()) {
+			unlockedAchievements.push(ach.key);
+			await supabaseClient.from('achievements_unlocked').upsert({
+				user_id: currentUser.id,
+				achievement_key: ach.key
+			}, { onConflict: 'user_id,achievement_key' });
+			showMessage(`🏅 Traguardo sbloccato: ${ach.title}!`);
+		}
+	}
+	renderAchievements();
+}
+
+function renderAchievements() {
+	const el = document.getElementById('achievementsList');
+	if (!el) return;
+
+	el.innerHTML = ACHIEVEMENTS.map(ach => {
+		const unlocked = unlockedAchievements.includes(ach.key);
+		return `
+			<div style="display:flex; align-items:center; gap:12px; padding:12px; margin-bottom:8px; border-radius:12px;
+						background:${unlocked ? 'rgba(76,175,80,0.1)' : 'rgba(0,0,0,0.03)'};
+						border:1px solid ${unlocked ? 'rgba(76,175,80,0.25)' : 'rgba(0,0,0,0.05)'};
+						opacity:${unlocked ? '1' : '0.5'};">
+				<span style="font-size:28px; filter:${unlocked ? 'none' : 'grayscale(100%)'};">${ach.icon}</span>
+				<div>
+					<div style="font-weight:700; font-size:14px; color:${unlocked ? 'var(--primary-dark)' : '#999'};">${ach.title}</div>
+					<div style="font-size:12px; color:#999;">${ach.desc}</div>
+				</div>
+			</div>
+		`;
+	}).join('');
+}
+
+async function loadBreaks() {
+	const { data, error } = await supabaseClient
+		.from('tolerance_breaks')
+		.select('*')
+		.order('start_date', { ascending: false });
+
+	if (error) { console.error('Errore caricamento pause:', error); return; }
+
+	allBreaks = data || [];
+	activeBreak = allBreaks.find(b => b.is_active) || null;
+	renderBreakCard();
+}
+
+function getAvgPricePerGram() {
+	if (typeof purchases === 'undefined') return null;
+	const priced = purchases.filter(p => p.price && p.grams);
+	if (priced.length === 0) return null;
+	const totalPrice = priced.reduce((s, p) => s + parseFloat(p.price), 0);
+	const totalGrams = priced.reduce((s, p) => s + parseFloat(p.grams), 0);
+	return totalGrams > 0 ? totalPrice / totalGrams : null;
+}
+
+function getAvgDailyGramsBeforeBreak(breakStartDate) {
+	const before = smokes.filter(s => s.date < breakStartDate && !s.not_mine);
+	if (before.length === 0) return 0;
+	const totalGrams = before.reduce((s, x) => s + (x.my_fumo_grams ?? x.fumo_grams ?? 0) + (x.my_erba_grams ?? x.erba_grams ?? 0), 0);
+	const dates = [...new Set(before.map(s => s.date))].sort();
+	const firstDate = new Date(dates[0]);
+	const lastDate = new Date(breakStartDate);
+	const diffDays = Math.max(1, Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24)));
+	return totalGrams / diffDays;
+}
+
+function renderBreakCard() {
+	const el = document.getElementById('breakCard');
+	if (!el) return;
+
+	if (activeBreak) {
+		const start = new Date(activeBreak.start_date);
+		const today = new Date();
+		const days = Math.max(0, Math.floor((today - start) / (1000 * 60 * 60 * 24)));
+
+		const avgDaily = getAvgDailyGramsBeforeBreak(activeBreak.start_date);
+		const pricePerGram = getAvgPricePerGram();
+		const savedGrams = avgDaily * days;
+		const savedMoney = pricePerGram ? (savedGrams * pricePerGram) : null;
+
+		el.innerHTML = `
+			<div style="text-align:center; padding:10px;">
+				<div style="font-size:36px; font-weight:800; color:var(--primary);">${days}</div>
+				<div style="font-size:13px; color:#666; margin-bottom:15px;">giorni senza fumare 💪</div>
+				${savedMoney !== null ? `<div style="font-size:15px; font-weight:700; color:#9c27b0;">💰 ~€${savedMoney.toFixed(2)} risparmiati</div>` : ''}
+				<div style="font-size:12px; color:#999; margin-top:4px;">~${savedGrams.toFixed(1)}g non consumati</div>
+				<button class="secondary-btn" onclick="endBreak()" style="margin-top:15px;">Interrompi pausa</button>
+			</div>
+		`;
+	} else {
+		el.innerHTML = `
+			<p style="text-align:center; color:#999; font-size:13px; margin-bottom:10px;">Nessuna pausa attiva.</p>
+			<button class="main-btn" onclick="startBreak()" style="margin-top:0;">💤 Inizia una pausa</button>
+		`;
+	}
+
+	renderBreakHistory();
+}
+
+function renderBreakHistory() {
+	const el = document.getElementById('breakHistory');
+	if (!el) return;
+
+	const past = allBreaks.filter(b => !b.is_active);
+	if (past.length === 0) { el.innerHTML = ''; return; }
+
+	el.innerHTML = '<hr style="margin:15px 0;"><p style="font-size:12px; color:#999; margin-bottom:8px;">Pause precedenti</p>' +
+		past.map(b => {
+			const days = Math.ceil((new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24));
+			return `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.04); font-size:13px;">
+				<span>${b.start_date.split('-').reverse().join('/')} → ${b.end_date.split('-').reverse().join('/')}</span>
+				<span style="font-weight:600; color:var(--primary);">${days}g</span>
+			</div>`;
+		}).join('');
+}
+
+async function startBreak() {
+	const today = new Date().toISOString().split('T')[0];
+	const { error } = await supabaseClient.from('tolerance_breaks').insert({
+		user_id: currentUser.id,
+		start_date: today,
+		is_active: true
+	});
+
+	if (error) { alert('Errore nell\'avvio della pausa.'); return; }
+	showMessage('💤 Pausa iniziata, in bocca al lupo!');
+	await loadBreaks();
+}
+
+async function endBreak() {
+	if (!activeBreak) return;
+	if (!confirm('Vuoi terminare la pausa attuale?')) return;
+
+	const today = new Date().toISOString().split('T')[0];
+	const { error } = await supabaseClient
+		.from('tolerance_breaks')
+		.update({ is_active: false, end_date: today })
+		.eq('id', activeBreak.id);
+
+	if (error) { alert('Errore nella chiusura della pausa.'); return; }
+	showMessage('✅ Pausa conclusa, ottimo lavoro!');
+	await loadBreaks();
+}
 
 // ========== PROMEMORIA (banner in-app) ==========
 function checkReminderBanner() {
