@@ -290,6 +290,11 @@
 		<div class="tabs-social">
 			<button id="tab-global" class="active" onclick="switchSocialTab('global')">🌍 Mondiale</button>
 			<button id="tab-friends" onclick="switchSocialTab('friends')">👥 Amici</button>
+			<button id="tab-shared" onclick="switchSocialTab('shared')">🤝 Insieme</button>
+		</div>
+		<div id="sharedPeriodToggle" style="display:none; gap:8px; margin-bottom:15px;">
+			<button class="action-btn" id="periodMonthBtn" onclick="setSharedPeriod('month')" style="flex:1; margin-top:0;">Questo mese</button>
+			<button class="secondary-btn" id="periodAllBtn" onclick="setSharedPeriod('all')" style="flex:1; margin-top:0;">Sempre</button>
 		</div>
 		<div id="leaderboardList"></div>
 	</div>
@@ -506,6 +511,7 @@
 	let isLocatingNow = false;
 	let isOnline = navigator.onLine;
 	let notifications = [];
+	let sharedPeriod = 'month';
 
 	const VAPID_PUBLIC_KEY = 'BE2yG7kWhMrni1qk-uilMqHc7uGL92CZE6UaLt-sbTTHsDr4lDP6qiqnSJsxachx5kUJ7C-0dO46UeSjxOUwiG0';
 	let userReminderSettings = { reminder_enabled: true, reminder_time: '20:00:00' };
@@ -2141,8 +2147,17 @@ if (ctxPie) {
 		currentSocialTab = tab;
 		document.getElementById('tab-global').classList.toggle('active', tab === 'global');
 		document.getElementById('tab-friends').classList.toggle('active', tab === 'friends');
+		document.getElementById('tab-shared').classList.toggle('active', tab === 'shared');
+		document.getElementById('sharedPeriodToggle').style.display = tab === 'shared' ? 'flex' : 'none';
 		loadSocial();
 	}
+
+	function setSharedPeriod(period) {
+	sharedPeriod = period;
+	document.getElementById('periodMonthBtn').className = period === 'month' ? 'action-btn' : 'secondary-btn';
+	document.getElementById('periodAllBtn').className = period === 'all' ? 'action-btn' : 'secondary-btn';
+	loadSocial();
+}
 
 	async function loadSocial() {
 		const list = document.getElementById('leaderboardList');
@@ -2153,6 +2168,10 @@ if (ctxPie) {
 		if (!currentUser) {
 			list.innerHTML = "<p style='text-align:center;'>Effettua il login per vedere la classifica.</p>";
 			return;
+		}
+
+		if (currentSocialTab === 'shared') {
+			return loadSharedLeaderboard();
 		}
 
 		const isGlobal = currentSocialTab === 'global';
@@ -2175,7 +2194,6 @@ if (ctxPie) {
 				return;
 			}
 
-			// 🆕 Se siamo nel tab amici, carica anche le statistiche condivise
 			let sharedMap = {};
 			if (!isGlobal) {
 				const { data: sharedData } = await supabaseClient.rpc('get_all_friends_shared_stats');
@@ -2214,6 +2232,51 @@ if (ctxPie) {
 
 		} catch (err) {
 			console.error("Errore generico loadSocial:", err);
+			list.innerHTML = "<p class='error'>Errore di connessione.</p>";
+		}
+	}
+
+	async function loadSharedLeaderboard() {
+		const list = document.getElementById('leaderboardList');
+
+		try {
+			const { data, error } = await supabaseClient.rpc('get_friends_shared_leaderboard', { period: sharedPeriod });
+
+			if (error) {
+				console.error("Errore leaderboard condivise:", error);
+				list.innerHTML = "<p class='error'>Errore nel recupero dati dal database.</p>";
+				return;
+			}
+
+			const filtered = (data || []).filter(u => u.sessions_together > 0);
+
+			if (filtered.length === 0) {
+				list.innerHTML = `<p style='text-align:center; padding: 20px;'>
+					${sharedPeriod === 'month' ? "Nessuna sessione condivisa questo mese." : "Nessuna sessione condivisa ancora."}
+				</p>`;
+				return;
+			}
+
+			list.innerHTML = filtered.map((u, i) => {
+				const rankStr = i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`;
+				const rankClass = i < 3 ? 'top3' : '';
+
+				return `
+					<div class="lb-item" onclick="viewFriendStats('${u.friend_id}', '${u.username}')">
+						<div style="display: flex; align-items: center;">
+							<span class="lb-rank ${rankClass}">${rankStr}</span>
+							<span style="font-weight: 500;">🤝 ${u.username}</span>
+						</div>
+						<div style="text-align: right;">
+							<span style="font-weight: bold; color: var(--primary);">${u.sessions_together}</span><br>
+							<small style="color: #999;">${Number(u.grams_together).toFixed(1)}g insieme</small>
+						</div>
+					</div>
+				`;
+			}).join('');
+
+		} catch (err) {
+			console.error("Errore generico leaderboard condivise:", err);
 			list.innerHTML = "<p class='error'>Errore di connessione.</p>";
 		}
 	}
