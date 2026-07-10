@@ -1,6 +1,6 @@
 // sw.js — gestisce sia le notifiche push sia il caching per l'uso offline
 
-const CACHE_NAME = 'jointtracker-v5';
+const CACHE_NAME = 'jointtracker-v6';
 
 const PRECACHE_URLS = [
   '/',
