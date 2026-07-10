@@ -61,7 +61,13 @@
 <!-- PAGINA PRINCIPALE (quando loggato) -->
 <header id="header" style="display:none;">
 	<h1>🌿 JointTracker</h1>
-	<button class="menu-btn" onclick="toggleMenu()">☰</button>
+	<div style="display:flex; align-items:center; gap:6px;">
+		<button class="menu-btn" id="notifBtn" onclick="toggleNotifications()" style="position:relative;">
+			🔔
+			<span id="notifBadge" style="display:none; position:absolute; top:2px; right:2px; background:var(--danger); color:white; font-size:10px; font-weight:bold; border-radius:50%; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;"></span>
+		</button>
+		<button class="menu-btn" id="hamburgerBtn" onclick="toggleMenu()">☰</button>
+	</div>
 	<div class="menu-content" id="menu">
     <button onclick="showPage('add')"><span style="font-size:18px;">➕</span>Aggiungi</button>
     <button onclick="showPage('history')"><span style="font-size:18px;">📜</span>Registro</button>
@@ -72,6 +78,10 @@
     <button onclick="showPage('stock')"><span style="font-size:18px;">🛒</span>Scorte</button>
     <button onclick="showPage('settings')"><span style="font-size:18px;">⚙️</span>Dati</button>
 </div>
+	<div class="menu-content" id="notifPanel" style="min-width:280px; max-width:320px;">
+		<div style="padding:12px 15px; font-weight:700; color:var(--primary-dark); border-bottom:1px solid rgba(0,0,0,0.06);">🔔 Notifiche</div>
+		<div id="notifList"></div>
+	</div>
 </header>
 
 <!-- PAGINA AGGIUNGI -->
@@ -495,6 +505,7 @@
 	let sessionParticipants = []; // { user_id, username }
 	let isLocatingNow = false;
 	let isOnline = navigator.onLine;
+	let notifications = [];
 
 	const VAPID_PUBLIC_KEY = 'BE2yG7kWhMrni1qk-uilMqHc7uGL92CZE6UaLt-sbTTHsDr4lDP6qiqnSJsxachx5kUJ7C-0dO46UeSjxOUwiG0';
 	let userReminderSettings = { reminder_enabled: true, reminder_time: '20:00:00' };
@@ -899,6 +910,8 @@ if (mode === 'signup') {
 	await loadUserPlaces();
 	await loadPurchases();
 	await loadReminderSettings();
+	await loadNotifications();
+	subscribeToNotifications();
 	getLocationAuto();
 	}
 
@@ -2320,6 +2333,102 @@ function dismissReminderBanner() {
 	document.getElementById('reminderBanner').style.display = 'none';
 }
 
+// ========== NOTIFICHE IN-APP ==========
+async function loadNotifications() {
+	const { data, error } = await supabaseClient
+		.from('notifications')
+		.select('*')
+		.order('created_at', { ascending: false })
+		.limit(30);
+
+	if (error) { console.error('Errore notifiche:', error); return; }
+
+	notifications = data || [];
+	renderNotifications();
+	updateNotifBadge();
+}
+
+function renderNotifications() {
+	const list = document.getElementById('notifList');
+	if (!list) return;
+
+	if (notifications.length === 0) {
+		list.innerHTML = '<p style="padding:15px; text-align:center; color:#999; font-size:13px;">Nessuna notifica.</p>';
+		return;
+	}
+
+	list.innerHTML = notifications.map(n => `
+		<div style="padding:12px 15px; border-bottom:1px solid rgba(0,0,0,0.04); background:${n.read ? 'transparent' : 'rgba(76,175,80,0.08)'};">
+			<p style="margin:0; font-size:13px; color:#444;">${n.message}</p>
+			<small style="color:#999;">${formatNotifTime(n.created_at)}</small>
+		</div>
+	`).join('');
+}
+
+function formatNotifTime(iso) {
+	const d = new Date(iso);
+	const now = new Date();
+	const diffMin = Math.floor((now - d) / 60000);
+	if (diffMin < 1) return 'Adesso';
+	if (diffMin < 60) return `${diffMin} min fa`;
+	const diffH = Math.floor(diffMin / 60);
+	if (diffH < 24) return `${diffH} h fa`;
+	return d.toLocaleDateString('it-IT');
+}
+
+function updateNotifBadge() {
+	const badge = document.getElementById('notifBadge');
+	if (!badge) return;
+	const unread = notifications.filter(n => !n.read).length;
+	if (unread > 0) {
+		badge.textContent = unread > 9 ? '9+' : unread;
+		badge.style.display = 'flex';
+	} else {
+		badge.style.display = 'none';
+	}
+}
+
+async function toggleNotifications() {
+	const panel = document.getElementById('notifPanel');
+	const menu = document.getElementById('menu');
+	if (menu) menu.classList.remove('active');
+
+	const isOpening = !panel.classList.contains('active');
+	panel.classList.toggle('active');
+
+	if (isOpening) {
+		await markAllNotificationsRead();
+	}
+}
+
+async function markAllNotificationsRead() {
+	const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+	if (unreadIds.length === 0) return;
+
+	notifications.forEach(n => n.read = true);
+	renderNotifications();
+	updateNotifBadge();
+
+	await supabaseClient.from('notifications').update({ read: true }).in('id', unreadIds);
+}
+
+function subscribeToNotifications() {
+	supabaseClient
+		.channel('notifications-channel')
+		.on('postgres_changes', {
+			event: 'INSERT',
+			schema: 'public',
+			table: 'notifications',
+			filter: `user_id=eq.${currentUser.id}`
+		}, (payload) => {
+			notifications.unshift(payload.new);
+			renderNotifications();
+			updateNotifBadge();
+			showMessage('🔔 ' + payload.new.message);
+		})
+		.subscribe();
+}
+
 // ========== IMPOSTAZIONI PROMEMORIA ==========
 async function loadReminderSettings() {
 	const { data } = await supabaseClient
@@ -2882,7 +2991,7 @@ function toggleMenu() {
 
 // Chiudi il menu quando clicchi su un bottone
 document.addEventListener('DOMContentLoaded', function() {
-	const menuButtons = document.querySelectorAll('.menu-content button');
+	const menuButtons = document.querySelectorAll('#menu button');
 	menuButtons.forEach(btn => {
 		btn.addEventListener('click', function() {
 			setTimeout(() => {
@@ -2891,13 +3000,18 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	});
 
-	// Chiudi il menu se clicchi fuori
+	// Chiudi menu/notifiche se clicchi fuori
 	document.addEventListener('click', function(event) {
 		const menu = document.getElementById('menu');
-		const menuBtn = document.querySelector('.menu-btn');
-		
-		if (!menu.contains(event.target) && !menuBtn.contains(event.target)) {
+		const hamburgerBtn = document.getElementById('hamburgerBtn');
+		const notifPanel = document.getElementById('notifPanel');
+		const notifBtn = document.getElementById('notifBtn');
+
+		if (menu && hamburgerBtn && !menu.contains(event.target) && !hamburgerBtn.contains(event.target)) {
 			menu.classList.remove('active');
+		}
+		if (notifPanel && notifBtn && !notifPanel.contains(event.target) && !notifBtn.contains(event.target)) {
+			notifPanel.classList.remove('active');
 		}
 	});
 });
