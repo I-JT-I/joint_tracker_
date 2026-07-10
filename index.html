@@ -2716,6 +2716,47 @@ function gramsRemainingForPurchase(purchase) {
     return Math.max(0, parseFloat(purchase.grams) - consumed);
 }
 
+function computeDailyRate(type, daysWindow = 14) {
+	const cutoff = new Date();
+	cutoff.setDate(cutoff.getDate() - daysWindow);
+	const cutoffStr = cutoff.toISOString().split('T')[0];
+
+	const recentGrams = smokes
+		.filter(s => !s.not_mine && s.date >= cutoffStr)
+		.reduce((sum, s) => sum + (type === 'fumo' ? (s.fumo_grams || 0) : (s.erba_grams || 0)), 0);
+
+	return recentGrams / daysWindow;
+}
+
+function getTotalRemaining(type) {
+	return getOpenPurchasesFIFO(type).reduce((sum, p) => sum + gramsRemainingForPurchase(p), 0);
+}
+
+function renderStockPrediction(type) {
+	const remaining = getTotalRemaining(type);
+	if (remaining <= 0) return '';
+
+	const dailyRate = computeDailyRate(type);
+	if (dailyRate <= 0) {
+		return `<p style="font-size:12px; color:#999; margin-top:10px; text-align:center;">⏳ Consumo troppo basso negli ultimi 14gg per stimare la durata</p>`;
+	}
+
+	const daysLeft = Math.round(remaining / dailyRate);
+	const exhaustDate = new Date();
+	exhaustDate.setDate(exhaustDate.getDate() + daysLeft);
+	const dateStr = exhaustDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+
+	const urgencyColor = daysLeft > 7 ? '#4CAF50' : daysLeft > 3 ? '#FF9800' : '#f44336';
+
+	return `
+		<div style="background:rgba(0,0,0,0.03); border-radius:10px; padding:10px; margin-top:10px; text-align:center;">
+			<span style="font-size:13px; color:${urgencyColor}; font-weight:600;">
+				⏳ Al ritmo attuale, dura ancora ~${daysLeft} giorni (fino al ${dateStr})
+			</span>
+		</div>
+	`;
+}
+
 // ========== RENDER PAGINA STOCK ==========
 function renderStockPage() {
     renderStockCard('fumo');
@@ -2784,6 +2825,7 @@ function renderStockCard(type, stock) {
         `;
     });
 
+    html += renderStockPrediction(type);
     displayEl.innerHTML = html;
 }
 
