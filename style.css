@@ -48,17 +48,17 @@
 			animation: ondaScuraDue 15s infinite linear reverse;
 		}
 		header {
-			background: linear-gradient(180deg, rgba(46,125,50,0.95) 0%, rgba(27,94,32,0.98) 100%);
-			color: white;
-			padding: 15px;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			position: sticky;
-			top: 0;
-			z-index: 1000;
-			box-shadow: 0 2px 20px rgba(0,0,0,0.08);
-		}
+	background: linear-gradient(180deg, rgba(46,125,50,0.95) 0%, rgba(27,94,32,0.98) 100%);
+	color: white;
+	padding: 15px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	position: sticky;
+	top: 0;
+	z-index: 1000;
+	box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+}
  
 		header h1 {
 			margin: 0;
@@ -80,8 +80,8 @@
 }
 
 .menu-content {
-	position: fixed;
-	top: 60px;
+	position: absolute;
+	top: 100%;
 	right: 15px;
 	left: auto;
 	bottom: auto;
@@ -95,6 +95,7 @@
 	overflow: hidden;
 	border: 1px solid rgba(0,0,0,0.05);
 	min-width: 200px;
+	margin-top: 8px;
 }
 
 .menu-content.active {
