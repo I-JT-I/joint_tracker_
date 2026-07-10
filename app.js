@@ -1189,6 +1189,7 @@ function updateMap() {
 		updateStats();
 		renderCharts();
 		checkReminderBanner();
+		renderPeriodComparison();
 		if (typeof checkAchievements === 'function' && unlockedAchievements) checkAchievements();
 	}
 
@@ -2071,6 +2072,60 @@ function renderBreakHistory() {
 				<span style="font-weight:600; color:var(--primary);">${days}g</span>
 			</div>`;
 		}).join('');
+}
+
+function getMonthKey(date) {
+	const d = new Date(date);
+	return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+}
+
+function renderPeriodComparison() {
+	const el = document.getElementById('periodComparison');
+	if (!el) return;
+
+	const now = new Date();
+	const currentMonthKey = getMonthKey(now);
+	const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+	const lastMonthKey = getMonthKey(lastMonthDate);
+
+	const currentSmokes = smokes.filter(s => getMonthKey(s.date) === currentMonthKey);
+	const lastSmokes = smokes.filter(s => getMonthKey(s.date) === lastMonthKey);
+
+	const currentCount = currentSmokes.length;
+	const lastCount = lastSmokes.length;
+
+	const currentGrams = currentSmokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
+	const lastGrams = lastSmokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
+
+	function renderDiff(current, last) {
+		if (last === 0 && current === 0) return `<span style="color:#999; font-size:12px;">Nessun dato</span>`;
+		if (last === 0) return `<span style="color:var(--primary); font-size:12px; font-weight:600;">▲ Nuovo questo mese</span>`;
+		const pct = ((current - last) / last) * 100;
+		const isSame = Math.abs(pct) < 0.5;
+		const isUp = pct > 0;
+		const color = isSame ? '#999' : (isUp ? '#FF9800' : '#2196F3');
+		const arrow = isSame ? '→' : (isUp ? '▲' : '▼');
+		return `<span style="color:${color}; font-size:12px; font-weight:600;">${arrow} ${Math.abs(pct).toFixed(0)}%</span>`;
+	}
+
+	function renderRow(label, current, last, suffix) {
+		const displayVal = suffix === 'g' ? current.toFixed(1) : current;
+		return `
+			<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(0,0,0,0.04);">
+				<span style="font-size:13px; color:#666;">${label}</span>
+				<div style="text-align:right;">
+					<div style="font-weight:700; font-size:15px;">${displayVal}${suffix}</div>
+					${renderDiff(current, last)}
+				</div>
+			</div>
+		`;
+	}
+
+	el.innerHTML = `
+		${renderRow('Sessioni', currentCount, lastCount, '')}
+		${renderRow('Grammi totali', currentGrams, lastGrams, 'g')}
+		<p style="font-size:11px; color:#999; margin-top:8px; text-align:center;">Mese scorso: ${lastCount} sessioni · ${lastGrams.toFixed(1)}g</p>
+	`;
 }
 
 async function startBreak() {
