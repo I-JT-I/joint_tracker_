@@ -23,6 +23,7 @@
 	let userReminderSettings = { reminder_enabled: true, reminder_time: '20:00:00' };
 	let unlockedAchievements = [];
 let friendsCountCache = 0;
+let achievementsLoaded = false;
 
 const ACHIEVEMENTS = [
 	{ key: 'first_session', icon: '🌱', title: 'Prima Volta', desc: 'Segna la tua prima sessione', check: () => smokes.length >= 1 },
@@ -1190,7 +1191,7 @@ function updateMap() {
 		renderCharts();
 		checkReminderBanner();
 		renderPeriodComparison();
-		if (typeof checkAchievements === 'function' && unlockedAchievements) checkAchievements();
+		if (achievementsLoaded) checkAchievements();
 	}
 
 function updateHistory() {
@@ -1951,6 +1952,7 @@ if (ctxPie) {
 		.eq('user_id', currentUser.id);
 	friendsCountCache = count || 0;
 
+	achievementsLoaded = true;
 	await checkAchievements();
 	renderAchievements();
 }
