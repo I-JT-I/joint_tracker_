@@ -3,7 +3,7 @@
   "short_name": "JointTracker",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#f4f7f6",
+  "background_color": "#0c120c",
   "theme_color": "#2e7d32",
   "icons": [
     {
