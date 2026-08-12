@@ -4,7 +4,22 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Joint Tracker</title>
-	
+
+	<!-- TEMA: imposta subito data-theme prima del paint, per evitare flash -->
+	<script>
+	(function() {
+		try {
+			var pref = localStorage.getItem('jt_theme') || 'dark';
+			var resolved = pref === 'auto'
+				? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+				: pref;
+			document.documentElement.setAttribute('data-theme', resolved);
+		} catch (e) {
+			document.documentElement.setAttribute('data-theme', 'dark');
+		}
+	})();
+	</script>
+
 	<!-- PWA Meta Tags -->
 	<meta name="theme-color" content="#2e7d32">
 	<meta name="description" content="App per tracciare il consumo di cannabis con statistiche dettagliate">
@@ -60,6 +75,9 @@
 <header id="header" style="display:none; position:sticky;">
 	<h1>🌿 JointTracker</h1>
 	<div style="display:flex; align-items:center; gap:6px;">
+		<button class="menu-btn theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Cambia tema">
+			<span class="theme-icon-light">🌙</span><span class="theme-icon-dark">☀️</span>
+		</button>
 		<button class="menu-btn" id="notifBtn" onclick="toggleNotifications()" style="position:relative;">
 			🔔
 			<span id="notifBadge" style="display:none; position:absolute; top:2px; right:2px; background:var(--danger); color:white; font-size:10px; font-weight:bold; border-radius:50%; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;"></span>
@@ -67,44 +85,64 @@
 		<button class="menu-btn" id="hamburgerBtn" onclick="toggleMenu()">☰</button>
 	</div>
 	<div class="menu-content" id="menu">
+    <button onclick="showPage('home')"><span style="font-size:18px;">🏠</span>Home</button>
     <button onclick="showPage('add')"><span style="font-size:18px;">➕</span>Aggiungi</button>
     <button onclick="showPage('history')"><span style="font-size:18px;">📜</span>Registro</button>
     <button onclick="showPage('stats')"><span style="font-size:18px;">📊</span>Stats</button>
     <button onclick="showPage('charts')"><span style="font-size:18px;">📈</span>Grafici</button>
-    <button onclick="showPage('map')"><span style="font-size:18px;">🗺️</span>Mappa</button>
+    <button onclick="showPage('map')"><span style="font-size:18px;">🗺️</span>Luoghi</button>
     <button onclick="showPage('social')"><span style="font-size:18px;">🏆</span>Social</button>
     <button onclick="showPage('stock')"><span style="font-size:18px;">🛒</span>Scorte</button>
     <button onclick="showPage('settings')"><span style="font-size:18px;">⚙️</span>Dati</button>
 </div>
 	<div class="menu-content" id="notifPanel" style="min-width:280px; max-width:320px;">
-		<div style="padding:12px 15px; font-weight:700; color:var(--primary-dark); border-bottom:1px solid rgba(0,0,0,0.06);">🔔 Notifiche</div>
+		<div style="padding:12px 15px; font-weight:700; color:var(--heading); border-bottom:1px solid rgba(var(--overlay-rgb),0.08);">🔔 Notifiche</div>
 		<div id="notifList"></div>
 	</div>
 </header>
+
+<!-- PAGINA HOME -->
+<div id="page-home" class="page">
+	<div class="card home-hero">
+		<div id="homeGreeting" style="font-size:15px; color:var(--color-text-secondary); font-weight:600;">Ciao 👋</div>
+		<div class="streak-num"><span id="homeStreak">0</span>🔥</div>
+		<div style="font-size:13px; color:var(--color-text-muted);">giorni di streak</div>
+		<div class="home-quick-row">
+			<span id="homeMonthStat">Questo mese: – sessioni</span>
+			<span id="homeReminderLine" style="display:none;"></span>
+		</div>
+		<button class="main-btn" onclick="showPage('add')">➕ Nuova sessione</button>
+		<div id="homeAchievementTeaser" style="display:none; margin-top:12px; font-size:13px; color:var(--heading); font-weight:600;"></div>
+	</div>
+
+	<div class="card">
+		<h3>📦 Scorte</h3>
+		<div id="miniStockWidget" style="display:none;">
+		  <div style="display:flex; gap:10px;">
+		    <div style="flex:1; background: rgba(139,69,19,0.08); border:1px solid rgba(139,69,19,0.2); border-radius:12px; padding:10px;">
+		      <div style="font-size:11px; font-weight:600; color:#795548; margin-bottom:6px;">🍫 Fumo rimanente</div>
+		      <div style="font-size:15px; font-weight:700; color:#5D4037;" id="miniFumoGrams">–</div>
+		      <div style="background:rgba(139,69,19,0.15); border-radius:6px; height:6px; margin-top:6px; overflow:hidden;">
+		        <div id="miniFumoBar" style="height:100%; background:#795548; border-radius:6px; transition: width 0.5s ease; width:0%;"></div>
+		      </div>
+		    </div>
+		    <div style="flex:1; background: rgba(76,175,80,0.08); border:1px solid rgba(76,175,80,0.2); border-radius:12px; padding:10px;">
+		      <div style="font-size:11px; font-weight:600; color:var(--primary); margin-bottom:6px;">🍃 Erba rimanente</div>
+		      <div style="font-size:15px; font-weight:700; color:var(--heading);" id="miniErbaGrams">–</div>
+		      <div style="background:rgba(76,175,80,0.15); border-radius:6px; height:6px; margin-top:6px; overflow:hidden;">
+		        <div id="miniErbaBar" style="height:100%; background:var(--primary-light); border-radius:6px; transition: width 0.5s ease; width:0%;"></div>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		<p id="homeNoStock" style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna scorta attiva. Registrane una dalla pagina Scorte.</p>
+	</div>
+</div>
 
 <!-- PAGINA AGGIUNGI -->
 <div id="page-add" class="page">
 	<div class="card">
 		<div class="user-info">Loggato come <strong id="emailDisplay"></strong></div>
-		<!-- MINI SCORTA WIDGET -->
-<div id="miniStockWidget" style="display:none; margin-bottom: 15px;">
-  <div style="display:flex; gap:10px;">
-    <div style="flex:1; background: rgba(139,69,19,0.08); border:1px solid rgba(139,69,19,0.2); border-radius:12px; padding:10px;">
-      <div style="font-size:11px; font-weight:600; color:#795548; margin-bottom:6px;">🍫 Fumo rimanente</div>
-      <div style="font-size:15px; font-weight:700; color:#5D4037;" id="miniFumoGrams">–</div>
-      <div style="background:rgba(139,69,19,0.15); border-radius:6px; height:6px; margin-top:6px; overflow:hidden;">
-        <div id="miniFumoBar" style="height:100%; background:#795548; border-radius:6px; transition: width 0.5s ease; width:0%;"></div>
-      </div>
-    </div>
-    <div style="flex:1; background: rgba(76,175,80,0.08); border:1px solid rgba(76,175,80,0.2); border-radius:12px; padding:10px;">
-      <div style="font-size:11px; font-weight:600; color:var(--primary); margin-bottom:6px;">🍃 Erba rimanente</div>
-      <div style="font-size:15px; font-weight:700; color:var(--primary-dark);" id="miniErbaGrams">–</div>
-      <div style="background:rgba(76,175,80,0.15); border-radius:6px; height:6px; margin-top:6px; overflow:hidden;">
-        <div id="miniErbaBar" style="height:100%; background:var(--primary-light); border-radius:6px; transition: width 0.5s ease; width:0%;"></div>
-      </div>
-    </div>
-  </div>
-</div>
 		<h3>➕ Nuovo Inserimento</h3>
 
 		<label>Cosa fumi?</label>
@@ -119,7 +157,7 @@
 
 <!-- MESSAGGIO QUANDO ENTRAMBI SELEZIONATI -->
 <div id="divideMessage" style="display: none; background: rgba(76, 175, 80, 0.15); border: 2px solid var(--primary-light); border-radius: 12px; padding: 12px; margin-top: 10px;">
-    <p style="text-align:center; font-weight: 600; color: var(--primary-dark); margin: 0 0 10px;">📊 Quanti grammi per ciascuno?</p>
+    <p style="text-align:center; font-weight: 600; color: var(--heading); margin: 0 0 10px;">📊 Quanti grammi per ciascuno?</p>
     <div style="display: flex; gap: 10px;">
         <div style="flex:1;">
             <label style="margin-top:0; font-size:12px;">🍫 Fumo (g)</label>
@@ -135,15 +173,15 @@
 <!-- TOGGLE NON MIA -->
 <div id="notMineToggle" style="display:none; margin-top: 12px;">
     <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; background: rgba(255,152,0,0.08); border: 1px solid rgba(255,152,0,0.3); border-radius:12px; padding:12px; cursor:pointer;">
-        <span style="font-size:14px; font-weight:600; color:#E65100;">👥 Non è mia (non scala dalla scorta)</span>
-        <input type="checkbox" id="notMineCheck" style="width:20px; height:20px; margin:0; padding:0; border:none; background:none; cursor:pointer; accent-color: #FF9800;">
+        <span style="font-size:14px; font-weight:600; color:var(--warning-text);">👥 Non è mia (non scala dalla scorta)</span>
+        <input type="checkbox" id="notMineCheck" style="width:20px; height:20px; margin:0; padding:0; border:none; background:none; cursor:pointer; accent-color: var(--warning);">
     </label>
 </div>
 
 <!-- SESSIONE CONDIVISA -->
 <div style="margin-top:12px;">
     <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; background: rgba(76,175,80,0.08); border: 1px solid rgba(76,175,80,0.3); border-radius:12px; padding:12px; cursor:pointer;">
-        <span style="font-size:14px; font-weight:600; color:var(--primary-dark);">👥 Sessione condivisa con amici</span>
+        <span style="font-size:14px; font-weight:600; color:var(--heading);">👥 Sessione condivisa con amici</span>
         <input type="checkbox" id="sharedSessionCheck" onchange="toggleSharedSession()" style="width:20px; height:20px; margin:0; accent-color: var(--primary-light);">
     </label>
 </div>
@@ -226,19 +264,15 @@
 			<div class="stat-box"><big id="bestStreak">0</big><small>🏆 Miglior streak</small></div>
 		</div>
 
-		<p style="font-size: 12px; color: #999; margin-top: 10px;">*Il calcolo parte dalla tua prima J inserita. (<span id="diffDays">0</span> giorni fa)</p>
+		<p style="font-size: 12px; color: var(--color-text-muted); margin-top: 10px;">*Il calcolo parte dalla tua prima J inserita. (<span id="diffDays">0</span> giorni fa)</p>
+		<div class="card">
+		    <h3>🏅 Traguardi</h3>
+		    <div id="achievementsList"></div>
+		</div>
 		<div class="card">
 		    <h3>💤 Pausa / Tolleranza</h3>
 		    <div id="breakCard"></div>
 		    <div id="breakHistory"></div>
-		</div>
-		<div class="card">
-		    <h3>📍 I tuoi Posti</h3>
-		    <div id="statsPlaces"></div>
-		</div>
-		<div class="card">
-		    <h3>🏅 Traguardi</h3>
-		    <div id="achievementsList"></div>
 		</div>
 	</div>
 </div>
@@ -276,20 +310,65 @@
 	</div>
 </div>
 
-<!-- PAGINA MAPPA -->
+<!-- PAGINA MAPPA / LUOGHI -->
 <div id="page-map" class="page">
 	<div class="card">
 		<h3>🗺️ Mappa delle Sessioni</h3>
 		<div id="mapContainer"></div>
-		
+
 		<label>Filtra per tipo</label>
 		<div class="grams-row" style="margin-bottom: 20px;">
 			<label><input type="radio" name="mapFilter" value="all" checked onclick="updateMap()"> Tutte</label>
 			<label><input type="radio" name="mapFilter" value="fumo" onclick="updateMap()"> 🍫 Fumo</label>
 			<label><input type="radio" name="mapFilter" value="erba" onclick="updateMap()"> 🍃 Erba</label>
 		</div>
-		
+
 		<div id="mapStats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"></div>
+	</div>
+
+	<div class="card">
+	    <h3>📍 I tuoi Posti</h3>
+	    <p style="font-size: 12px; color: var(--color-text-secondary);">Salva la posizione attuale o cercane una manualmente.</p>
+
+	    <input type="text" id="newPlaceName" placeholder="Nome (es. Casa, Spot...)">
+
+	    <!-- Metodo 1: GPS attuale -->
+	    <div style="display:flex; gap:10px; margin-top:10px;">
+	        <button class="action-btn" onclick="addNewPlace()" style="flex:1;">📍 Usa posizione attuale</button>
+	        <button class="action-btn" onclick="toggleAdvancedSearch()" id="btnToggleAdvanced" style="flex:1;">🗺️ Cerca sulla mappa</button>
+	    </div>
+		<div id="userPlacesList" style="margin-top: 15px;"></div>
+	    <div id="advancedPlaceSearch" style="display:none;">
+	    <hr>
+
+	    <!-- Metodo 2: Cerca indirizzo -->
+	    <label>🔍 Cerca un indirizzo</label>
+	    <div style="display:flex; gap:10px;">
+	        <input type="text" id="searchAddressInput" placeholder="Via Roma 1, Torino..." style="margin-top:0; flex:1;">
+	        <button class="action-btn" onclick="searchAddress()" style="margin-top:0; white-space:nowrap;">Cerca</button>
+	    </div>
+
+	    <!-- Metodo 3: Mappa cliccabile -->
+	    <label>🗺️ Oppure clicca sulla mappa</label>
+	    <div id="addPlaceMap" style="width:100%; height:250px; border-radius:12px; margin-top:8px; overflow:hidden;"></div>
+	    <div id="selectedPinInfo" style="display:none; font-size:12px; color:var(--primary); margin-top:6px; text-align:center; font-weight:600;">
+	        📌 Punto selezionato
+	    </div>
+
+	    <button class="action-btn" id="btnSaveFromMap" onclick="addPlaceFromMap()" style="width:100%; margin-top:10px; display:none;">📌 Salva punto sulla mappa</button>
+	    </div>
+	</div>
+
+	<div class="card">
+	    <h3>🔄 Aggiorna Sessioni Vecchie</h3>
+	    <p style="font-size: 12px; color: var(--color-text-secondary);">Collega le sessioni passate ai posti salvati in base alla posizione GPS.</p>
+	    <button class="action-btn" onclick="fixOldSessions()" style="width:100%;">🔄 Aggiorna Sessioni</button>
+	    <p id="fixStatus" style="font-size: 13px; text-align:center; margin-top: 10px; color: var(--primary);"></p>
+	</div>
+
+	<div class="card">
+	    <h3>📊 Statistiche per Posto</h3>
+	    <div id="statsPlaces"></div>
 	</div>
 </div>
 
@@ -325,7 +404,7 @@
 			<div class="stat-box"><big id="modaleFumo">0</big><small>g Fumo</small></div>
 			<div class="stat-box"><big id="modaleErba">0</big><small>g Erba</small></div>
 		</div>
-		<p id="modaleShared" style="text-align:center; font-size:13px; color:#999; margin-top:-8px; margin-bottom:15px;"></p>
+		<p id="modaleShared" style="text-align:center; font-size:13px; color:var(--color-text-muted); margin-top:-8px; margin-bottom:15px;"></p>
 		<button class="secondary-btn" onclick="closeFriendModal()">Chiudi</button>
 	</div>
 </div>
@@ -338,7 +417,7 @@
   <div class="card">
     <h3>🍫 Scorta Fumo</h3>
     <div id="stockFumoDisplay">
-      <p style="text-align:center; color:#999; font-size:13px;">Nessuna scorta attiva</p>
+      <p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna scorta attiva</p>
     </div>
     <button class="action-btn" onclick="openBuyModal('fumo')" style="width:100%; margin-top:10px;">+ Registra acquisto</button>
     <button id="btnCloseFumo" onclick="closeStock('fumo')" style="display:none; background:none; border:none; color:var(--danger); width:100%; margin-top:8px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Ho finito la scorta di fumo</button>
@@ -348,7 +427,7 @@
   <div class="card">
     <h3>🍃 Scorta Erba</h3>
     <div id="stockErbaDisplay">
-      <p style="text-align:center; color:#999; font-size:13px;">Nessuna scorta attiva</p>
+      <p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna scorta attiva</p>
     </div>
     <button class="action-btn" onclick="openBuyModal('erba')" style="width:100%; margin-top:10px;">+ Registra acquisto</button>
     <button id="btnCloseErba" onclick="closeStock('erba')" style="display:none; background:none; border:none; color:var(--danger); width:100%; margin-top:8px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Ho finito la scorta di erba</button>
@@ -357,7 +436,7 @@
   <!-- STORICO ACQUISTI -->
   <div class="card">
     <h3>📋 Storico Acquisti</h3>
-    <div id="purchaseHistory"><p style="text-align:center; color:#999; font-size:13px;">Nessun acquisto registrato.</p></div>
+    <div id="purchaseHistory"><p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessun acquisto registrato.</p></div>
   </div>
 
 </div>
@@ -373,7 +452,7 @@
     <label>Prezzo (opzionale)</label>
     <div style="position:relative;">
       <input type="number" id="buyPrice" step="0.5" min="0" placeholder="es. 30" style="padding-right:40px;">
-      <span style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:#999; font-size:14px; margin-top:4px;">€</span>
+      <span style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--color-text-muted); font-size:14px; margin-top:4px;">€</span>
     </div>
 
     <label>Data acquisto</label>
@@ -390,7 +469,7 @@
 <div id="discrepancyModal" class="modal">
   <div class="modal-content card">
     <h3>⚠️ Discrepanza rilevata</h3>
-    <p id="discrepancyText" style="font-size:14px; line-height:1.6; color:#555;"></p>
+    <p id="discrepancyText" style="font-size:14px; line-height:1.6; color:var(--color-text-secondary);"></p>
 
     <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
       <button class="main-btn" onclick="fixProportional()" style="margin-top:0;">⚖️ Scala proporzionalmente</button>
@@ -404,7 +483,7 @@
 <div id="manualFixModal" class="modal">
   <div class="modal-content card" style="max-height:80vh; overflow-y:auto;">
     <h3>✏️ Correggi sessioni</h3>
-    <p style="font-size:12px; color:#999; margin-bottom:15px;" id="manualFixHint"></p>
+    <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:15px;" id="manualFixHint"></p>
     <div id="manualFixList"></div>
     <div style="display:flex; gap:10px; margin-top:15px;">
       <button class="secondary-btn" onclick="closeManualFix()" style="flex:1; margin-top:0;">Annulla</button>
@@ -426,9 +505,19 @@
 	</div>
 
 	<div class="card">
-		<h3>🔔 Promemoria</h3>
+		<h3>🎨 Aspetto</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Scegli il tema dell'app.</p>
+		<div class="grams-row" id="themeOptions">
+			<label><input type="radio" name="themeChoice" value="light" onchange="setTheme('light')"> ☀️ Chiaro</label>
+			<label><input type="radio" name="themeChoice" value="dark" onchange="setTheme('dark')"> 🌙 Scuro</label>
+			<label><input type="radio" name="themeChoice" value="auto" onchange="setTheme('auto')"> 🔄 Automatico</label>
+		</div>
+	</div>
+
+	<div class="card">
+		<h3>🔔 Notifiche & Promemoria</h3>
 		<label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
-			<span style="font-size:14px; font-weight:600; color:#555;">Attiva promemoria giornaliero</span>
+			<span style="font-size:14px; font-weight:600; color:var(--color-text-secondary);">Attiva promemoria giornaliero</span>
 			<input type="checkbox" id="reminderEnabledCheck" style="width:20px; height:20px; margin:0; accent-color: var(--primary-light);">
 		</label>
 
@@ -439,53 +528,13 @@
 
 		<hr>
 
-		<p style="font-size:12px; color:#666;">Per ricevere notifiche push anche ad app chiusa, attivale sul dispositivo:</p>
+		<p style="font-size:12px; color:var(--color-text-secondary);">Per ricevere notifiche push anche ad app chiusa, attivale sul dispositivo:</p>
 		<button class="action-btn" id="btnEnablePush" onclick="enablePushNotifications()" style="width:100%; background: linear-gradient(135deg, #FF9800, #E65100);">🔔 Attiva Notifiche Push</button>
-		<p id="pushStatus" style="font-size:12px; text-align:center; margin-top:8px; color:#999;"></p>
+		<p id="pushStatus" style="font-size:12px; text-align:center; margin-top:8px; color:var(--color-text-muted);"></p>
 	</div>
 
 
 	
-	<div class="card">
-    <h3>📍 I tuoi Posti</h3>
-    <p style="font-size: 12px; color: #666;">Salva la posizione attuale o cercane una manualmente.</p>
-
-    <input type="text" id="newPlaceName" placeholder="Nome (es. Casa, Spot...)">
-
-    <!-- Metodo 1: GPS attuale -->
-    <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="action-btn" onclick="addNewPlace()" style="flex:1;">📍 Usa posizione attuale</button>
-        <button class="action-btn" onclick="toggleAdvancedSearch()" id="btnToggleAdvanced" style="flex:1;">🗺️ Cerca sulla mappa</button>
-    </div>
-	<div id="userPlacesList" style="margin-top: 15px;"></div>
-    <div id="advancedPlaceSearch" style="display:none;">
-    <hr>
-
-    <!-- Metodo 2: Cerca indirizzo -->
-    <label>🔍 Cerca un indirizzo</label>
-    <div style="display:flex; gap:10px;">
-        <input type="text" id="searchAddressInput" placeholder="Via Roma 1, Torino..." style="margin-top:0; flex:1;">
-        <button class="action-btn" onclick="searchAddress()" style="margin-top:0; white-space:nowrap;">Cerca</button>
-    </div>
-
-    <!-- Metodo 3: Mappa cliccabile -->
-    <label>🗺️ Oppure clicca sulla mappa</label>
-    <div id="addPlaceMap" style="width:100%; height:250px; border-radius:12px; margin-top:8px; overflow:hidden;"></div>
-    <div id="selectedPinInfo" style="display:none; font-size:12px; color:var(--primary); margin-top:6px; text-align:center; font-weight:600;">
-        📌 Punto selezionato
-    </div>
-
-    <button class="action-btn" id="btnSaveFromMap" onclick="addPlaceFromMap()" style="width:100%; margin-top:10px; display:none;">📌 Salva punto sulla mappa</button>
-    </div>
-	</div>
-
-	<div class="card">
-    <h3>🔄 Aggiorna Sessioni Vecchie</h3>
-    <p style="font-size: 12px; color: #666;">Collega le sessioni passate ai posti salvati in base alla posizione GPS.</p>
-    <button class="action-btn" onclick="fixOldSessions()" style="width:100%;">🔄 Aggiorna Sessioni</button>
-    <p id="fixStatus" style="font-size: 13px; text-align:center; margin-top: 10px; color: var(--primary);"></p>
-</div>
-
 	<div class="card">
 		<div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleGestioneDati()">
 			<h3 style="margin:0;">⚙️ Gestione Dati</h3>

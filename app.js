@@ -25,6 +25,48 @@
 let friendsCountCache = 0;
 let achievementsLoaded = false;
 
+// ========== TEMA (chiaro/scuro/automatico) ==========
+function getStoredThemePref() {
+	try { return localStorage.getItem('jt_theme') || 'dark'; } catch (e) { return 'dark'; }
+}
+
+function resolveTheme(pref) {
+	if (pref === 'auto') {
+		return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+	}
+	return pref;
+}
+
+function applyTheme(pref) {
+	document.documentElement.setAttribute('data-theme', resolveTheme(pref));
+
+	document.querySelectorAll('#themeOptions label').forEach(l => l.classList.remove('selected'));
+	const radio = document.querySelector(`input[name="themeChoice"][value="${pref}"]`);
+	if (radio) {
+		radio.checked = true;
+		radio.parentElement.classList.add('selected');
+	}
+}
+
+function setTheme(pref) {
+	try { localStorage.setItem('jt_theme', pref); } catch (e) {}
+	applyTheme(pref);
+}
+
+function toggleTheme() {
+	const current = document.documentElement.getAttribute('data-theme');
+	setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+function initTheme() {
+	applyTheme(getStoredThemePref());
+	if (window.matchMedia) {
+		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+			if (getStoredThemePref() === 'auto') applyTheme('auto');
+		});
+	}
+}
+
 const ACHIEVEMENTS = [
 	{ key: 'first_session', icon: '🌱', title: 'Prima Volta', desc: 'Segna la tua prima sessione', check: () => smokes.length >= 1 },
 	{ key: 'sessions_10', icon: '🔥', title: 'Decina', desc: '10 sessioni totali', check: () => smokes.length >= 10 },
@@ -112,18 +154,18 @@ async function getMyFriendsList() {
 async function renderFriendsQuickList() {
     const el = document.getElementById('friendsQuickList');
     if (!el) return;
-    el.innerHTML = '<p style="font-size:12px; color:#999;">Caricamento...</p>';
+    el.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted);">Caricamento...</p>';
 
     const friends = await getMyFriendsList();
 
     if (friends.length === 0) {
-        el.innerHTML = '<p style="font-size:12px; color:#999;">Non hai ancora amici. Aggiungili dalla pagina Social.</p>';
+        el.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted);">Non hai ancora amici. Aggiungili dalla pagina Social.</p>';
         return;
     }
 
     el.innerHTML = friends.map(f => `
         <button type="button" onclick="quickAddParticipant('${f.id}','${f.username}')"
-            style="background:rgba(76,175,80,0.12); border:1px solid rgba(76,175,80,0.3); color:var(--primary-dark); border-radius:20px; padding:6px 12px; font-size:13px; cursor:pointer;">
+            style="background:rgba(76,175,80,0.12); border:1px solid rgba(76,175,80,0.3); color:var(--heading); border-radius:20px; padding:6px 12px; font-size:13px; cursor:pointer;">
             + ${f.username}
         </button>
     `).join('');
@@ -195,7 +237,7 @@ function renderContributorsPanel() {
         if (hasErba) erbaTotal = grams || 0;
     }
 
-    let html = '<p style="font-size:12px; color:#999; margin-top:0;">Chi ha portato la roba, e quanto? Puoi modificare i grammi a mano.</p>';
+    let html = '<p style="font-size:12px; color:var(--color-text-muted); margin-top:0;">Chi ha portato la roba, e quanto? Puoi modificare i grammi a mano.</p>';
 
     const isFirstRender = document.querySelectorAll('.contrib-fumo, .contrib-erba').length === 0;
 
@@ -215,7 +257,7 @@ function renderContributorsPanel() {
                 <input type="number" step="0.01" min="0" class="contrib-fumo-amt" data-user="${p.user_id}"
                     value="${activeIds.includes(p.user_id) ? share : '0.00'}"
                     style="width:70px; margin:0; padding:6px; font-size:13px; text-align:center;">
-                <span style="font-size:12px; color:#999;">g</span>
+                <span style="font-size:12px; color:var(--color-text-muted);">g</span>
             </div>
         `).join('');
     }
@@ -236,7 +278,7 @@ function renderContributorsPanel() {
                 <input type="number" step="0.01" min="0" class="contrib-erba-amt" data-user="${p.user_id}"
                     value="${activeIds.includes(p.user_id) ? share : '0.00'}"
                     style="width:70px; margin:0; padding:6px; font-size:13px; text-align:center;">
-                <span style="font-size:12px; color:#999;">g</span>
+                <span style="font-size:12px; color:var(--color-text-muted);">g</span>
             </div>
         `).join('');
     }
@@ -280,7 +322,7 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 				<button type="submit" class="main-btn">🔓 Accedi</button>
 			</form>
 			
-			<p style="text-align: center; margin-top: 20px; color: #666;">
+			<p style="text-align: center; margin-top: 20px; color: var(--color-text-secondary);">
 				Non hai un account? <a onclick="toggleAuthMode(); return false;" style="cursor: pointer; color: var(--primary-light);">Registrati</a>
 			</p>
 		`;
@@ -307,7 +349,7 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 					<button type="submit" class="main-btn">📝 Registrati</button>
 				</form>
 				
-				<p style="text-align: center; margin-top: 20px; color: #666;">
+				<p style="text-align: center; margin-top: 20px; color: var(--color-text-secondary);">
 					Hai già un account? <a onclick="toggleAuthMode(); return false;" style="cursor: pointer; color: var(--primary-light);">Accedi</a>
 				</p>
 			`;
@@ -398,15 +440,15 @@ if (mode === 'signup') {
 		<div style="text-align: center; padding: 30px 20px;">
 			<div style="font-size: 50px; margin-bottom: 20px;">📧</div>
 			<h2 style="color: var(--primary); margin-bottom: 10px;">Conferma la tua Email!</h2>
-			<p style="color: #666; font-size: 16px; line-height: 1.6;">
+			<p style="color: var(--color-text-secondary); font-size: 16px; line-height: 1.6;">
 				Abbiamo inviato un link di conferma a:<br>
 				<strong style="color: var(--primary);">${email}</strong>
 			</p>
-			<p style="color: #999; font-size: 14px; margin-top: 20px;">
+			<p style="color: var(--color-text-muted); font-size: 14px; margin-top: 20px;">
 				Controlla la tua casella di posta (e lo spam) e clicca sul link per completare la registrazione.
 			</p>
 			<hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-			<p style="color: #666; font-size: 13px; margin-bottom: 20px;">
+			<p style="color: var(--color-text-secondary); font-size: 13px; margin-bottom: 20px;">
 				Non hai ricevuto l'email?
 			</p>
 			<button onclick="toggleAuthMode()" style="background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px;">
@@ -428,7 +470,7 @@ if (mode === 'signup') {
 	async function showApp() {
 		document.getElementById('page-auth').classList.remove('active');
 		document.getElementById('header').style.display = 'flex';
-		showPage('add');
+		showPage('home');
 		document.getElementById('emailDisplay').textContent = currentUser.email;
 		document.getElementById('date').value = new Date().toISOString().split('T')[0];
 		
@@ -771,14 +813,14 @@ function renderUserPlaces() {
     if (!list) return;
 
     if (userPlaces.length === 0) {
-        list.innerHTML = '<p style="font-size: 12px; color: #8e8e93; text-align: center;">Nessun posto salvato.</p>';
+        list.innerHTML = '<p style="font-size: 12px; color: var(--color-text-muted); text-align: center;">Nessun posto salvato.</p>';
         return;
     }
 
     list.innerHTML = userPlaces.map(p => `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; margin-bottom: 5px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(var(--overlay-rgb),0.05); border-radius: 8px; margin-bottom: 5px;">
             <span style="font-size: 14px; font-weight: 500;">${p.name}</span>
-            <button onclick="deletePlace(${p.id})" style="background: none; border: none; color: #ff3b30; cursor: pointer; font-size: 16px;">🗑️</button>
+            <button onclick="deletePlace(${p.id})" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 16px;">🗑️</button>
         </div>
     `).join('');
 }
@@ -1057,11 +1099,12 @@ async function addPlaceFromMap() {
 		document.getElementById("page-" + p).classList.add("active");
 
 		document.querySelectorAll(".menu-content button").forEach(btn => btn.classList.remove("active-tab"));
-		const pageToIndex = { 'add': 0, 'history': 1, 'stats': 2, 'charts': 3, 'map': 4, 'social': 5, 'stock': 6, 'settings': 7 };
+		const pageToIndex = { 'home': 0, 'add': 1, 'history': 2, 'stats': 3, 'charts': 4, 'map': 5, 'social': 6, 'stock': 7, 'settings': 8 };
 		const activeBtn = document.querySelectorAll(".menu-content button")[pageToIndex[p]];
 		if(activeBtn) activeBtn.classList.add("active-tab");
 
 		if (p === 'map') {
+			loadUserPlaces();
 			setTimeout(() => {
 				initMap();
 				updateMap();
@@ -1072,7 +1115,6 @@ async function addPlaceFromMap() {
 		if (p === 'stock' || p === 'charts') loadPurchases();
 		if (p === 'settings') {
 		    loadUserProfile();
-		    loadUserPlaces();
 		    loadReminderSettings();
 		}
 		update();
@@ -1191,7 +1233,46 @@ function updateMap() {
 		renderCharts();
 		checkReminderBanner();
 		renderPeriodComparison();
+		renderHomeSummary();
 		if (achievementsLoaded) checkAchievements();
+	}
+
+	// ========== HOME: riepilogo ==========
+	function renderHomeSummary() {
+		const greetingEl = document.getElementById('homeGreeting');
+		if (!greetingEl) return;
+
+		const hour = new Date().getHours();
+		const greeting = hour < 6 ? 'Nottataccia 🌙' : hour < 12 ? 'Buongiorno ☀️' : hour < 18 ? 'Buon pomeriggio 👋' : 'Buonasera 🌆';
+		greetingEl.textContent = greeting;
+
+		document.getElementById('homeStreak').textContent = calculateStreak();
+
+		const now = new Date();
+		const currentMonthKey = getMonthKey(now);
+		const monthSmokes = smokes.filter(s => getMonthKey(s.date) === currentMonthKey);
+		const monthGrams = monthSmokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
+		document.getElementById('homeMonthStat').textContent = `Questo mese: ${monthSmokes.length} sessioni · ${monthGrams.toFixed(1)}g`;
+
+		const reminderLine = document.getElementById('homeReminderLine');
+		if (userReminderSettings && userReminderSettings.reminder_enabled && userReminderSettings.reminder_time) {
+			reminderLine.textContent = `⏰ Promemoria alle ${userReminderSettings.reminder_time.slice(0, 5)}`;
+			reminderLine.style.display = 'inline';
+		} else {
+			reminderLine.style.display = 'none';
+		}
+
+		const teaserEl = document.getElementById('homeAchievementTeaser');
+		if (unlockedAchievements.length > 0) {
+			const lastKey = unlockedAchievements[unlockedAchievements.length - 1];
+			const lastAch = ACHIEVEMENTS.find(a => a.key === lastKey);
+			if (lastAch) {
+				teaserEl.textContent = `🏅 Ultimo traguardo: ${lastAch.icon} ${lastAch.title}`;
+				teaserEl.style.display = 'block';
+			}
+		} else {
+			teaserEl.style.display = 'none';
+		}
 	}
 
 function updateHistory() {
@@ -1199,7 +1280,7 @@ function updateHistory() {
 	hList.innerHTML = "";
 
 	if (smokes.length === 0) {
-		hList.innerHTML = "<p style='text-align:center; color:#999;'>Nessun dato presente.</p>";
+		hList.innerHTML = "<p style='text-align:center; color:var(--color-text-muted);'>Nessun dato presente.</p>";
 	} else {
 		const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
 		const byYear = {};
@@ -1252,9 +1333,9 @@ function updateHistory() {
 					let itemsHtml = sortedSmokes.map(s => `
     <div class="history-item">
         <div>
-            <span style="font-weight: bold; color: #2e7d32;">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${s.grams}g
-            ${s.not_mine ? `<span style="background:rgba(255,152,0,0.15); color:#E65100; font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">👥 non mia</span>` : ''}
-            ${s.location_name ? `<br><small style="color: #999;">📍 ${s.location_name}</small>` : ''}
+            <span style="font-weight: bold; color: var(--primary);">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${s.grams}g
+            ${s.not_mine ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">👥 non mia</span>` : ''}
+            ${s.location_name ? `<br><small style="color: var(--color-text-muted);">📍 ${s.location_name}</small>` : ''}
         </div>
         <button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
     </div>
@@ -1391,7 +1472,7 @@ smokes.forEach(s => {
     });
 
     if (Object.keys(grouped).length === 0) {
-        el.innerHTML = '<p style="text-align:center; color:#999; font-size:13px;">Nessun dato con posizione.</p>';
+        el.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessun dato con posizione.</p>';
         return;
     }
 
@@ -1408,15 +1489,15 @@ smokes.forEach(s => {
     const renderRow = ([name, data], isSaved) => `
         <div style="display:flex; justify-content:space-between; align-items:center; 
                     padding: 12px; margin-bottom: 8px; border-radius: 12px;
-                    background: ${isSaved ? 'rgba(76,175,80,0.08)' : 'rgba(0,0,0,0.03)'};
-                    border: 1px solid ${isSaved ? 'rgba(76,175,80,0.2)' : 'rgba(0,0,0,0.05)'};">
+                    background: ${isSaved ? 'rgba(76,175,80,0.08)' : 'rgba(var(--overlay-rgb),0.05)'};
+                    border: 1px solid ${isSaved ? 'rgba(76,175,80,0.2)' : 'rgba(var(--overlay-rgb),0.07)'};">
             <div>
                 <span style="font-weight:600; font-size:14px;">${isSaved ? '📍' : '🌍'} ${name}</span><br>
-                <small style="color:#999;">🍫 ${data.fumo.toFixed(1)}g &nbsp; 🍃 ${data.erba.toFixed(1)}g</small>
+                <small style="color:var(--color-text-muted);">🍫 ${data.fumo.toFixed(1)}g &nbsp; 🍃 ${data.erba.toFixed(1)}g</small>
             </div>
             <div style="text-align:right;">
                 <span style="font-size:18px; font-weight:700; color:var(--primary);">${data.j}</span><br>
-                <small style="color:#999;">joint</small>
+                <small style="color:var(--color-text-muted);">joint</small>
             </div>
         </div>
     `;
@@ -1797,7 +1878,7 @@ if (ctxPie) {
 						</div>
 						<div style="text-align: right;">
 							<span style="font-weight: bold; color: var(--primary);">${Number(u.total_g).toFixed(1)}g</span><br>
-							<small style="color: #999;">${u.total_j} joint</small>
+							<small style="color: var(--color-text-muted);">${u.total_j} joint</small>
 						</div>
 					</div>
 				`;
@@ -1842,7 +1923,7 @@ if (ctxPie) {
 						</div>
 						<div style="text-align: right;">
 							<span style="font-weight: bold; color: var(--primary);">${u.sessions_together}</span><br>
-							<small style="color: #999;">${Number(u.grams_together).toFixed(1)}g insieme</small>
+							<small style="color: var(--color-text-muted);">${Number(u.grams_together).toFixed(1)}g insieme</small>
 						</div>
 					</div>
 				`;
@@ -1980,13 +2061,13 @@ function renderAchievements() {
 		const unlocked = unlockedAchievements.includes(ach.key);
 		return `
 			<div style="display:flex; align-items:center; gap:12px; padding:12px; margin-bottom:8px; border-radius:12px;
-						background:${unlocked ? 'rgba(76,175,80,0.1)' : 'rgba(0,0,0,0.03)'};
-						border:1px solid ${unlocked ? 'rgba(76,175,80,0.25)' : 'rgba(0,0,0,0.05)'};
+						background:${unlocked ? 'rgba(76,175,80,0.1)' : 'rgba(var(--overlay-rgb),0.05)'};
+						border:1px solid ${unlocked ? 'rgba(76,175,80,0.25)' : 'rgba(var(--overlay-rgb),0.07)'};
 						opacity:${unlocked ? '1' : '0.5'};">
 				<span style="font-size:28px; filter:${unlocked ? 'none' : 'grayscale(100%)'};">${ach.icon}</span>
 				<div>
-					<div style="font-weight:700; font-size:14px; color:${unlocked ? 'var(--primary-dark)' : '#999'};">${ach.title}</div>
-					<div style="font-size:12px; color:#999;">${ach.desc}</div>
+					<div style="font-weight:700; font-size:14px; color:${unlocked ? 'var(--heading)' : 'var(--color-text-muted)'};">${ach.title}</div>
+					<div style="font-size:12px; color:var(--color-text-muted);">${ach.desc}</div>
 				</div>
 			</div>
 		`;
@@ -2043,15 +2124,15 @@ function renderBreakCard() {
 		el.innerHTML = `
 			<div style="text-align:center; padding:10px;">
 				<div style="font-size:36px; font-weight:800; color:var(--primary);">${days}</div>
-				<div style="font-size:13px; color:#666; margin-bottom:15px;">giorni senza fumare 💪</div>
+				<div style="font-size:13px; color:var(--color-text-secondary); margin-bottom:15px;">giorni senza fumare 💪</div>
 				${savedMoney !== null ? `<div style="font-size:15px; font-weight:700; color:#9c27b0;">💰 ~€${savedMoney.toFixed(2)} risparmiati</div>` : ''}
-				<div style="font-size:12px; color:#999; margin-top:4px;">~${savedGrams.toFixed(1)}g non consumati</div>
+				<div style="font-size:12px; color:var(--color-text-muted); margin-top:4px;">~${savedGrams.toFixed(1)}g non consumati</div>
 				<button class="secondary-btn" onclick="endBreak()" style="margin-top:15px;">Interrompi pausa</button>
 			</div>
 		`;
 	} else {
 		el.innerHTML = `
-			<p style="text-align:center; color:#999; font-size:13px; margin-bottom:10px;">Nessuna pausa attiva.</p>
+			<p style="text-align:center; color:var(--color-text-muted); font-size:13px; margin-bottom:10px;">Nessuna pausa attiva.</p>
 			<button class="main-btn" onclick="startBreak()" style="margin-top:0;">💤 Inizia una pausa</button>
 		`;
 	}
@@ -2066,10 +2147,10 @@ function renderBreakHistory() {
 	const past = allBreaks.filter(b => !b.is_active);
 	if (past.length === 0) { el.innerHTML = ''; return; }
 
-	el.innerHTML = '<hr style="margin:15px 0;"><p style="font-size:12px; color:#999; margin-bottom:8px;">Pause precedenti</p>' +
+	el.innerHTML = '<hr style="margin:15px 0;"><p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">Pause precedenti</p>' +
 		past.map(b => {
 			const days = Math.ceil((new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24));
-			return `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.04); font-size:13px;">
+			return `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:13px;">
 				<span>${b.start_date.split('-').reverse().join('/')} → ${b.end_date.split('-').reverse().join('/')}</span>
 				<span style="font-weight:600; color:var(--primary);">${days}g</span>
 			</div>`;
@@ -2100,12 +2181,12 @@ function renderPeriodComparison() {
 	const lastGrams = lastSmokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
 
 	function renderDiff(current, last) {
-		if (last === 0 && current === 0) return `<span style="color:#999; font-size:12px;">Nessun dato</span>`;
+		if (last === 0 && current === 0) return `<span style="color:var(--color-text-muted); font-size:12px;">Nessun dato</span>`;
 		if (last === 0) return `<span style="color:var(--primary); font-size:12px; font-weight:600;">▲ Nuovo questo mese</span>`;
 		const pct = ((current - last) / last) * 100;
 		const isSame = Math.abs(pct) < 0.5;
 		const isUp = pct > 0;
-		const color = isSame ? '#999' : (isUp ? '#FF9800' : '#2196F3');
+		const color = isSame ? 'var(--color-text-muted)' : (isUp ? '#FF9800' : '#2196F3');
 		const arrow = isSame ? '→' : (isUp ? '▲' : '▼');
 		return `<span style="color:${color}; font-size:12px; font-weight:600;">${arrow} ${Math.abs(pct).toFixed(0)}%</span>`;
 	}
@@ -2113,8 +2194,8 @@ function renderPeriodComparison() {
 	function renderRow(label, current, last, suffix) {
 		const displayVal = suffix === 'g' ? current.toFixed(1) : current;
 		return `
-			<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(0,0,0,0.04);">
-				<span style="font-size:13px; color:#666;">${label}</span>
+			<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06);">
+				<span style="font-size:13px; color:var(--color-text-secondary);">${label}</span>
 				<div style="text-align:right;">
 					<div style="font-weight:700; font-size:15px;">${displayVal}${suffix}</div>
 					${renderDiff(current, last)}
@@ -2126,7 +2207,7 @@ function renderPeriodComparison() {
 	el.innerHTML = `
 		${renderRow('Sessioni', currentCount, lastCount, '')}
 		${renderRow('Grammi totali', currentGrams, lastGrams, 'g')}
-		<p style="font-size:11px; color:#999; margin-top:8px; text-align:center;">Mese scorso: ${lastCount} sessioni · ${lastGrams.toFixed(1)}g</p>
+		<p style="font-size:11px; color:var(--color-text-muted); margin-top:8px; text-align:center;">Mese scorso: ${lastCount} sessioni · ${lastGrams.toFixed(1)}g</p>
 	`;
 }
 
@@ -2211,14 +2292,14 @@ function renderNotifications() {
 	if (!list) return;
 
 	if (notifications.length === 0) {
-		list.innerHTML = '<p style="padding:15px; text-align:center; color:#999; font-size:13px;">Nessuna notifica.</p>';
+		list.innerHTML = '<p style="padding:15px; text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna notifica.</p>';
 		return;
 	}
 
 	list.innerHTML = notifications.map(n => `
-		<div style="padding:12px 15px; border-bottom:1px solid rgba(0,0,0,0.04); background:${n.read ? 'transparent' : 'rgba(76,175,80,0.08)'};">
-			<p style="margin:0; font-size:13px; color:#444;">${n.message}</p>
-			<small style="color:#999;">${formatNotifTime(n.created_at)}</small>
+		<div style="padding:12px 15px; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); background:${n.read ? 'transparent' : 'rgba(76,175,80,0.08)'};">
+			<p style="margin:0; font-size:13px; color:var(--color-text);">${n.message}</p>
+			<small style="color:var(--color-text-muted);">${formatNotifTime(n.created_at)}</small>
 		</div>
 	`).join('');
 }
@@ -2484,7 +2565,7 @@ function renderStockPrediction(type) {
 
 	const dailyRate = computeDailyRate(type);
 	if (dailyRate <= 0) {
-		return `<p style="font-size:12px; color:#999; margin-top:10px; text-align:center;">⏳ Consumo troppo basso negli ultimi 14gg per stimare la durata</p>`;
+		return `<p style="font-size:12px; color:var(--color-text-muted); margin-top:10px; text-align:center;">⏳ Consumo troppo basso negli ultimi 14gg per stimare la durata</p>`;
 	}
 
 	const daysLeft = Math.round(remaining / dailyRate);
@@ -2495,7 +2576,7 @@ function renderStockPrediction(type) {
 	const urgencyColor = daysLeft > 7 ? '#4CAF50' : daysLeft > 3 ? '#FF9800' : '#f44336';
 
 	return `
-		<div style="background:rgba(0,0,0,0.03); border-radius:10px; padding:10px; margin-top:10px; text-align:center;">
+		<div style="background:rgba(var(--overlay-rgb),0.05); border-radius:10px; padding:10px; margin-top:10px; text-align:center;">
 			<span style="font-size:13px; color:${urgencyColor}; font-weight:600;">
 				⏳ Al ritmo attuale, dura ancora ~${daysLeft} giorni (fino al ${dateStr})
 			</span>
@@ -2514,7 +2595,7 @@ function renderStockPage() {
 
 function renderStockCard(type, stock) {
     const emoji = type === 'fumo' ? '🍫' : '🍃';
-    const color = type === 'fumo' ? '#795548' : 'var(--primary-dark)';
+    const color = type === 'fumo' ? '#795548' : 'var(--heading)';
     const colorLight = type === 'fumo' ? 'rgba(139,69,19,0.1)' : 'rgba(76,175,80,0.1)';
     const displayEl = document.getElementById(`stock${type.charAt(0).toUpperCase()+type.slice(1)}Display`);
     const closeBtn = document.getElementById(`btnClose${type.charAt(0).toUpperCase()+type.slice(1)}`);
@@ -2522,7 +2603,7 @@ function renderStockCard(type, stock) {
     const openPurchases = getOpenPurchasesFIFO(type);
 
     if (openPurchases.length === 0) {
-        displayEl.innerHTML = `<p style="text-align:center; color:#999; font-size:13px;">Nessuna scorta attiva</p>`;
+        displayEl.innerHTML = `<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna scorta attiva</p>`;
         if (closeBtn) closeBtn.style.display = 'none';
         return;
     }
@@ -2541,30 +2622,30 @@ function renderStockCard(type, stock) {
         const barColor = pct > 50 ? '#4CAF50' : pct > 20 ? '#FF9800' : '#f44336';
 
         const oldestLabel = isOldest && openPurchases.length > 1
-            ? `<span style="background:rgba(255,152,0,0.15); color:#E65100; font-size:11px; padding:2px 8px; border-radius:20px; margin-left:6px;">In uso</span>`
+            ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:2px 8px; border-radius:20px; margin-left:6px;">In uso</span>`
             : '';
 
         html += `
             <div style="background:${colorLight}; border-radius:12px; padding:14px; margin-bottom:${idx < openPurchases.length-1 ? '12px' : '0'};">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <span style="font-size:13px; color:#666;">
+                    <span style="font-size:13px; color:var(--color-text-secondary);">
                         ${emoji} Acquisto del ${p.date.split('-').reverse().join('/')}${oldestLabel}
                     </span>
                     <span style="font-weight:700; color:${color};">${p.grams}g${priceStr}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <span style="font-size:13px; color:#666;">Consumati</span>
-                    <span style="font-weight:600; color:#555;">${consumed.toFixed(2)}g</span>
+                    <span style="font-size:13px; color:var(--color-text-secondary);">Consumati</span>
+                    <span style="font-weight:600; color:var(--color-text-secondary);">${consumed.toFixed(2)}g</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <span style="font-size:14px; font-weight:700; color:${color};">Rimanenti</span>
                     <span style="font-size:18px; font-weight:800; color:${color};">${remaining.toFixed(2)}g</span>
                 </div>
-                <div style="background:rgba(0,0,0,0.08); border-radius:8px; height:10px; overflow:hidden;">
+                <div style="background:rgba(var(--overlay-rgb),0.12); border-radius:8px; height:10px; overflow:hidden;">
                     <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:8px; transition: width 0.5s ease;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                    <span style="font-size:11px; color:#999;">${pct.toFixed(0)}% rimanente</span>
+                    <span style="font-size:11px; color:var(--color-text-muted);">${pct.toFixed(0)}% rimanente</span>
                     ${isOldest ? `<button onclick="closeStock('${type}', ${p.id})" style="background:none; border:none; color:var(--danger); font-size:12px; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0;">⚠️ Ho finito questa scorta</button>` : ''}
                 </div>
             </div>
@@ -2581,16 +2662,19 @@ function renderStockCard(type, stock) {
 function renderMiniWidget() {
     const widget = document.getElementById('miniStockWidget');
     if (!widget) return;
+    const noStockMsg = document.getElementById('homeNoStock');
 
     const openFumo = getOpenPurchasesFIFO('fumo');
     const openErba = getOpenPurchasesFIFO('erba');
 
     if (openFumo.length === 0 && openErba.length === 0) {
         widget.style.display = 'none';
+        if (noStockMsg) noStockMsg.style.display = 'block';
         return;
     }
 
     widget.style.display = 'block';
+    if (noStockMsg) noStockMsg.style.display = 'none';
 
     // FUMO — scala dal più vecchio
     if (openFumo.length > 0) {
@@ -2623,17 +2707,17 @@ function renderPurchaseHistory() {
     if (!el) return;
 
     if (purchases.length === 0) {
-        el.innerHTML = '<p style="text-align:center; color:#999; font-size:13px;">Nessun acquisto registrato.</p>';
+        el.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessun acquisto registrato.</p>';
         return;
     }
 
     el.innerHTML = purchases.map(p => {
         const emoji = p.type === 'fumo' ? '🍫' : '🍃';
         const label = p.type === 'fumo' ? 'Fumo' : 'Erba';
-        const priceStr = p.price ? ` · <span style="color:#FF9800;">€${p.price}</span>` : '';
+        const priceStr = p.price ? ` · <span style="color:var(--warning);">€${p.price}</span>` : '';
 
         const statusStr = p.is_closed
-            ? `<span style="background:rgba(0,0,0,0.06); color:#999; font-size:11px; padding:2px 8px; border-radius:20px;">Chiusa</span>`
+            ? `<span style="background:rgba(var(--overlay-rgb),0.08); color:var(--color-text-muted); font-size:11px; padding:2px 8px; border-radius:20px;">Chiusa</span>`
             : `<span style="background:rgba(76,175,80,0.12); color:var(--primary); font-size:11px; padding:2px 8px; border-radius:20px;">Attiva</span>`;
 
         let consumedStr = '–';
@@ -2646,20 +2730,20 @@ function renderPurchaseHistory() {
             const barColor = pct > 50 ? '#4CAF50' : pct > 20 ? '#FF9800' : '#f44336';
             consumedStr = `${consumed.toFixed(2)}g consumati · ${remaining.toFixed(2)}g rimanenti`;
             barHtml = `
-                <div style="background:rgba(0,0,0,0.08); border-radius:6px; height:6px; overflow:hidden; margin-top:6px;">
+                <div style="background:rgba(var(--overlay-rgb),0.12); border-radius:6px; height:6px; overflow:hidden; margin-top:6px;">
                     <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:6px; transition: width 0.5s ease;"></div>
                 </div>
             `;
         }
 
         return `
-            <div style="padding:12px; border-bottom:1px solid rgba(0,0,0,0.05);">
+            <div style="padding:12px; border-bottom:1px solid rgba(var(--overlay-rgb),0.07);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <span style="font-weight:700;">${emoji} ${label}</span>
                         ${statusStr}<br>
-                        <small style="color:#999;">${p.date.split('-').reverse().join('/')} · ${p.grams}g${priceStr}</small><br>
-                        <small style="color:#aaa;">${consumedStr}</small>
+                        <small style="color:var(--color-text-muted);">${p.date.split('-').reverse().join('/')} · ${p.grams}g${priceStr}</small><br>
+                        <small style="color:var(--color-text-muted);">${consumedStr}</small>
                     </div>
                     <button onclick="deletePurchase(${p.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:18px;">🗑️</button>
                 </div>
@@ -2753,7 +2837,7 @@ function closeStock(type, purchaseId) {
     } else {
         msg = `Hai registrato <strong>${consumed.toFixed(2)}g</strong> di ${type},
                ma ne avevi comprati <strong>${stock.grams}g</strong>.<br><br>
-               Differenza: <strong style="color:#FF9800;">${absDiff.toFixed(2)}g non contabilizzati</strong>.<br><br>
+               Differenza: <strong style="color:var(--warning);">${absDiff.toFixed(2)}g non contabilizzati</strong>.<br><br>
                Come vuoi procedere?`;
     }
 
@@ -2801,11 +2885,11 @@ function fixManual() {
         const gram = type === 'fumo' ? (s.fumo_grams || 0) : (s.erba_grams || 0);
         return `
             <div style="display:flex; justify-content:space-between; align-items:center;
-                        padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                        padding:10px; border-bottom:1px solid rgba(var(--overlay-rgb),0.07);">
                 <div>
                     <span style="font-weight:600;">${s.date.split('-').reverse().join('/')}</span>
-                    <span style="color:#999; font-size:12px;"> ${s.time}</span><br>
-                    <small style="color:#aaa;">Totale sessione: ${s.grams}g</small>
+                    <span style="color:var(--color-text-muted); font-size:12px;"> ${s.time}</span><br>
+                    <small style="color:var(--color-text-muted);">Totale sessione: ${s.grams}g</small>
                 </div>
                 <input type="number" step="0.01" min="0"
                        data-id="${s.id}"
@@ -2813,7 +2897,7 @@ function fixManual() {
                        data-total="${s.grams}"
                        data-old="${gram}"
                        value="${gram}"
-                       style="width:80px; text-align:center; margin:0; font-weight:700; color:var(--primary-dark);">
+                       style="width:80px; text-align:center; margin:0; font-weight:700; color:var(--heading);">
             </div>
         `;
     }).join('');
@@ -2923,4 +3007,5 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 	updateOnlineStatus();
 
+	initTheme();
 	checkAuth();
