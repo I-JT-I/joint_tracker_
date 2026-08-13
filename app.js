@@ -3715,6 +3715,9 @@ function renderPurchaseHistory() {
                     <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:6px; transition: width 0.5s ease;"></div>
                 </div>
             `;
+        } else if (p.closed_at) {
+            const days = Math.max(0, Math.round((new Date(p.closed_at) - new Date(p.date)) / 86400000));
+            consumedStr = `Terminata il ${p.closed_at.split('-').reverse().join('/')} · durata: ${days} giorno${days === 1 ? '' : 'i'}`;
         }
 
         return `
