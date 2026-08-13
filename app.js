@@ -159,7 +159,8 @@ async function getMyFriendsList() {
     const { data: friendships, error } = await supabaseClient
         .from('friendships')
         .select('friend_id')
-        .eq('user_id', currentUser.id);
+        .eq('user_id', currentUser.id)
+        .eq('status', 'accepted');
 
     if (error || !friendships || friendships.length === 0) return [];
 
@@ -1162,7 +1163,7 @@ async function addPlaceFromMap() {
 			}, 100);
 		}
 
-		if (p === 'social') { loadSocial(); loadSnapshots(); }
+		if (p === 'social') { loadSocial(); loadSnapshots(); loadFriendRequests(); }
 		if (p === 'stock' || p === 'charts') loadPurchases();
 		if (p === 'settings') {
 		    loadUserProfile();
@@ -2380,27 +2381,55 @@ if (ctxPie) {
 		const username = document.getElementById('friendUsername').value.trim();
 		if (!username) return alert("Inserisci un nickname");
 
-		const { data: profiles, error: profileErr } = await supabaseClient
-			.from('profiles')
-			.select('id')
-			.ilike('username', username);
+		const { error } = await supabaseClient.rpc('send_friend_request', { target_username: username });
 
-		if (profileErr || profiles.length === 0) return alert("Utente non trovato!");
-		if (profiles[0].id === currentUser.id) return alert("Non puoi aggiungere te stesso!");
-
-		const { error: insertErr } = await supabaseClient
-			.from('friendships')
-			.insert({ user_id: currentUser.id, friend_id: profiles[0].id });
-
-		if (insertErr && insertErr.code === '23505') {
-			alert("Siete già amici!");
-		} else if (insertErr) {
-			alert("Errore durante l'aggiunta.");
+		if (error) {
+			if (error.message && error.message.includes('non trovato')) alert("Utente non trovato!");
+			else if (error.message && error.message.includes('te stesso')) alert("Non puoi aggiungere te stesso!");
+			else if (error.message && error.message.includes('gia')) alert("Richiesta già inviata o siete già amici!");
+			else alert("Errore durante l'invio della richiesta.");
 		} else {
-			showMessage("👥 Amico aggiunto!");
+			showMessage("👥 Richiesta di amicizia inviata!");
 			document.getElementById('friendUsername').value = "";
 			if(currentSocialTab === 'friends') loadSocial();
 		}
+	}
+
+	async function loadFriendRequests() {
+		const el = document.getElementById('friendRequestsList');
+		if (!el) return;
+
+		const { data, error } = await supabaseClient.rpc('get_pending_friend_requests');
+		if (error) { console.error('Errore richieste amicizia:', error); return; }
+
+		if (!data || data.length === 0) {
+			el.style.display = 'none';
+			el.innerHTML = '';
+			return;
+		}
+
+		el.style.display = 'block';
+		el.innerHTML = `
+			<h3 style="margin-top:0;">🔔 Richieste di amicizia</h3>
+			${data.map(r => `
+				<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(76,175,80,0.08); border-radius:10px; margin-bottom:8px;">
+					<span style="font-weight:600; font-size:14px;">👤 ${r.username}</span>
+					<div style="display:flex; gap:8px;">
+						<button class="action-btn" onclick="respondFriendRequest('${r.requester_id}', true)" style="margin-top:0; padding:8px 14px;">✅ Accetta</button>
+						<button class="secondary-btn" onclick="respondFriendRequest('${r.requester_id}', false)" style="margin-top:0; padding:8px 14px;">✕ Rifiuta</button>
+					</div>
+				</div>
+			`).join('')}
+		`;
+	}
+
+	async function respondFriendRequest(requesterId, accept) {
+		const { error } = await supabaseClient.rpc('respond_friend_request', { requester_id: requesterId, accept });
+		if (error) { alert('Errore nella risposta alla richiesta.'); return; }
+
+		showMessage(accept ? '🤝 Amicizia accettata!' : 'Richiesta rifiutata');
+		await loadFriendRequests();
+		if (currentSocialTab === 'friends') loadSocial();
 	}
 
 	async function viewFriendStats(targetId, username) {

@@ -451,8 +451,11 @@
 
 <!-- PAGINA SOCIAL -->
 <div id="page-social" class="page">
+	<div class="card" id="friendRequestsList" style="display:none;"></div>
+
 	<div class="card">
 		<h3>👥 Aggiungi un Amico</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Invia una richiesta: potrà vedere le tue statistiche e foto solo se l'accetta.</p>
 		<div style="display: flex; gap: 10px;">
 			<input type="text" id="friendUsername" placeholder="Nickname dell'amico" style="margin-top: 0; flex: 1;">
 			<button class="action-btn" onclick="addFriend()" style="margin-top: 0; width: 80px;">Aggiungi</button>
