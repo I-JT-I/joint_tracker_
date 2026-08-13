@@ -67,6 +67,85 @@ function initTheme() {
 	}
 }
 
+// Grammi personalmente consumati in una sessione (quota propria per le sessioni condivise,
+// non il totale grezzo "grams" che in passato poteva riflettere l'importo di un altro partecipante).
+function personalGrams(s) {
+	return (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0);
+}
+
+// ========== BLOCCO PIN ==========
+async function sha256Hex(text) {
+	const enc = new TextEncoder().encode(text);
+	const hashBuf = await crypto.subtle.digest('SHA-256', enc);
+	return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function getPinHash() {
+	try { return localStorage.getItem('jt_pin_hash'); } catch (e) { return null; }
+}
+
+function isAppLocked() {
+	if (!getPinHash()) return false;
+	try { return sessionStorage.getItem('jt_unlocked') !== 'true'; } catch (e) { return true; }
+}
+
+function showLockScreen() {
+	document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+	document.getElementById('header').style.display = 'none';
+	document.getElementById('page-lock').classList.add('active');
+	const input = document.getElementById('lockPinInput');
+	if (input) { input.value = ''; setTimeout(() => input.focus(), 100); }
+}
+
+async function tryUnlockPin() {
+	const input = document.getElementById('lockPinInput');
+	const errorEl = document.getElementById('lockError');
+	const hash = await sha256Hex(input.value);
+	if (hash === getPinHash()) {
+		try { sessionStorage.setItem('jt_unlocked', 'true'); } catch (e) {}
+		errorEl.textContent = '';
+		document.getElementById('page-lock').classList.remove('active');
+		document.getElementById('header').style.display = 'flex';
+		showPage('home');
+	} else {
+		errorEl.textContent = '❌ PIN errato';
+		input.value = '';
+		input.focus();
+	}
+}
+
+async function setAppPin() {
+	const val = document.getElementById('newPinInput').value.trim();
+	if (!/^\d{4,8}$/.test(val)) return alert('Il PIN deve essere numerico, tra 4 e 8 cifre.');
+	const hash = await sha256Hex(val);
+	try {
+		localStorage.setItem('jt_pin_hash', hash);
+		sessionStorage.setItem('jt_unlocked', 'true');
+	} catch (e) {}
+	document.getElementById('newPinInput').value = '';
+	showMessage('🔒 PIN impostato!');
+	renderPinStatus();
+}
+
+function removeAppPin() {
+	if (!confirm('Rimuovere il blocco PIN da questo dispositivo?')) return;
+	try {
+		localStorage.removeItem('jt_pin_hash');
+		sessionStorage.removeItem('jt_unlocked');
+	} catch (e) {}
+	showMessage('🔓 PIN rimosso');
+	renderPinStatus();
+}
+
+function renderPinStatus() {
+	const el = document.getElementById('pinStatusDisplay');
+	const removeBtn = document.getElementById('btnRemovePin');
+	if (!el) return;
+	const active = !!getPinHash();
+	el.textContent = active ? '🔒 Blocco PIN attivo su questo dispositivo.' : '🔓 Nessun blocco PIN impostato.';
+	if (removeBtn) removeBtn.style.display = active ? 'block' : 'none';
+}
+
 const ACHIEVEMENTS = [
 	{ key: 'first_session', icon: '🌱', title: 'Prima Volta', desc: 'Segna la tua prima sessione', check: () => smokes.length >= 1 },
 	{ key: 'sessions_10', icon: '🔥', title: 'Decina', desc: '10 sessioni totali', check: () => smokes.length >= 10 },
@@ -486,8 +565,11 @@ if (mode === 'signup') {
 	await loadNotifications();
 	await loadAchievements();
 	await loadBreaks();
+	await loadGoal();
 	subscribeToNotifications();
 	getLocationAuto();
+
+	if (isAppLocked()) showLockScreen();
 	}
 
 	function showError(msg) {
@@ -646,6 +728,10 @@ async function flushPendingSessions() {
 		});
 	}
 
+	const contextTag = document.querySelector('input[name="contextTag"]:checked')?.value || null;
+	const moodRatingRaw = document.querySelector('input[name="moodRating"]:checked')?.value || '';
+	const moodRating = moodRatingRaw ? parseInt(moodRatingRaw) : null;
+
 	const isShared = document.getElementById('sharedSessionCheck')?.checked && sessionParticipants.length > 0;
 
 	if (isShared) {
@@ -676,7 +762,9 @@ async function flushPendingSessions() {
 			p_latitude: currentLocation.lat || null,
 			p_longitude: currentLocation.lng || null,
 			p_location_name: finalLocationName,
-			p_participants: participants
+			p_participants: participants,
+			p_context_tag: contextTag,
+			p_mood_rating: moodRating
 		});
 
 		if (error) {
@@ -697,6 +785,8 @@ async function flushPendingSessions() {
 			longitude: currentLocation.lng || null,
 			location_name: finalLocationName,
 			not_mine: document.getElementById("notMineCheck").checked,
+			context_tag: contextTag,
+			mood_rating: moodRating,
 		};
 
 		if (!navigator.onLine) {
@@ -719,6 +809,9 @@ async function flushPendingSessions() {
 	document.getElementById("notMineCheck").checked = false;
 	document.getElementById("notMineToggle").style.display = "none";
 	document.querySelectorAll('.substance-checkbox-group label').forEach(l => l.classList.remove('selected'));
+	const defaultContextTag = document.querySelector('input[name="contextTag"][value=""]');
+	if (defaultContextTag) defaultContextTag.checked = true;
+	document.querySelectorAll('input[name="moodRating"]').forEach(r => { r.checked = false; });
 	sessionParticipants = [];
 	document.getElementById('sharedSessionCheck').checked = false;
 	document.getElementById('sharedSessionPanel').style.display = 'none';
@@ -1116,6 +1209,9 @@ async function addPlaceFromMap() {
 		if (p === 'settings') {
 		    loadUserProfile();
 		    loadReminderSettings();
+		    renderPinStatus();
+		    loadPushDevices();
+		    loadBackupStatus();
 		}
 		update();
 	}
@@ -1165,7 +1261,7 @@ function updateMap() {
                 };
             }
             grouped[s.location_name].count++;
-            grouped[s.location_name].grams += s.grams;
+            grouped[s.location_name].grams += personalGrams(s);
         } else {
             singles.push(s);
         }
@@ -1208,12 +1304,12 @@ function updateMap() {
         });
 
         const marker = L.marker([s.latitude, s.longitude], { icon: markerEl })
-            .bindPopup(`<strong>${s.location_name || 'Posizione'}</strong><br>${s.date} ${s.time}<br>${s.grams}g`);
+            .bindPopup(`<strong>${s.location_name || 'Posizione'}</strong><br>${s.date} ${s.time}<br>${parseFloat(personalGrams(s).toFixed(2))}g`);
 
         markerClusterGroup.addLayer(marker);
         bounds.extend([s.latitude, s.longitude]);
         totalCount++;
-        totalGrams += s.grams;
+        totalGrams += personalGrams(s);
     });
 
     if (totalCount > 0) {
@@ -1234,6 +1330,9 @@ function updateMap() {
 		checkReminderBanner();
 		renderPeriodComparison();
 		renderHomeSummary();
+		renderInsights();
+		renderContextStats();
+		renderGoalCard();
 		if (achievementsLoaded) checkAchievements();
 	}
 
@@ -1275,17 +1374,64 @@ function updateMap() {
 		}
 	}
 
+// ========== STORICO: ricerca e filtri ==========
+function getFilteredHistorySmokes() {
+	const query = (document.getElementById('historySearch')?.value || '').trim().toLowerCase();
+	const type = document.getElementById('historyTypeFilter')?.value || 'all';
+	const from = document.getElementById('historyDateFrom')?.value || '';
+	const to = document.getElementById('historyDateTo')?.value || '';
+
+	return smokes.filter(s => {
+		if (type !== 'all' && s.type !== type) return false;
+		if (from && s.date < from) return false;
+		if (to && s.date > to) return false;
+		if (query && !(s.location_name || '').toLowerCase().includes(query)) return false;
+		return true;
+	});
+}
+
+function isHistoryFilterActive() {
+	const query = document.getElementById('historySearch')?.value || '';
+	const type = document.getElementById('historyTypeFilter')?.value || 'all';
+	const from = document.getElementById('historyDateFrom')?.value || '';
+	const to = document.getElementById('historyDateTo')?.value || '';
+	return !!(query || type !== 'all' || from || to);
+}
+
+function applyHistoryFilters() {
+	const resetBtn = document.getElementById('historyFilterReset');
+	if (resetBtn) resetBtn.style.display = isHistoryFilterActive() ? 'block' : 'none';
+	updateHistory();
+}
+
+function resetHistoryFilters() {
+	const search = document.getElementById('historySearch');
+	const type = document.getElementById('historyTypeFilter');
+	const from = document.getElementById('historyDateFrom');
+	const to = document.getElementById('historyDateTo');
+	if (search) search.value = '';
+	if (type) type.value = 'all';
+	if (from) from.value = '';
+	if (to) to.value = '';
+	applyHistoryFilters();
+}
+
 function updateHistory() {
 	const hList = document.getElementById("historyList");
 	hList.innerHTML = "";
 
+	const filterActive = isHistoryFilterActive();
+	const visibleSmokes = filterActive ? getFilteredHistorySmokes() : smokes;
+
 	if (smokes.length === 0) {
 		hList.innerHTML = "<p style='text-align:center; color:var(--color-text-muted);'>Nessun dato presente.</p>";
+	} else if (visibleSmokes.length === 0) {
+		hList.innerHTML = "<p style='text-align:center; color:var(--color-text-muted);'>Nessun risultato per questi filtri.</p>";
 	} else {
 		const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
 		const byYear = {};
 
-		smokes.forEach(s => {
+		visibleSmokes.forEach(s => {
 			const d = new Date(s.date);
 			const year = d.getFullYear();
 			const monthIndex = d.getMonth();
@@ -1321,7 +1467,7 @@ function updateHistory() {
 				
 				dayKeys.forEach(dKey => {
 					const daySmokes = byYear[year][mKey][dKey];
-					const dayWeight = daySmokes.reduce((sum, s) => sum + s.grams, 0);
+					const dayWeight = daySmokes.reduce((sum, s) => sum + personalGrams(s), 0);
 					mGrams += dayWeight;
 					yearGrams += dayWeight;
 
@@ -1333,7 +1479,7 @@ function updateHistory() {
 					let itemsHtml = sortedSmokes.map(s => `
     <div class="history-item">
         <div>
-            <span style="font-weight: bold; color: var(--primary);">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${s.grams}g
+            <span style="font-weight: bold; color: var(--primary);">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${parseFloat(personalGrams(s).toFixed(2))}g
             ${s.not_mine ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">👥 non mia</span>` : ''}
             ${s.location_name ? `<br><small style="color: var(--color-text-muted);">📍 ${s.location_name}</small>` : ''}
         </div>
@@ -1522,6 +1668,8 @@ smokes.forEach(s => {
 		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
 		charts = {};
 
+		renderCalendarHeatmap();
+
 		let gramsFumo = smokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0), 0);
 let gramsErba = smokes.reduce((sum, s) => sum + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
 
@@ -1587,7 +1735,7 @@ if (ctxPie) {
 
 		// Grafico ultimi 7 giorni
 		const last7 = [...Array(7)].map((_,i) => { let d = new Date(); d.setDate(d.getDate()-i); return d.toISOString().split('T')[0]; }).reverse();
-		const weightData = last7.map(d => smokes.filter(s => s.date === d).reduce((acc, curr) => acc + curr.grams, 0));
+		const weightData = last7.map(d => smokes.filter(s => s.date === d).reduce((acc, curr) => acc + personalGrams(curr), 0));
 
 		const ctxWeight = document.getElementById("cWeight");
 		if (ctxWeight) {
@@ -1720,6 +1868,44 @@ if (ctxPie) {
 		} catch (err) {
 			console.error(err);
 			alert("Errore durante l'esportazione.");
+		}
+	}
+
+	function csvEscape(val) {
+		if (val === null || val === undefined) return '';
+		const str = String(val);
+		return /[",\n;]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+	}
+
+	async function exportDataCSV() {
+		try {
+			const { data, error } = await supabaseClient
+				.from('smokes')
+				.select('*')
+				.order('ts', { ascending: false });
+
+			if (error) throw error;
+			if (!data || data.length === 0) return alert('Nessun dato da esportare.');
+
+			const headers = ['date', 'time', 'type', 'grams', 'fumo_grams', 'erba_grams', 'my_fumo_grams', 'my_erba_grams', 'location_name', 'latitude', 'longitude', 'not_mine'];
+			const rows = data.map(s => headers.map(h => csvEscape(s[h])).join(';'));
+			const csv = [headers.join(';'), ...rows].join('\n');
+
+			const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+			const url = URL.createObjectURL(blob);
+
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `jointtracker_export_${new Date().toISOString().split('T')[0]}.csv`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+
+			showMessage('✅ CSV scaricato!');
+		} catch (err) {
+			console.error(err);
+			alert("Errore durante l'esportazione CSV.");
 		}
 	}
 
@@ -2157,9 +2343,381 @@ function renderBreakHistory() {
 		}).join('');
 }
 
+// Formatta una data locale come YYYY-MM-DD usando i componenti locali (getFullYear/getMonth/getDate),
+// evitando toISOString() che converte in UTC e può far slittare il giorno di uno per i fusi orari > UTC.
+function toDateStr(d) {
+	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const HEATMAP_COLORS = ['#a5d6a7', '#4caf50', '#2e7d32', '#1b5e20'];
+
+function renderCalendarHeatmap() {
+	const el = document.getElementById('calendarHeatmap');
+	if (!el) return;
+
+	const counts = {};
+	smokes.forEach(s => { counts[s.date] = (counts[s.date] || 0) + 1; });
+
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+	const start = new Date(today);
+	start.setDate(start.getDate() - 364);
+	start.setDate(start.getDate() - start.getDay()); // allinea a domenica
+
+	const maxCount = Math.max(1, ...Object.values(counts));
+
+	function colorFor(count) {
+		if (count === 0) return 'rgba(var(--overlay-rgb),0.08)';
+		const ratio = count / maxCount;
+		if (ratio > 0.75) return HEATMAP_COLORS[3];
+		if (ratio > 0.5) return HEATMAP_COLORS[2];
+		if (ratio > 0.25) return HEATMAP_COLORS[1];
+		return HEATMAP_COLORS[0];
+	}
+
+	const monthNames = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+	const weeks = [];
+	const cursor = new Date(start);
+	while (cursor <= today) {
+		const week = [];
+		for (let d = 0; d < 7; d++) {
+			if (cursor > today) {
+				week.push(null);
+			} else {
+				const dateStr = toDateStr(cursor);
+				week.push({ date: dateStr, month: cursor.getMonth(), count: counts[dateStr] || 0 });
+			}
+			cursor.setDate(cursor.getDate() + 1);
+		}
+		weeks.push(week);
+	}
+
+	let lastMonth = null;
+	const labelsHtml = weeks.map(week => {
+		const firstValid = week.find(d => d);
+		let label = '';
+		if (firstValid && firstValid.month !== lastMonth) {
+			label = monthNames[firstValid.month];
+			lastMonth = firstValid.month;
+		}
+		return `<div style="width:11px; font-size:9px; color:var(--color-text-muted); white-space:nowrap;">${label}</div>`;
+	}).join('');
+
+	const gridHtml = weeks.map(week => `
+		<div style="display:flex; flex-direction:column; gap:3px;">
+			${week.map(d => d
+				? `<div title="${d.date.split('-').reverse().join('/')}: ${d.count} sessione/i" style="width:11px; height:11px; border-radius:2px; background:${colorFor(d.count)};"></div>`
+				: `<div style="width:11px; height:11px;"></div>`
+			).join('')}
+		</div>
+	`).join('');
+
+	el.innerHTML = `
+		<div style="display:flex; gap:3px; margin-bottom:4px;">${labelsHtml}</div>
+		<div style="display:flex; gap:3px;">${gridHtml}</div>
+	`;
+
+	const legend = document.getElementById('heatmapLegend');
+	if (legend) {
+		legend.innerHTML = ['rgba(var(--overlay-rgb),0.08)', ...HEATMAP_COLORS].map(c =>
+			`<span style="width:11px; height:11px; border-radius:2px; background:${c}; display:inline-block;"></span>`
+		).join('');
+	}
+}
+
+// ========== OBIETTIVI PERSONALI ==========
+let activeGoal = null;
+
+async function loadGoal() {
+	const { data, error } = await supabaseClient
+		.from('user_goals')
+		.select('*')
+		.eq('is_active', true)
+		.maybeSingle();
+
+	if (error) { console.error('Errore caricamento obiettivo:', error); return; }
+	activeGoal = data || null;
+	renderGoalCard();
+}
+
+function getWeekStart(d) {
+	const date = new Date(d);
+	const day = date.getDay();
+	const diff = (day === 0 ? -6 : 1) - day; // porta a lunedì
+	date.setDate(date.getDate() + diff);
+	date.setHours(0, 0, 0, 0);
+	return date;
+}
+
+function renderGoalCard() {
+	const el = document.getElementById('goalCard');
+	if (!el) return;
+
+	if (!activeGoal) {
+		el.innerHTML = `
+			<p style="text-align:center; color:var(--color-text-muted); font-size:13px; margin-bottom:10px;">Nessun obiettivo impostato.</p>
+			<select id="goalMetric" style="margin-top:0;">
+				<option value="sessions">Numero sessioni</option>
+				<option value="grams">Grammi totali</option>
+			</select>
+			<select id="goalPeriod" style="margin-top:10px;">
+				<option value="week">a settimana</option>
+				<option value="month">al mese</option>
+			</select>
+			<input type="number" id="goalTarget" min="0.1" step="0.1" placeholder="Valore massimo" style="margin-top:10px;">
+			<button class="main-btn" onclick="setGoal()" style="margin-top:10px;">🎯 Imposta obiettivo</button>
+		`;
+		return;
+	}
+
+	const now = new Date();
+	let periodStart, periodLabel;
+	if (activeGoal.period === 'week') {
+		periodStart = getWeekStart(now);
+		periodLabel = 'questa settimana';
+	} else {
+		periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+		periodLabel = 'questo mese';
+	}
+	const periodStartStr = toDateStr(periodStart);
+
+	const periodSmokes = smokes.filter(s => s.date >= periodStartStr && !s.not_mine);
+	const isSessions = activeGoal.metric === 'sessions';
+	const current = isSessions
+		? periodSmokes.length
+		: periodSmokes.reduce((sum, s) => sum + personalGrams(s), 0);
+	const target = parseFloat(activeGoal.target_value);
+
+	const pct = Math.min(100, (current / target) * 100);
+	const isOver = current > target;
+	const barColor = isOver ? '#f44336' : pct > 75 ? '#FF9800' : '#4CAF50';
+	const unit = isSessions ? '' : 'g';
+	const metricLabel = isSessions ? 'sessioni' : 'grammi';
+	const decimals = isSessions ? 0 : 1;
+
+	el.innerHTML = `
+		<div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+			<span style="font-size:13px; color:var(--color-text-secondary);">${metricLabel} ${periodLabel}</span>
+			<span style="font-weight:700; color:${barColor};">${current.toFixed(decimals)}${unit} / ${target.toFixed(decimals)}${unit}</span>
+		</div>
+		<div style="background:rgba(var(--overlay-rgb),0.12); border-radius:8px; height:10px; overflow:hidden;">
+			<div style="height:100%; width:${pct}%; background:${barColor}; border-radius:8px; transition: width 0.5s ease;"></div>
+		</div>
+		${isOver ? `<p style="font-size:12px; color:var(--danger); margin-top:8px; text-align:center;">⚠️ Obiettivo superato per ${periodLabel}</p>` : ''}
+		<button class="secondary-btn" onclick="removeGoal()" style="margin-top:12px;">Rimuovi obiettivo</button>
+	`;
+}
+
+async function setGoal() {
+	const metric = document.getElementById('goalMetric').value;
+	const period = document.getElementById('goalPeriod').value;
+	const target = parseFloat(document.getElementById('goalTarget').value);
+	if (!target || target <= 0) return alert('Inserisci un valore valido!');
+
+	if (activeGoal) {
+		await supabaseClient.from('user_goals').update({ is_active: false }).eq('id', activeGoal.id);
+	}
+
+	const { error } = await supabaseClient.from('user_goals').insert({
+		user_id: currentUser.id,
+		metric, period,
+		target_value: target,
+		is_active: true
+	});
+
+	if (error) { alert("Errore nel salvataggio dell'obiettivo."); return; }
+	showMessage('🎯 Obiettivo impostato!');
+	await loadGoal();
+}
+
+async function removeGoal() {
+	if (!activeGoal) return;
+	if (!confirm("Rimuovere l'obiettivo attuale?")) return;
+
+	const { error } = await supabaseClient.from('user_goals').update({ is_active: false }).eq('id', activeGoal.id);
+	if (error) { alert('Errore nella rimozione.'); return; }
+
+	activeGoal = null;
+	showMessage('🗑️ Obiettivo rimosso');
+	renderGoalCard();
+}
+
 function getMonthKey(date) {
 	const d = new Date(date);
 	return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+}
+
+// ========== RIEPILOGO ANNUALE ("WRAPPED") ==========
+function openWrapped(year) {
+	const years = [...new Set(smokes.map(s => new Date(s.date).getFullYear()))].sort((a, b) => b - a);
+	if (years.length === 0) return alert('Non ci sono ancora dati per generare un riepilogo.');
+	const targetYear = year || years[0];
+	renderWrapped(targetYear, years);
+	document.getElementById('wrappedModal').style.display = 'flex';
+}
+
+function closeWrapped() {
+	document.getElementById('wrappedModal').style.display = 'none';
+}
+
+function renderWrapped(year, years) {
+	const yearSmokes = smokes.filter(s => new Date(s.date).getFullYear() === year);
+	document.getElementById('wrappedTitle').textContent = `🎉 Il tuo ${year}`;
+
+	const selector = years.length > 1 ? `
+		<select onchange="openWrapped(parseInt(this.value))" style="margin-top:0; margin-bottom:15px;">
+			${years.map(y => `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`).join('')}
+		</select>
+	` : '';
+
+	if (yearSmokes.length === 0) {
+		document.getElementById('wrappedContent').innerHTML = `${selector}<p style="text-align:center; color:var(--color-text-muted);">Nessun dato per il ${year}.</p>`;
+		return;
+	}
+
+	const totalGrams = yearSmokes.reduce((sum, s) => sum + personalGrams(s), 0);
+	const totalSessions = yearSmokes.length;
+	const uniqueDays = new Set(yearSmokes.map(s => s.date)).size;
+
+	const dayNames = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+	const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+	yearSmokes.forEach(s => dayCounts[new Date(s.date).getDay()]++);
+	const topDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
+
+	const placeCounts = {};
+	yearSmokes.forEach(s => { if (s.location_name) placeCounts[s.location_name] = (placeCounts[s.location_name] || 0) + 1; });
+	const topPlace = Object.entries(placeCounts).sort((a, b) => b[1] - a[1])[0];
+
+	const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+	const monthCounts = Array(12).fill(0);
+	yearSmokes.forEach(s => monthCounts[new Date(s.date).getMonth()]++);
+	const topMonthIdx = monthCounts.indexOf(Math.max(...monthCounts));
+
+	const sharedCount = yearSmokes.filter(s => Array.isArray(s.shared_with) && s.shared_with.length > 0).length;
+
+	const yearPurchases = purchases.filter(p => p.date && new Date(p.date).getFullYear() === year && p.price);
+	const totalSpent = yearPurchases.reduce((sum, p) => sum + parseFloat(p.price), 0);
+
+	document.getElementById('wrappedContent').innerHTML = `
+		${selector}
+		<div class="stat-grid" style="margin-bottom:15px;">
+			<div class="stat-box"><big>${totalSessions}</big><small>Sessioni</small></div>
+			<div class="stat-box"><big>${totalGrams.toFixed(1)}</big><small>Grammi</small></div>
+			<div class="stat-box"><big>${uniqueDays}</big><small>Giorni attivi</small></div>
+			<div class="stat-box"><big>${sharedCount}</big><small>Condivise</small></div>
+		</div>
+		<div style="font-size:13px; line-height:2;">
+			<div>📅 Giorno preferito: <strong>${dayNames[topDayIdx]}</strong></div>
+			<div>🌟 Mese più attivo: <strong>${monthNames[topMonthIdx]}</strong> (${monthCounts[topMonthIdx]} sessioni)</div>
+			${topPlace ? `<div>📍 Posto preferito: <strong>${topPlace[0]}</strong> (${topPlace[1]}x)</div>` : ''}
+			${totalSpent > 0 ? `<div>💰 Speso (registrato): <strong>€${totalSpent.toFixed(2)}</strong></div>` : ''}
+		</div>
+	`;
+}
+
+// ========== INSIGHT AUTOMATICI ==========
+function renderInsights() {
+	const el = document.getElementById('insightsList');
+	if (!el) return;
+
+	if (smokes.length < 5) {
+		el.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Servono più dati per generare insight (almeno 5 sessioni).</p>';
+		return;
+	}
+
+	const insights = [];
+	const dayNames = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+	const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+	const hourSlots = { Notte: 0, Mattina: 0, Pomeriggio: 0, Sera: 0 };
+	const placeCounts = {};
+
+	smokes.forEach(s => {
+		const d = new Date(s.date);
+		dayCounts[d.getDay()]++;
+		if (s.time && typeof s.time === 'string') {
+			const h = parseInt(s.time.split(':')[0]);
+			if (h >= 0 && h < 6) hourSlots.Notte++;
+			else if (h < 12) hourSlots.Mattina++;
+			else if (h < 18) hourSlots.Pomeriggio++;
+			else hourSlots.Sera++;
+		}
+		if (s.location_name) placeCounts[s.location_name] = (placeCounts[s.location_name] || 0) + 1;
+	});
+
+	const topDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
+	if (dayCounts[topDayIdx] > 0) {
+		const pct = Math.round((dayCounts[topDayIdx] / smokes.length) * 100);
+		insights.push(`📅 <strong>${dayNames[topDayIdx]}</strong> è il tuo giorno più attivo (${pct}% delle sessioni).`);
+	}
+
+	const topSlot = Object.entries(hourSlots).sort((a, b) => b[1] - a[1])[0];
+	if (topSlot && topSlot[1] > 0) {
+		const pct = Math.round((topSlot[1] / smokes.length) * 100);
+		const slotLabel = { Notte: 'di notte 🌙', Mattina: 'di mattina ☀️', Pomeriggio: 'nel pomeriggio 🌤️', Sera: 'di sera 🌆' }[topSlot[0]];
+		insights.push(`⏰ Fumi soprattutto <strong>${slotLabel}</strong> (${pct}% delle sessioni).`);
+	}
+
+	const topPlace = Object.entries(placeCounts).sort((a, b) => b[1] - a[1])[0];
+	if (topPlace) {
+		insights.push(`📍 Il posto dove fumi più spesso è <strong>${topPlace[0]}</strong> (${topPlace[1]} sessioni).`);
+	}
+
+	const now = new Date();
+	const currentMonthKey = getMonthKey(now);
+	const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+	const lastMonthKey = getMonthKey(lastMonthDate);
+	const currentCount = smokes.filter(s => getMonthKey(s.date) === currentMonthKey).length;
+	const lastCount = smokes.filter(s => getMonthKey(s.date) === lastMonthKey).length;
+	if (lastCount > 0) {
+		const diffPct = Math.round(((currentCount - lastCount) / lastCount) * 100);
+		if (Math.abs(diffPct) >= 10) {
+			insights.push(diffPct > 0
+				? `📈 Questo mese hai fumato il <strong>${diffPct}% in più</strong> rispetto al mese scorso.`
+				: `📉 Questo mese hai fumato il <strong>${Math.abs(diffPct)}% in meno</strong> rispetto al mese scorso.`);
+		}
+	}
+
+	const totalGrams = smokes.reduce((sum, s) => sum + personalGrams(s), 0);
+	const avgPerSession = totalGrams / smokes.length;
+	insights.push(`⚖️ In media consumi <strong>${avgPerSession.toFixed(2)}g</strong> a sessione.`);
+
+	el.innerHTML = insights.map(i => `
+		<div style="padding:10px 12px; margin-bottom:8px; border-radius:10px; background:rgba(var(--overlay-rgb),0.05); font-size:13px; line-height:1.5;">${i}</div>
+	`).join('');
+}
+
+// ========== CONTESTO & UMORE ==========
+const CONTEXT_TAG_LABELS = { relax: '😌 Relax', social: '👥 Social', creativo: '🎨 Creativo', sonno: '😴 Sonno' };
+
+function renderContextStats() {
+	const el = document.getElementById('contextStatsList');
+	if (!el) return;
+
+	const tagged = smokes.filter(s => s.context_tag);
+	if (tagged.length === 0) {
+		el.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna sessione taggata ancora. Scegli un contesto quando registri una sessione.</p>';
+		return;
+	}
+
+	const grouped = {};
+	tagged.forEach(s => {
+		if (!grouped[s.context_tag]) grouped[s.context_tag] = { count: 0, moodSum: 0, moodCount: 0 };
+		grouped[s.context_tag].count++;
+		if (s.mood_rating) {
+			grouped[s.context_tag].moodSum += s.mood_rating;
+			grouped[s.context_tag].moodCount++;
+		}
+	});
+
+	el.innerHTML = Object.entries(grouped).sort((a, b) => b[1].count - a[1].count).map(([tag, data]) => {
+		const avgMood = data.moodCount > 0 ? (data.moodSum / data.moodCount).toFixed(1) : null;
+		return `
+			<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(var(--overlay-rgb),0.05); border-radius:10px; margin-bottom:6px;">
+				<span style="font-size:13px; font-weight:600;">${CONTEXT_TAG_LABELS[tag] || tag}</span>
+				<span style="font-size:12px; color:var(--color-text-muted);">${data.count} sessioni${avgMood ? ` · umore medio ${avgMood}/5` : ''}</span>
+			</div>
+		`;
+	}).join('');
 }
 
 function renderPeriodComparison() {
@@ -2452,12 +3010,98 @@ async function enablePushNotifications() {
 		}
 
 		statusEl.textContent = '✅ Notifiche push attivate su questo dispositivo!';
+		loadPushDevices();
 	} catch (err) {
 		console.error(err);
 		statusEl.textContent = '❌ Errore durante l\'attivazione.';
 	}
-}	
-		
+}
+
+// ========== STATO BACKUP AUTOMATICI (solo metadati, mai il contenuto) ==========
+async function loadBackupStatus() {
+	const el = document.getElementById('backupStatusList');
+	if (!el) return;
+	el.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted); text-align:center;">Caricamento...</p>';
+
+	try {
+		const { data, error } = await supabaseClient.functions.invoke('list-backups');
+		if (error || !data?.ok) throw error || new Error('Risposta non valida');
+
+		if (!data.files || data.files.length === 0) {
+			el.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted); text-align:center;">Nessun backup automatico ancora eseguito.</p>';
+			return;
+		}
+
+		el.innerHTML = data.files.slice(0, 5).map(f => `
+			<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:12px;">
+				<span>${f.name}</span>
+				<span style="color:var(--color-text-muted);">${new Date(f.created_at).toLocaleDateString('it-IT')}</span>
+			</div>
+		`).join('');
+	} catch (err) {
+		console.error('Errore stato backup:', err);
+		el.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted); text-align:center;">Impossibile verificare lo stato dei backup.</p>';
+	}
+}
+
+// ========== GESTIONE DISPOSITIVI PUSH ==========
+async function getCurrentPushEndpoint() {
+	try {
+		if (!('serviceWorker' in navigator)) return null;
+		const reg = await navigator.serviceWorker.getRegistration();
+		if (!reg) return null;
+		const sub = await reg.pushManager.getSubscription();
+		return sub ? sub.endpoint : null;
+	} catch (e) {
+		return null;
+	}
+}
+
+async function loadPushDevices() {
+	const { data, error } = await supabaseClient
+		.from('push_subscriptions')
+		.select('id, endpoint, created_at')
+		.order('created_at', { ascending: false });
+
+	if (error) { console.error('Errore caricamento dispositivi push:', error); return; }
+	await renderPushDevices(data || []);
+}
+
+async function renderPushDevices(devices) {
+	const el = document.getElementById('pushDevicesList');
+	if (!el) return;
+
+	if (devices.length === 0) {
+		el.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessun dispositivo con notifiche attive.</p>';
+		return;
+	}
+
+	const currentEndpoint = await getCurrentPushEndpoint();
+
+	el.innerHTML = devices.map(d => {
+		const isThis = d.endpoint === currentEndpoint;
+		const dateStr = new Date(d.created_at).toLocaleDateString('it-IT');
+		return `
+			<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(var(--overlay-rgb),0.05); border-radius:10px; margin-bottom:6px;">
+				<div>
+					<span style="font-size:13px; font-weight:600;">📱 Dispositivo${isThis ? ' <span style="color:var(--primary); font-size:11px;">(questo)</span>' : ''}</span><br>
+					<small style="color:var(--color-text-muted);">Attivato il ${dateStr}</small>
+				</div>
+				<button onclick="revokePushDevice(${d.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:16px;">🗑️</button>
+			</div>
+		`;
+	}).join('');
+}
+
+async function revokePushDevice(id) {
+	if (!confirm('Disattivare le notifiche push per questo dispositivo?')) return;
+	const { error } = await supabaseClient.from('push_subscriptions').delete().eq('id', id);
+	if (error) { alert('Errore nella rimozione.'); return; }
+	showMessage('🗑️ Dispositivo rimosso');
+	loadPushDevices();
+}
+
+
 		// ========== SCORTE / ACQUISTI ==========
 let purchases = [];
 let activeFumoStock = null;
