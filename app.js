@@ -3778,6 +3778,13 @@ function closeStock(type, purchaseId) {
     document.getElementById('discrepancyModal').style.display = 'flex';
 }
 
+// Annulla: chiude il modal senza chiudere la scorta (niente più "ignora e chiudi comunque")
+function closeDiscrepancyModal() {
+    document.getElementById('discrepancyModal').style.display = 'none';
+    pendingCloseStock = null;
+    sessionsToFix = [];
+}
+
 // Scala tutte le sessioni proporzionalmente
 async function fixProportional() {
     if (!pendingCloseStock) return;
