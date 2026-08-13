@@ -73,79 +73,6 @@ function personalGrams(s) {
 	return (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0);
 }
 
-// ========== BLOCCO PIN ==========
-async function sha256Hex(text) {
-	const enc = new TextEncoder().encode(text);
-	const hashBuf = await crypto.subtle.digest('SHA-256', enc);
-	return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function getPinHash() {
-	try { return localStorage.getItem('jt_pin_hash'); } catch (e) { return null; }
-}
-
-function isAppLocked() {
-	if (!getPinHash()) return false;
-	try { return sessionStorage.getItem('jt_unlocked') !== 'true'; } catch (e) { return true; }
-}
-
-function showLockScreen() {
-	document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-	document.getElementById('header').style.display = 'none';
-	document.getElementById('page-lock').classList.add('active');
-	const input = document.getElementById('lockPinInput');
-	if (input) { input.value = ''; setTimeout(() => input.focus(), 100); }
-}
-
-async function tryUnlockPin() {
-	const input = document.getElementById('lockPinInput');
-	const errorEl = document.getElementById('lockError');
-	const hash = await sha256Hex(input.value);
-	if (hash === getPinHash()) {
-		try { sessionStorage.setItem('jt_unlocked', 'true'); } catch (e) {}
-		errorEl.textContent = '';
-		document.getElementById('page-lock').classList.remove('active');
-		document.getElementById('header').style.display = 'flex';
-		showPage('home');
-	} else {
-		errorEl.textContent = '❌ PIN errato';
-		input.value = '';
-		input.focus();
-	}
-}
-
-async function setAppPin() {
-	const val = document.getElementById('newPinInput').value.trim();
-	if (!/^\d{4,8}$/.test(val)) return alert('Il PIN deve essere numerico, tra 4 e 8 cifre.');
-	const hash = await sha256Hex(val);
-	try {
-		localStorage.setItem('jt_pin_hash', hash);
-		sessionStorage.setItem('jt_unlocked', 'true');
-	} catch (e) {}
-	document.getElementById('newPinInput').value = '';
-	showMessage('🔒 PIN impostato!');
-	renderPinStatus();
-}
-
-function removeAppPin() {
-	if (!confirm('Rimuovere il blocco PIN da questo dispositivo?')) return;
-	try {
-		localStorage.removeItem('jt_pin_hash');
-		sessionStorage.removeItem('jt_unlocked');
-	} catch (e) {}
-	showMessage('🔓 PIN rimosso');
-	renderPinStatus();
-}
-
-function renderPinStatus() {
-	const el = document.getElementById('pinStatusDisplay');
-	const removeBtn = document.getElementById('btnRemovePin');
-	if (!el) return;
-	const active = !!getPinHash();
-	el.textContent = active ? '🔒 Blocco PIN attivo su questo dispositivo.' : '🔓 Nessun blocco PIN impostato.';
-	if (removeBtn) removeBtn.style.display = active ? 'block' : 'none';
-}
-
 const ACHIEVEMENTS = [
 	{ key: 'first_session', icon: '🌱', title: 'Prima Volta', desc: 'Segna la tua prima sessione', check: () => smokes.length >= 1 },
 	{ key: 'sessions_10', icon: '🔥', title: 'Decina', desc: '10 sessioni totali', check: () => smokes.length >= 10 },
@@ -173,6 +100,22 @@ document.querySelectorAll('.substance-checkbox-group input[type="checkbox"]').fo
 		}
 	});
 });
+
+	// Evidenzia l'opzione selezionata nei gruppi "a chip" (contesto, umore)
+	function syncTagRowVisual(radioName) {
+		document.querySelectorAll(`input[name="${radioName}"]`).forEach(r => {
+			r.parentElement.classList.toggle('selected', r.checked);
+		});
+	}
+
+	function bindTagRowSelection(radioName) {
+		document.querySelectorAll(`input[name="${radioName}"]`).forEach(input => {
+			input.addEventListener('change', () => syncTagRowVisual(radioName));
+		});
+	}
+
+	bindTagRowSelection('contextTag');
+	bindTagRowSelection('moodRating');
 
 	// Mostra messaggio quando entrambi selezionati
 document.getElementById("fumo").addEventListener('change', updateDivideMessage);
@@ -568,8 +511,6 @@ if (mode === 'signup') {
 	await loadGoal();
 	subscribeToNotifications();
 	getLocationAuto();
-
-	if (isAppLocked()) showLockScreen();
 	}
 
 	function showError(msg) {
@@ -812,6 +753,8 @@ async function flushPendingSessions() {
 	const defaultContextTag = document.querySelector('input[name="contextTag"][value=""]');
 	if (defaultContextTag) defaultContextTag.checked = true;
 	document.querySelectorAll('input[name="moodRating"]').forEach(r => { r.checked = false; });
+	syncTagRowVisual('contextTag');
+	syncTagRowVisual('moodRating');
 	sessionParticipants = [];
 	document.getElementById('sharedSessionCheck').checked = false;
 	document.getElementById('sharedSessionPanel').style.display = 'none';
@@ -1209,7 +1152,6 @@ async function addPlaceFromMap() {
 		if (p === 'settings') {
 		    loadUserProfile();
 		    loadReminderSettings();
-		    renderPinStatus();
 		    loadPushDevices();
 		    loadBackupStatus();
 		}

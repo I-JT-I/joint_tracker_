@@ -376,6 +376,37 @@ button.action-btn {
 	color: var(--primary-light);
 }
 
+/* Come .grams-row ma va a capo: per gruppi con piu' opzioni (contesto, umore) che
+   su schermi stretti non ci stanno tutte affiancate in una sola riga. */
+.tag-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.tag-row label {
+	flex: 0 1 auto;
+	margin: 0;
+	background: rgba(var(--overlay-rgb), 0.08);
+	padding: 10px 14px;
+	border-radius: 12px;
+	text-align: center;
+	cursor: pointer;
+	border: 2px solid transparent;
+	font-weight: 500;
+	font-size: 14px;
+	color: var(--color-text);
+}
+
+.tag-row input { display: none; }
+
+.tag-row label.selected {
+	background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+	border-color: var(--primary-light);
+	color: var(--primary-light);
+}
+
 .user-info {
 	background: rgba(76, 175, 80, 0.1);
 	padding: 10px;

@@ -71,19 +71,6 @@
 	</div>
 </div>
 
-<!-- PAGINA BLOCCO PIN -->
-<div id="page-lock" class="page">
-	<div class="auth-container">
-		<div class="auth-box">
-			<h2>🔒 JointTracker</h2>
-			<p style="text-align:center; color:var(--color-text-secondary); margin-bottom:15px;">Inserisci il PIN per continuare</p>
-			<input type="password" id="lockPinInput" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="PIN" style="text-align:center; font-size:24px; letter-spacing:8px;" onkeydown="if(event.key==='Enter') tryUnlockPin()">
-			<button class="main-btn" onclick="tryUnlockPin()">🔓 Sblocca</button>
-			<p id="lockError" style="color:var(--danger); text-align:center; font-size:13px; margin-top:10px;"></p>
-		</div>
-	</div>
-</div>
-
 <!-- PAGINA PRINCIPALE (quando loggato) -->
 <header id="header" style="display:none; position:sticky;">
 	<h1>🌿 JointTracker</h1>
@@ -226,8 +213,8 @@
 		<input type="date" id="date">
 		
 		<label>🏷️ Contesto (opzionale)</label>
-		<div class="grams-row" id="contextTagGroup">
-			<label><input type="radio" name="contextTag" value="" checked> Nessuno</label>
+		<div class="tag-row" id="contextTagGroup">
+			<label class="selected"><input type="radio" name="contextTag" value="" checked> Nessuno</label>
 			<label><input type="radio" name="contextTag" value="relax"> 😌 Relax</label>
 			<label><input type="radio" name="contextTag" value="social"> 👥 Social</label>
 			<label><input type="radio" name="contextTag" value="creativo"> 🎨 Creativo</label>
@@ -235,8 +222,7 @@
 		</div>
 
 		<label>😊 Umore dopo (opzionale)</label>
-		<div class="grams-row" id="moodRatingGroup">
-			<label><input type="radio" name="moodRating" value=""> –</label>
+		<div class="tag-row" id="moodRatingGroup">
 			<label><input type="radio" name="moodRating" value="1"> 1</label>
 			<label><input type="radio" name="moodRating" value="2"> 2</label>
 			<label><input type="radio" name="moodRating" value="3"> 3</label>
@@ -592,15 +578,6 @@
 			<label><input type="radio" name="themeChoice" value="dark" onchange="setTheme('dark')"> 🌙 Scuro</label>
 			<label><input type="radio" name="themeChoice" value="auto" onchange="setTheme('auto')"> 🔄 Automatico</label>
 		</div>
-	</div>
-
-	<div class="card">
-		<h3>🔒 Blocco App</h3>
-		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Richiedi un PIN per aprire l'app su questo dispositivo.</p>
-		<div id="pinStatusDisplay" style="font-size:13px; margin-bottom:10px;"></div>
-		<input type="password" id="newPinInput" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Nuovo PIN (4-8 cifre)">
-		<button class="action-btn" onclick="setAppPin()" style="width:100%; margin-top:10px;">🔒 Imposta PIN</button>
-		<button class="action-btn" id="btnRemovePin" onclick="removeAppPin()" style="width:100%; margin-top:8px; display:none; background:var(--danger); color:white;">🔓 Rimuovi PIN</button>
 	</div>
 
 	<div class="card">
