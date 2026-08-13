@@ -67,6 +67,18 @@ function initTheme() {
 	}
 }
 
+// Neutralizza HTML in testo libero di altri utenti prima di inserirlo via innerHTML
+// (es. il nome di un posto di un amico, mostrato nelle Istantanee).
+function escapeHtml(str) {
+	if (str === null || str === undefined) return '';
+	return String(str)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
+
 // Grammi personalmente consumati in una sessione (quota propria per le sessioni condivise,
 // non il totale grezzo "grams" che in passato poteva riflettere l'importo di un altro partecipante).
 function personalGrams(s) {
@@ -391,6 +403,13 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 			return;
 		}
 
+		if (/[<>"'`&]/.test(username)) {
+			statusLabel.innerText = "❌ Niente < > \" ' ` &";
+			statusLabel.style.color = "red";
+			input.style.borderColor = "red";
+			return;
+		}
+
 		const { data } = await supabaseClient
 			.from('profiles')
 			.select('username')
@@ -417,6 +436,11 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 
 		if (mode === 'signup' && password !== confirm) {
 			showError('Le password non corrispondono!');
+			return;
+		}
+
+		if (mode === 'signup' && /[<>"'`&]/.test(username || '')) {
+			showError("Il nickname non può contenere < > \" ' ` &");
 			return;
 		}
 
@@ -1593,7 +1617,7 @@ async function openSnapshotViewer(index) {
 		<strong>${isMe ? 'Tu' : s.username}</strong> · ${s.date.split('-').reverse().join('/')} · ${s.time}<br>
 		<span style="color:var(--color-text-muted); font-size:13px;">
 			${s.type === 'fumo' ? '🍫 Fumo' : s.type === 'erba' ? '🍃 Erba' : '🍫🍃 Fumo+Erba'} · ${grams.toFixed(2)}g
-			${s.location_name ? ' · 📍 ' + s.location_name : ''}
+			${s.location_name ? ' · 📍 ' + escapeHtml(s.location_name) : ''}
 		</span>
 	`;
 }
@@ -2405,9 +2429,11 @@ if (ctxPie) {
 		if (currentSocialTab === 'friends') loadSocial();
 	}
 
+	let currentModalFriendId = null;
+
 	async function viewFriendStats(targetId, username) {
 		const { data, error } = await supabaseClient.rpc('get_friend_stats', { target_user_id: targetId });
-		
+
 		if (error || !data || data.length === 0) return alert("Impossibile caricare le statistiche.");
 
 		document.getElementById('modalFriendName').innerText = `📊 Statistiche di ${username}`;
@@ -2421,8 +2447,24 @@ if (ctxPie) {
 		} else if (sharedEl) {
 			sharedEl.innerText = "";
 		}
-		
+
+		currentModalFriendId = targetId;
+		const removeBtn = document.getElementById('btnRemoveFriendModal');
+		if (removeBtn) removeBtn.style.display = (currentSocialTab === 'friends') ? 'block' : 'none';
+
 		document.getElementById('friendModal').style.display = 'flex';
+	}
+
+	async function removeFriendFromModal() {
+		if (!currentModalFriendId) return;
+		if (!confirm("Rimuovere questa amicizia? Non vedrete più a vicenda le rispettive statistiche e foto.")) return;
+
+		const { error } = await supabaseClient.rpc('remove_friend', { target_id: currentModalFriendId });
+		if (error) { alert("Errore nella rimozione dell'amicizia."); return; }
+
+		showMessage('🗑️ Amicizia rimossa');
+		closeFriendModal();
+		loadSocial();
 	}
 
 	function closeFriendModal() {
@@ -2433,6 +2475,7 @@ if (ctxPie) {
 	async function updateProfile() {
 		const newName = document.getElementById('usernameInput').value.trim();
 		if(newName.length < 3) return alert("Il nickname deve avere almeno 3 caratteri!");
+		if(/[<>"'`&]/.test(newName)) return alert("Il nickname non può contenere < > \" ' ` &");
 
 		const { error } = await supabaseClient
 			.from('profiles')
