@@ -821,16 +821,6 @@ async function addNewPlace() {
     }
 }
 
-	function toggleGestioneDati() {
-    const panel = document.getElementById('gestioneDatiPanel');
-    const chevron = document.getElementById('chevronGestione');
-    const isVisible = panel.style.display !== 'none';
-    panel.style.display = isVisible ? 'none' : 'block';
-    chevron.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
-}
-
-
-	
 	function toggleAdvancedSearch() {
     const panel = document.getElementById('advancedPlaceSearch');
     const btn = document.getElementById('btnToggleAdvanced');
@@ -2193,118 +2183,6 @@ if (ctxPie) {
 		}
 	}
 
-	// ========== ESPORTA/IMPORTA DATI ==========
-	async function exportData() {
-		try {
-			const { data, error } = await supabaseClient
-				.from('smokes')
-				.select('*')
-				.order('ts', { ascending: false });
-
-			if (error) throw error;
-
-			const dataStr = JSON.stringify(data, null, 2);
-			const blob = new Blob([dataStr], { type: 'application/json' });
-			const url = URL.createObjectURL(blob);
-			
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = `jointtracker_backup_${new Date().toISOString().split('T')[0]}.json`;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
-			
-			showMessage("✅ Backup scaricato!");
-		} catch (err) {
-			console.error(err);
-			alert("Errore durante l'esportazione.");
-		}
-	}
-
-	function csvEscape(val) {
-		if (val === null || val === undefined) return '';
-		const str = String(val);
-		return /[",\n;]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
-	}
-
-	async function exportDataCSV() {
-		try {
-			const { data, error } = await supabaseClient
-				.from('smokes')
-				.select('*')
-				.order('ts', { ascending: false });
-
-			if (error) throw error;
-			if (!data || data.length === 0) return alert('Nessun dato da esportare.');
-
-			const headers = ['date', 'time', 'type', 'grams', 'fumo_grams', 'erba_grams', 'my_fumo_grams', 'my_erba_grams', 'location_name', 'latitude', 'longitude', 'not_mine'];
-			const rows = data.map(s => headers.map(h => csvEscape(s[h])).join(';'));
-			const csv = [headers.join(';'), ...rows].join('\n');
-
-			const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-			const url = URL.createObjectURL(blob);
-
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = `jointtracker_export_${new Date().toISOString().split('T')[0]}.csv`;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
-
-			showMessage('✅ CSV scaricato!');
-		} catch (err) {
-			console.error(err);
-			alert("Errore durante l'esportazione CSV.");
-		}
-	}
-
-	async function importData() {
-		const area = document.getElementById('importArea');
-		const jsonRaw = area.value.trim();
-
-		if (!jsonRaw) return alert("Incolla prima il JSON nell'area di testo.");
-
-		try {
-			let importedData = JSON.parse(jsonRaw);
-
-			if (importedData.smokes_v3 && Array.isArray(importedData.smokes_v3)) {
-				importedData = importedData.smokes_v3;
-			}
-
-			if (!Array.isArray(importedData)) {
-				throw new Error("Il formato del backup non è valido (deve essere un array o un oggetto con 'smokes_v3').");
-			}
-
-			if (!confirm(`Stai per importare ${importedData.length} sessioni. Procedere?`)) return;
-
-			const cleanData = importedData.map((item, index) => {
-				const { id, created_at, ...rest } = item; 
-				return { 
-					...rest, 
-					user_id: currentUser.id,
-					ts: Math.floor(item.ts) + index,
-					time: item.time || '12:00'
-				};
-			});
-
-			const { error } = await supabaseClient
-				.from('smokes')
-				.insert(cleanData);
-			
-			if (error) throw error;
-
-			alert("✅ Importazione completata con successo!");
-			area.value = "";
-			await loadData();
-			showPage('history');
-		} catch (err) {
-			console.error(err);
-			alert("Errore durante l'importazione: " + err.message);
-		}
-	}
-
 	async function resetAll() {
 		const conferma = confirm("ATTENZIONE: Questa operazione cancellerà DEFINITIVAMENTE tutte le tue sessioni salvate. Non potrai tornare indietro. Sei davvero sicuro?");
 		
@@ -2570,6 +2448,9 @@ if (ctxPie) {
 	}
 
 	async function loadUserProfile() {
+		const emailEl = document.getElementById('settingsEmailDisplay');
+		if (emailEl) emailEl.textContent = currentUser.email;
+
 		const { data, error } = await supabaseClient
 			.from('profiles')
 			.select('username')

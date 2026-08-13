@@ -94,7 +94,7 @@
     <button onclick="showPage('map')"><span style="font-size:18px;">🗺️</span>Luoghi</button>
     <button onclick="showPage('social')"><span style="font-size:18px;">🏆</span>Social</button>
     <button onclick="showPage('stock')"><span style="font-size:18px;">🛒</span>Scorte</button>
-    <button onclick="showPage('settings')"><span style="font-size:18px;">⚙️</span>Dati</button>
+    <button onclick="showPage('settings')"><span style="font-size:18px;">⚙️</span>Impostazioni</button>
 </div>
 	<div class="menu-content" id="notifPanel" style="min-width:280px; max-width:320px;">
 		<div style="padding:12px 15px; font-weight:700; color:var(--heading); border-bottom:1px solid rgba(var(--overlay-rgb),0.08);">🔔 Notifiche</div>
@@ -637,9 +637,10 @@
 <!-- PAGINA IMPOSTAZIONI -->
 <div id="page-settings" class="page">
 	<div class="card">
-		<h3>👤 Profilo Social</h3>
+		<h3>👤 Profilo</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Loggato come <strong id="settingsEmailDisplay">...</strong></p>
 		<p>Il tuo nickname attuale: <strong id="currentUsernameDisplay" style="color: var(--primary);">...</strong></p>
-		
+
 		<label for="usernameInput">Cambia Nickname</label>
 		<input type="text" id="usernameInput" placeholder="Nuovo nickname">
 		<button class="action-btn" onclick="updateProfile()">Aggiorna Nome</button>
@@ -690,24 +691,6 @@
 		<h3>☁️ Backup Automatici</h3>
 		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Un backup di sicurezza gira automaticamente ogni settimana lato server (contenuto non scaricabile qui per motivi di privacy: include dati aggregati di tutti gli utenti).</p>
 		<div id="backupStatusList"></div>
-	</div>
-
-	<div class="card">
-		<div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleGestioneDati()">
-			<h3 style="margin:0;">⚙️ Gestione Dati</h3>
-			<span id="chevronGestione" style="font-size:18px; transition: transform 0.3s ease;">▼</span>
-		</div>
-
-		<div id="gestioneDatiPanel" style="display:none; margin-top:15px;">
-			<button class="main-btn" onclick="exportData()" style="background: linear-gradient(135deg, #9c27b0 0%, #6a1b9a 100%);">📤 Esporta Backup (JSON)</button>
-			<button class="action-btn" onclick="exportDataCSV()" style="width:100%; margin-top:10px;">📊 Esporta CSV (Excel/Sheets)</button>
-
-			<hr>
-			
-			<label>📥 Importa Dati</label>
-			<textarea id="importArea" placeholder="Incolla qui il codice JSON del tuo backup..."></textarea>
-			<button class="action-btn" onclick="importData()" style="background: #444;">Importa JSON</button>
-		</div>
 	</div>
 
 	<div class="card">
