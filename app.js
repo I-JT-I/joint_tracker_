@@ -673,6 +673,16 @@ async function flushPendingSessions() {
 	const moodRatingRaw = document.querySelector('input[name="moodRating"]:checked')?.value || '';
 	const moodRating = moodRatingRaw ? parseInt(moodRatingRaw) : null;
 
+	let photoPath = null;
+	if (selectedPhotoFile) {
+		if (navigator.onLine) {
+			photoPath = await uploadSessionPhoto(ts);
+			if (!photoPath) showMessage('⚠️ Foto non caricata, salvo comunque la sessione');
+		} else {
+			showMessage('📡 Offline: foto non allegata, salvo comunque la sessione');
+		}
+	}
+
 	const isShared = document.getElementById('sharedSessionCheck')?.checked && sessionParticipants.length > 0;
 
 	if (isShared) {
@@ -705,7 +715,8 @@ async function flushPendingSessions() {
 			p_location_name: finalLocationName,
 			p_participants: participants,
 			p_context_tag: contextTag,
-			p_mood_rating: moodRating
+			p_mood_rating: moodRating,
+			p_photo_path: photoPath
 		});
 
 		if (error) {
@@ -728,6 +739,7 @@ async function flushPendingSessions() {
 			not_mine: document.getElementById("notMineCheck").checked,
 			context_tag: contextTag,
 			mood_rating: moodRating,
+			photo_path: photoPath,
 		};
 
 		if (!navigator.onLine) {
@@ -755,6 +767,7 @@ async function flushPendingSessions() {
 	document.querySelectorAll('input[name="moodRating"]').forEach(r => { r.checked = false; });
 	syncTagRowVisual('contextTag');
 	syncTagRowVisual('moodRating');
+	clearSelectedPhoto();
 	sessionParticipants = [];
 	document.getElementById('sharedSessionCheck').checked = false;
 	document.getElementById('sharedSessionPanel').style.display = 'none';
@@ -1135,9 +1148,11 @@ async function addPlaceFromMap() {
 		document.getElementById("page-" + p).classList.add("active");
 
 		document.querySelectorAll(".menu-content button").forEach(btn => btn.classList.remove("active-tab"));
-		const pageToIndex = { 'home': 0, 'add': 1, 'history': 2, 'stats': 3, 'charts': 4, 'map': 5, 'social': 6, 'stock': 7, 'settings': 8 };
+		const pageToIndex = { 'home': 0, 'add': 1, 'history': 2, 'gallery': 3, 'stats': 4, 'charts': 5, 'map': 6, 'social': 7, 'stock': 8, 'settings': 9 };
 		const activeBtn = document.querySelectorAll(".menu-content button")[pageToIndex[p]];
 		if(activeBtn) activeBtn.classList.add("active-tab");
+
+		if (p === 'gallery') loadGallery();
 
 		if (p === 'map') {
 			loadUserPlaces();
@@ -1315,6 +1330,132 @@ function updateMap() {
 			teaserEl.style.display = 'none';
 		}
 	}
+
+// ========== FOTO SESSIONE ==========
+let selectedPhotoFile = null;
+
+function handlePhotoSelected(event) {
+	const file = event.target.files[0];
+	if (!file) return;
+
+	if (file.size > 8 * 1024 * 1024) {
+		alert('Foto troppo grande (max 8MB).');
+		event.target.value = '';
+		return;
+	}
+
+	selectedPhotoFile = file;
+	const reader = new FileReader();
+	reader.onload = e => {
+		document.getElementById('photoPreview').src = e.target.result;
+		document.getElementById('photoPreviewWrap').style.display = 'block';
+	};
+	reader.readAsDataURL(file);
+}
+
+function clearSelectedPhoto() {
+	selectedPhotoFile = null;
+	document.getElementById('photoInput').value = '';
+	document.getElementById('photoPreviewWrap').style.display = 'none';
+	document.getElementById('photoPreview').src = '';
+}
+
+async function uploadSessionPhoto(ts) {
+	if (!selectedPhotoFile) return null;
+	const extMatch = /\.([a-zA-Z0-9]+)$/.exec(selectedPhotoFile.name);
+	const ext = extMatch ? extMatch[1].toLowerCase() : 'jpg';
+	const path = `${currentUser.id}/${ts}.${ext}`;
+
+	const { error } = await supabaseClient.storage
+		.from('session-photos')
+		.upload(path, selectedPhotoFile, { upsert: true, contentType: selectedPhotoFile.type || 'image/jpeg' });
+
+	if (error) { console.error('Errore upload foto:', error); return null; }
+	return path;
+}
+
+// ========== GALLERIA FOTO ==========
+async function loadGallery() {
+	const el = document.getElementById('galleryGrid');
+	if (!el) return;
+	el.innerHTML = '<div class="spinner"></div>';
+
+	const withPhotos = [...smokes].filter(s => s.photo_path).sort((a, b) => b.ts - a.ts);
+
+	if (withPhotos.length === 0) {
+		el.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px; padding:20px 0;">Nessuna foto ancora. Scattane una dalla pagina Aggiungi!</p>';
+		return;
+	}
+
+	const paths = withPhotos.map(s => s.photo_path);
+	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrls(paths, 3600);
+
+	if (error || !data) {
+		el.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">Errore nel caricamento delle foto.</p>';
+		return;
+	}
+
+	el.innerHTML = withPhotos.map((s, i) => {
+		const signed = data[i]?.signedUrl;
+		if (!signed) return '';
+		return `
+			<div onclick="openPhotoViewer(${s.ts})" style="aspect-ratio:1; border-radius:10px; overflow:hidden; cursor:pointer; background:rgba(var(--overlay-rgb),0.08);">
+				<img src="${signed}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+			</div>
+		`;
+	}).join('');
+}
+
+let currentViewerTs = null;
+
+async function openPhotoViewer(ts) {
+	const session = smokes.find(s => s.ts === ts);
+	if (!session || !session.photo_path) return;
+
+	currentViewerTs = ts;
+	document.getElementById('photoViewerImg').src = '';
+	document.getElementById('photoViewerInfo').innerHTML = '<p style="text-align:center; color:var(--color-text-muted);">Caricamento...</p>';
+	document.getElementById('photoViewerModal').style.display = 'flex';
+
+	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrl(session.photo_path, 3600);
+
+	if (error || !data) {
+		document.getElementById('photoViewerInfo').innerHTML = '<p style="text-align:center; color:var(--danger);">Errore nel caricamento della foto.</p>';
+		return;
+	}
+
+	document.getElementById('photoViewerImg').src = data.signedUrl;
+	document.getElementById('photoViewerInfo').innerHTML = `
+		<strong>${session.date.split('-').reverse().join('/')} · ${session.time}</strong><br>
+		<span style="color:var(--color-text-muted); font-size:13px;">
+			${session.type === 'fumo' ? '🍫 Fumo' : session.type === 'erba' ? '🍃 Erba' : '🍫🍃 Fumo+Erba'} · ${parseFloat(personalGrams(session).toFixed(2))}g
+			${session.location_name ? ' · 📍 ' + session.location_name : ''}
+		</span>
+	`;
+}
+
+function closePhotoViewer() {
+	document.getElementById('photoViewerModal').style.display = 'none';
+	currentViewerTs = null;
+}
+
+async function deletePhotoFromViewer() {
+	if (!currentViewerTs) return;
+	if (!confirm('Eliminare questa foto?')) return;
+
+	const session = smokes.find(s => s.ts === currentViewerTs);
+	if (!session || !session.photo_path) return;
+
+	await supabaseClient.storage.from('session-photos').remove([session.photo_path]);
+	const { error } = await supabaseClient.from('smokes').update({ photo_path: null }).eq('ts', currentViewerTs);
+
+	if (error) { alert('Errore nella rimozione della foto.'); return; }
+
+	closePhotoViewer();
+	showMessage('🗑️ Foto rimossa');
+	await loadData();
+	await loadGallery();
+}
 
 // ========== MODIFICA POSIZIONE A POSTERIORI ==========
 let editingLocationTs = null;
@@ -1521,7 +1662,7 @@ function updateHistory() {
         <div>
             <span style="font-weight: bold; color: var(--primary);">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${parseFloat(personalGrams(s).toFixed(2))}g
             ${s.not_mine ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">👥 non mia</span>` : ''}
-            <br><small style="color: var(--color-text-muted);">${s.location_name ? `📍 ${s.location_name}` : '📍 <em>nessuna posizione</em>'} <a onclick="openEditLocationModal(${s.ts})" style="color:var(--primary-light); cursor:pointer; text-decoration:underline;">modifica</a></small>
+            <br><small style="color: var(--color-text-muted);">${s.location_name ? `📍 ${s.location_name}` : '📍 <em>nessuna posizione</em>'} <a onclick="openEditLocationModal(${s.ts})" style="color:var(--primary-light); cursor:pointer; text-decoration:underline;">modifica</a>${s.photo_path ? ` · <a onclick="openPhotoViewer(${s.ts})" style="cursor:pointer;">📷</a>` : ''}</small>
         </div>
         <button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
     </div>

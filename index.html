@@ -88,6 +88,7 @@
     <button onclick="showPage('home')"><span style="font-size:18px;">🏠</span>Home</button>
     <button onclick="showPage('add')"><span style="font-size:18px;">➕</span>Aggiungi</button>
     <button onclick="showPage('history')"><span style="font-size:18px;">📜</span>Registro</button>
+    <button onclick="showPage('gallery')"><span style="font-size:18px;">📷</span>Galleria</button>
     <button onclick="showPage('stats')"><span style="font-size:18px;">📊</span>Stats</button>
     <button onclick="showPage('charts')"><span style="font-size:18px;">📈</span>Grafici</button>
     <button onclick="showPage('map')"><span style="font-size:18px;">🗺️</span>Luoghi</button>
@@ -239,6 +240,14 @@
 			<input type="text" id="locationDisplay" placeholder="🔄 Cercando..." style="margin-top: 0; flex: 1; background: rgba(76, 175, 80, 0.08);" readonly>
 		</div>
 
+		<label>📷 Foto (opzionale)</label>
+		<input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoSelected(event)">
+		<button type="button" class="action-btn" onclick="document.getElementById('photoInput').click()" style="width:100%;">📷 Scatta/allega foto</button>
+		<div id="photoPreviewWrap" style="display:none; margin-top:10px; position:relative;">
+			<img id="photoPreview" style="width:100%; max-height:220px; object-fit:cover; border-radius:12px; display:block;">
+			<button type="button" onclick="clearSelectedPhoto()" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; font-size:16px;">✕</button>
+		</div>
+
 		<button class="main-btn" onclick="saveData()">SALVA SESSIONE</button>
 	</div>
 </div>
@@ -260,6 +269,14 @@
 		</div>
 		<button type="button" class="secondary-btn" id="historyFilterReset" onclick="resetHistoryFilters()" style="display:none; margin-top:10px;">✕ Rimuovi filtri</button>
 		<div id="historyList" style="margin-top:15px;"></div>
+	</div>
+</div>
+
+<!-- PAGINA GALLERIA -->
+<div id="page-gallery" class="page">
+	<div class="card">
+		<h3>📷 Galleria</h3>
+		<div id="galleryGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;"></div>
 	</div>
 </div>
 
@@ -531,6 +548,18 @@
     <h3 id="wrappedTitle">🎉 Il tuo anno</h3>
     <div id="wrappedContent"></div>
     <button class="secondary-btn" onclick="closeWrapped()" style="margin-top:15px;">Chiudi</button>
+  </div>
+</div>
+
+<!-- MODAL VISUALIZZATORE FOTO -->
+<div id="photoViewerModal" class="modal">
+  <div class="modal-content card" style="padding:12px;">
+    <img id="photoViewerImg" style="width:100%; border-radius:12px; max-height:60vh; object-fit:contain; background:#000; display:block;">
+    <div id="photoViewerInfo" style="margin-top:12px; font-size:14px;"></div>
+    <div style="display:flex; gap:10px; margin-top:15px;">
+      <button class="secondary-btn" onclick="closePhotoViewer()" style="flex:1; margin-top:0;">Chiudi</button>
+      <button class="action-btn" onclick="deletePhotoFromViewer()" style="flex:1; margin-top:0; background:var(--danger); color:white;">🗑️ Rimuovi foto</button>
+    </div>
   </div>
 </div>
 
