@@ -561,6 +561,19 @@
   </div>
 </div>
 
+<!-- MODAL TUTORIAL -->
+<div id="tutorialModal" class="modal">
+  <div class="modal-content card" style="max-height:85vh; overflow-y:auto;">
+    <div id="tutorialSlide"></div>
+    <div style="display:flex; justify-content:center; gap:6px; margin:15px 0;" id="tutorialDots"></div>
+    <div style="display:flex; gap:10px;">
+      <button class="secondary-btn" id="tutorialSkipBtn" onclick="skipTutorial()" style="flex:1; margin-top:0;">Salta</button>
+      <button class="secondary-btn" id="tutorialPrevBtn" onclick="tutorialPrev()" style="flex:1; margin-top:0; display:none;">← Indietro</button>
+      <button class="main-btn" id="tutorialNextBtn" onclick="tutorialNext()" style="flex:1; margin-top:0;">Avanti →</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL VISUALIZZATORE FOTO -->
 <div id="photoViewerModal" class="modal">
   <div class="modal-content card" style="padding:12px;">
@@ -630,6 +643,12 @@
 		<label for="usernameInput">Cambia Nickname</label>
 		<input type="text" id="usernameInput" placeholder="Nuovo nickname">
 		<button class="action-btn" onclick="updateProfile()">Aggiorna Nome</button>
+	</div>
+
+	<div class="card">
+		<h3>❓ Guida</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Un ripasso veloce delle funzioni principali dell'app.</p>
+		<button class="action-btn" onclick="openTutorial()" style="width:100%;">🎓 Rivedi il tutorial</button>
 	</div>
 
 	<div class="card">

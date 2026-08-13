@@ -513,6 +513,7 @@ if (mode === 'signup') {
 	await loadGoal();
 	subscribeToNotifications();
 	getLocationAuto();
+	await checkOnboarding();
 	}
 
 	function showError(msg) {
@@ -1331,6 +1332,104 @@ function updateMap() {
 			teaserEl.style.display = 'none';
 		}
 	}
+
+// ========== TUTORIAL PRIMO ACCESSO ==========
+const TUTORIAL_SLIDES = [
+	{
+		icon: '🌿',
+		title: 'Benvenuto su JointTracker!',
+		text: "Un'app per tenere traccia delle tue sessioni, delle scorte e di qualche statistica in più. Facciamo un giro veloce delle funzioni principali — meno di un minuto."
+	},
+	{
+		icon: '➕',
+		title: 'Aggiungi una sessione',
+		text: 'Dalla pagina "Aggiungi" scegli cosa fumi, quanto, data e ora (modificabili se te ne dimentichi sul momento). Puoi anche allegare posizione, foto, contesto e umore — tutto facoltativo.'
+	},
+	{
+		icon: '📦',
+		title: 'Scorte',
+		text: 'Registra i tuoi acquisti in "Scorte": l\'app calcola da sola quanto ti resta e stima quanto durerà, scalando le sessioni che segni. Quando la finisci, puoi correggere eventuali discrepanze prima di chiuderla.'
+	},
+	{
+		icon: '📊',
+		title: 'Storico e Grafici',
+		text: 'In Storico puoi cercare e filtrare le sessioni passate. In Grafici trovi la heatmap del calendario, l\'andamento nel tempo e la spesa mensile calcolata su quanto hai davvero consumato, non su quando hai comprato.'
+	},
+	{
+		icon: '🎯',
+		title: 'Obiettivi e Pause',
+		text: 'In Stats puoi impostare un obiettivo personale (es. massimo N sessioni a settimana), leggere qualche insight automatico e tenere traccia di eventuali pause di tolleranza.'
+	},
+	{
+		icon: '👥',
+		title: 'Social',
+		text: 'Aggiungi amici per confrontare le statistiche: dovranno accettare la tua richiesta prima che tu possa vedere le loro. Nelle Istantanee trovi le foto più recenti tue e loro.'
+	},
+	{
+		icon: '⚙️',
+		title: 'Impostazioni',
+		text: 'Da qui gestisci tema, promemoria, notifiche push, ed esporti i tuoi dati in JSON o CSV quando vuoi. Puoi rivedere questo tutorial in qualsiasi momento da qui.'
+	}
+];
+
+let tutorialStep = 0;
+
+function renderTutorialStep() {
+	const slide = TUTORIAL_SLIDES[tutorialStep];
+	document.getElementById('tutorialSlide').innerHTML = `
+		<div style="text-align:center; padding:10px 0;">
+			<div style="font-size:48px; margin-bottom:15px;">${slide.icon}</div>
+			<h3 style="margin-bottom:10px;">${slide.title}</h3>
+			<p style="color:var(--color-text-secondary); font-size:14px; line-height:1.6;">${slide.text}</p>
+		</div>
+	`;
+
+	document.getElementById('tutorialDots').innerHTML = TUTORIAL_SLIDES.map((_, i) =>
+		`<span style="width:7px; height:7px; border-radius:50%; background:${i === tutorialStep ? 'var(--primary-light)' : 'rgba(var(--overlay-rgb),0.2)'};"></span>`
+	).join('');
+
+	document.getElementById('tutorialPrevBtn').style.display = tutorialStep === 0 ? 'none' : 'block';
+	document.getElementById('tutorialSkipBtn').style.display = tutorialStep === TUTORIAL_SLIDES.length - 1 ? 'none' : 'block';
+	document.getElementById('tutorialNextBtn').textContent = tutorialStep === TUTORIAL_SLIDES.length - 1 ? 'Inizia! 🚀' : 'Avanti →';
+}
+
+function openTutorial() {
+	tutorialStep = 0;
+	renderTutorialStep();
+	document.getElementById('tutorialModal').style.display = 'flex';
+}
+
+function tutorialNext() {
+	if (tutorialStep < TUTORIAL_SLIDES.length - 1) {
+		tutorialStep++;
+		renderTutorialStep();
+	} else {
+		finishTutorial();
+	}
+}
+
+function tutorialPrev() {
+	if (tutorialStep > 0) {
+		tutorialStep--;
+		renderTutorialStep();
+	}
+}
+
+function skipTutorial() {
+	finishTutorial();
+}
+
+async function finishTutorial() {
+	document.getElementById('tutorialModal').style.display = 'none';
+	await supabaseClient.from('profiles').update({ onboarding_completed: true }).eq('id', currentUser.id);
+}
+
+async function checkOnboarding() {
+	const { data } = await supabaseClient.from('profiles').select('onboarding_completed').eq('id', currentUser.id).single();
+	if (data && data.onboarding_completed === false) {
+		openTutorial();
+	}
+}
 
 // ========== FOTO SESSIONE ==========
 let selectedPhotoFile = null;
