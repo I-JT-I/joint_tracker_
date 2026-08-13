@@ -179,7 +179,7 @@ async function getMyFriendsList() {
     const friendIds = friendships.map(f => f.friend_id);
 
     const { data: profilesData } = await supabaseClient
-        .from('profiles')
+        .from('profiles_public')
         .select('id, username')
         .in('id', friendIds);
 
@@ -218,7 +218,7 @@ async function searchParticipant() {
     if (!query) return;
 
     const { data, error } = await supabaseClient
-        .from('profiles')
+        .from('profiles_public')
         .select('id, username')
         .ilike('username', query)
         .neq('id', currentUser.id);
@@ -411,7 +411,7 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 		}
 
 		const { data } = await supabaseClient
-			.from('profiles')
+			.from('profiles_public')
 			.select('username')
 			.eq('username', username)
 			.single();

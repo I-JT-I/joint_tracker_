@@ -8,11 +8,22 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Endpoint pubblico senza JWT (chiamato dal cron interno): questo header impedisce a
+// chiunque scopra l'URL di invocarlo a piacere e generare carico/costi inutili.
+const CRON_SECRET = "73883e010b636dd2f246502a0908aaf26ae4d353e05762700f48cfc2ee91712b";
+
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 const TABLES = ["smokes", "purchases", "places", "profiles", "friendships", "user_stats"];
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  if (req.headers.get("x-cron-secret") !== CRON_SECRET) {
+    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const backup: Record<string, unknown> = {
       created_at: new Date().toISOString(),

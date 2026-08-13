@@ -13,6 +13,10 @@ const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:example@example.com";
 const TIMEZONE = "Europe/Rome";
 
+// Endpoint pubblico senza JWT (chiamato dal cron interno): questo header impedisce a
+// chiunque scopra l'URL di invocarlo a piacere e spammare notifiche push agli utenti.
+const CRON_SECRET = "73883e010b636dd2f246502a0908aaf26ae4d353e05762700f48cfc2ee91712b";
+
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -60,7 +64,14 @@ function computeStreakAsOfYesterday(dates: string[]): number {
   return streak;
 }
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  if (req.headers.get("x-cron-secret") !== CRON_SECRET) {
+    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const { hh, mm } = nowInTimezone(TIMEZONE);
     const nowSlot = floor15(hh, mm);
