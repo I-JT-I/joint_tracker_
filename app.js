@@ -1960,11 +1960,7 @@ if (ctxPie) {
 				monthLabels.push(d.toLocaleDateString('it-IT', { month: 'short', year: '2-digit' }));
 			}
 
-			const spendingByMonth = monthKeys.map(key => {
-				return purchases
-					.filter(p => p.date && p.date.startsWith(key) && p.price)
-					.reduce((sum, p) => sum + parseFloat(p.price), 0);
-			});
+			const spendingByMonth = computeMonthlySpending(monthKeys);
 
 			charts.spending = new Chart(ctxSpending, {
 				type: 'bar',
@@ -2653,17 +2649,6 @@ function renderCalendarHeatmap() {
 	start.setDate(start.getDate() - 364);
 	start.setDate(start.getDate() - start.getDay()); // allinea a domenica
 
-	const maxCount = Math.max(1, ...Object.values(counts));
-
-	function colorFor(count) {
-		if (count === 0) return 'rgba(var(--overlay-rgb),0.08)';
-		const ratio = count / maxCount;
-		if (ratio > 0.75) return HEATMAP_COLORS[3];
-		if (ratio > 0.5) return HEATMAP_COLORS[2];
-		if (ratio > 0.25) return HEATMAP_COLORS[1];
-		return HEATMAP_COLORS[0];
-	}
-
 	const monthNames = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 	const weeks = [];
 	const cursor = new Date(start);
@@ -2681,6 +2666,21 @@ function renderCalendarHeatmap() {
 		weeks.push(week);
 	}
 
+	// Scala dei colori basata solo sui giorni davvero visibili nella griglia (ultimi 12 mesi),
+	// non su tutto lo storico: un singolo giorno fuori finestra con tante sessioni sbiadiva
+	// tutta la heatmap visibile facendola sembrare piatta.
+	const visibleCounts = weeks.flat().filter(Boolean).map(d => d.count);
+	const maxCount = Math.max(1, ...visibleCounts);
+
+	function colorFor(count) {
+		if (count === 0) return 'rgba(var(--overlay-rgb),0.08)';
+		const ratio = count / maxCount;
+		if (ratio > 0.75) return HEATMAP_COLORS[3];
+		if (ratio > 0.5) return HEATMAP_COLORS[2];
+		if (ratio > 0.25) return HEATMAP_COLORS[1];
+		return HEATMAP_COLORS[0];
+	}
+
 	let lastMonth = null;
 	const labelsHtml = weeks.map(week => {
 		const firstValid = week.find(d => d);
@@ -2689,11 +2689,13 @@ function renderCalendarHeatmap() {
 			label = monthNames[firstValid.month];
 			lastMonth = firstValid.month;
 		}
-		return `<div style="width:11px; font-size:9px; color:var(--color-text-muted); white-space:nowrap;">${label}</div>`;
+		// flex:0 0 11px (non solo width) evita che il testo del mese forzi la colonna ad
+		// allargarsi e disallinei le colonne successive rispetto alla griglia dei giorni sotto.
+		return `<div style="flex:0 0 11px; width:11px; overflow:visible; font-size:9px; color:var(--color-text-muted); white-space:nowrap;">${label}</div>`;
 	}).join('');
 
 	const gridHtml = weeks.map(week => `
-		<div style="display:flex; flex-direction:column; gap:3px;">
+		<div style="display:flex; flex:0 0 11px; flex-direction:column; gap:3px;">
 			${week.map(d => d
 				? `<div title="${d.date.split('-').reverse().join('/')}: ${d.count} sessione/i" style="width:11px; height:11px; border-radius:2px; background:${colorFor(d.count)};"></div>`
 				: `<div style="width:11px; height:11px;"></div>`
@@ -3474,6 +3476,52 @@ function gramsConsumedForPurchase(purchase) {
 function gramsRemainingForPurchase(purchase) {
     const consumed = gramsConsumedForPurchase(purchase);
     return Math.max(0, parseFloat(purchase.grams) - consumed);
+}
+
+// Quanto era stato consumato di un acquisto specifico, cumulativamente, fino a una certa data
+// (stessa logica FIFO di gramsConsumedForPurchase ma "congelata" a una data, e includendo anche
+// gli acquisti gia' chiusi: serve a ricostruire quanto e' stato fumato mese per mese, non solo
+// lo stato attuale).
+function gramsConsumedForPurchaseAsOf(purchase, asOfDate) {
+    const type = purchase.type;
+    const allOfType = purchases
+        .filter(p => p.type === type && p.date <= asOfDate)
+        .sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id);
+
+    const idx = allOfType.findIndex(p => p.id === purchase.id);
+    if (idx === -1) return 0; // l'acquisto non era ancora stato registrato a quella data
+
+    const oldestDate = allOfType[0].date;
+    const totalConsumed = gramsConsumedSince(type, oldestDate, asOfDate);
+
+    let gramsBeforeThis = 0;
+    for (let i = 0; i < idx; i++) {
+        gramsBeforeThis += parseFloat(allOfType[i].grams);
+    }
+
+    const consumedIntoThis = Math.max(0, totalConsumed - gramsBeforeThis);
+    return Math.min(consumedIntoThis, parseFloat(purchase.grams));
+}
+
+// Spesa "reale" per mese: il prezzo di un acquisto viene spalmato sui mesi in cui quella
+// scorta e' stata effettivamente fumata (grammi consumati in quel mese * prezzo/grammo),
+// non tutto sul mese in cui e' stato comprato.
+function computeMonthlySpending(monthKeys) {
+    const priced = purchases.filter(p => p.price && p.grams);
+
+    return monthKeys.map(key => {
+        const [y, m] = key.split('-').map(Number);
+        const monthEnd = toDateStr(new Date(y, m, 0));
+        const prevMonthEnd = toDateStr(new Date(y, m - 1, 0));
+
+        return priced.reduce((sum, p) => {
+            const upToEnd = gramsConsumedForPurchaseAsOf(p, monthEnd);
+            const upToPrev = gramsConsumedForPurchaseAsOf(p, prevMonthEnd);
+            const consumedInMonth = Math.max(0, upToEnd - upToPrev);
+            const pricePerGram = parseFloat(p.price) / parseFloat(p.grams);
+            return sum + consumedInMonth * pricePerGram;
+        }, 0);
+    });
 }
 
 function computeDailyRate(type, daysWindow = 14) {
