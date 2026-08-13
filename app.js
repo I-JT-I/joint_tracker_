@@ -1162,7 +1162,7 @@ async function addPlaceFromMap() {
 			}, 100);
 		}
 
-		if (p === 'social') loadSocial();
+		if (p === 'social') { loadSocial(); loadSnapshots(); }
 		if (p === 'stock' || p === 'charts') loadPurchases();
 		if (p === 'settings') {
 		    loadUserProfile();
@@ -1415,6 +1415,7 @@ async function openPhotoViewer(ts) {
 	currentViewerTs = ts;
 	document.getElementById('photoViewerImg').src = '';
 	document.getElementById('photoViewerInfo').innerHTML = '<p style="text-align:center; color:var(--color-text-muted);">Caricamento...</p>';
+	document.getElementById('photoViewerDeleteBtn').style.display = 'block';
 	document.getElementById('photoViewerModal').style.display = 'flex';
 
 	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrl(session.photo_path, 3600);
@@ -1430,6 +1431,79 @@ async function openPhotoViewer(ts) {
 		<span style="color:var(--color-text-muted); font-size:13px;">
 			${session.type === 'fumo' ? '🍫 Fumo' : session.type === 'erba' ? '🍃 Erba' : '🍫🍃 Fumo+Erba'} · ${parseFloat(personalGrams(session).toFixed(2))}g
 			${session.location_name ? ' · 📍 ' + session.location_name : ''}
+		</span>
+	`;
+}
+
+// ========== ISTANTANEE (foto tue + amici) ==========
+let snapshotItems = [];
+
+async function loadSnapshots() {
+	const el = document.getElementById('snapshotsGrid');
+	if (!el) return;
+	el.innerHTML = '<div class="spinner"></div>';
+
+	const { data, error } = await supabaseClient.rpc('get_friends_snapshots', { limit_count: 24 });
+	if (error) {
+		console.error('Errore istantanee:', error);
+		el.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">Errore nel caricamento delle istantanee.</p>';
+		return;
+	}
+
+	snapshotItems = data || [];
+
+	if (snapshotItems.length === 0) {
+		el.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px; padding:10px 0;">Nessuna istantanea ancora. Le foto tue e dei tuoi amici compariranno qui.</p>';
+		return;
+	}
+
+	const paths = snapshotItems.map(s => s.photo_path);
+	const { data: signedData, error: signedError } = await supabaseClient.storage.from('session-photos').createSignedUrls(paths, 3600);
+
+	if (signedError || !signedData) {
+		el.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">Errore nel caricamento delle foto.</p>';
+		return;
+	}
+
+	el.innerHTML = snapshotItems.map((s, i) => {
+		const signed = signedData[i]?.signedUrl;
+		if (!signed) return '';
+		const isMe = s.user_id === currentUser.id;
+		return `
+			<div onclick="openSnapshotViewer(${i})" style="position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; cursor:pointer; background:rgba(var(--overlay-rgb),0.08);">
+				<img src="${signed}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+				<span style="position:absolute; bottom:4px; left:4px; right:4px; background:rgba(0,0,0,0.55); color:white; font-size:10px; padding:2px 6px; border-radius:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${isMe ? 'Tu' : s.username}</span>
+			</div>
+		`;
+	}).join('');
+}
+
+async function openSnapshotViewer(index) {
+	const s = snapshotItems[index];
+	if (!s) return;
+
+	const isMe = s.user_id === currentUser.id;
+	currentViewerTs = isMe ? s.ts : null;
+
+	document.getElementById('photoViewerImg').src = '';
+	document.getElementById('photoViewerInfo').innerHTML = '<p style="text-align:center; color:var(--color-text-muted);">Caricamento...</p>';
+	document.getElementById('photoViewerDeleteBtn').style.display = isMe ? 'block' : 'none';
+	document.getElementById('photoViewerModal').style.display = 'flex';
+
+	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrl(s.photo_path, 3600);
+
+	if (error || !data) {
+		document.getElementById('photoViewerInfo').innerHTML = '<p style="text-align:center; color:var(--danger);">Errore nel caricamento della foto.</p>';
+		return;
+	}
+
+	document.getElementById('photoViewerImg').src = data.signedUrl;
+	const grams = (s.my_fumo_grams || 0) + (s.my_erba_grams || 0);
+	document.getElementById('photoViewerInfo').innerHTML = `
+		<strong>${isMe ? 'Tu' : s.username}</strong> · ${s.date.split('-').reverse().join('/')} · ${s.time}<br>
+		<span style="color:var(--color-text-muted); font-size:13px;">
+			${s.type === 'fumo' ? '🍫 Fumo' : s.type === 'erba' ? '🍃 Erba' : '🍫🍃 Fumo+Erba'} · ${grams.toFixed(2)}g
+			${s.location_name ? ' · 📍 ' + s.location_name : ''}
 		</span>
 	`;
 }
