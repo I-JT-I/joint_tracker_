@@ -494,8 +494,9 @@ if (mode === 'signup') {
 		document.getElementById('header').style.display = 'flex';
 		showPage('home');
 		document.getElementById('emailDisplay').textContent = currentUser.email;
-		document.getElementById('date').value = new Date().toISOString().split('T')[0];
-		
+		document.getElementById('date').value = toDateStr(new Date());
+		document.getElementById('time').value = nowTimeStr();
+
 		const defaultRadio = document.querySelector('input[name="g"][value="0.3"]');
 		if(defaultRadio) {
 			defaultRadio.parentElement.classList.add('selected');
@@ -656,9 +657,8 @@ async function flushPendingSessions() {
 		if (hasFumo) fumo_grams = grams; else erba_grams = grams;
 	}
 
-	const now = new Date();
-	const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
 	const date = document.getElementById("date").value;
+	const time = document.getElementById("time").value || nowTimeStr();
 	const ts = Date.now();
 
 	let finalLocationName = currentLocation.name || null;
@@ -1316,6 +1316,104 @@ function updateMap() {
 		}
 	}
 
+// ========== MODIFICA POSIZIONE A POSTERIORI ==========
+let editingLocationTs = null;
+let editLocationPicked = null; // { lat, lng, name } scelto via GPS o posto salvato
+
+function openEditLocationModal(ts) {
+	const session = smokes.find(s => s.ts === ts);
+	if (!session) return;
+
+	editingLocationTs = ts;
+	editLocationPicked = null;
+
+	document.getElementById('editLocationSessionInfo').textContent =
+		`Sessione del ${session.date.split('-').reverse().join('/')} alle ${session.time}` +
+		(session.location_name ? ` · attuale: ${session.location_name}` : ' · nessuna posizione');
+	document.getElementById('editLocationManualInput').value = session.location_name || '';
+
+	const listEl = document.getElementById('editLocationPlacesList');
+	if (userPlaces.length === 0) {
+		listEl.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted);">Nessun posto salvato: usa il GPS o scrivi un nome qui sotto.</p>';
+	} else {
+		listEl.innerHTML = `
+			<label style="margin-top:0; font-size:12px;">I tuoi posti salvati</label>
+			<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
+				${userPlaces.map(p => `
+					<button type="button" onclick="pickSavedPlaceForEdit(${p.id})"
+						style="background:rgba(76,175,80,0.12); border:1px solid rgba(76,175,80,0.3); color:var(--heading); border-radius:20px; padding:6px 12px; font-size:13px; cursor:pointer;">
+						📍 ${p.name}
+					</button>
+				`).join('')}
+			</div>
+		`;
+	}
+
+	document.getElementById('editLocationModal').style.display = 'flex';
+}
+
+function closeEditLocationModal() {
+	document.getElementById('editLocationModal').style.display = 'none';
+	editingLocationTs = null;
+	editLocationPicked = null;
+}
+
+function pickSavedPlaceForEdit(placeId) {
+	const place = userPlaces.find(p => p.id === placeId);
+	if (!place) return;
+	editLocationPicked = { lat: place.latitude, lng: place.longitude, name: place.name };
+	document.getElementById('editLocationManualInput').value = place.name;
+	showMessage(`📍 ${place.name} selezionato`);
+}
+
+function useCurrentLocationForEdit() {
+	if (!navigator.geolocation) return alert('La geolocalizzazione non è supportata dal tuo browser.');
+
+	showMessage('📍 Cercando posizione...');
+	navigator.geolocation.getCurrentPosition(async (position) => {
+		const lat = position.coords.latitude;
+		const lng = position.coords.longitude;
+		let name = null;
+
+		userPlaces.forEach(p => {
+			const d = getDist(lat, lng, p.latitude, p.longitude);
+			if (d <= (p.radius || 50)) name = p.name;
+		});
+
+		if (!name) {
+			try {
+				const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+				const data = await response.json();
+				if (data.address) name = data.address.city || data.address.town || data.address.village || null;
+			} catch (e) {
+				console.log('Reverse geocoding non disponibile');
+			}
+		}
+
+		editLocationPicked = { lat, lng, name };
+		document.getElementById('editLocationManualInput').value = name || '';
+		showMessage('✅ Posizione trovata!');
+	}, (error) => {
+		alert('Errore: ' + error.message);
+	});
+}
+
+async function saveEditedLocation() {
+	if (!editingLocationTs) return;
+	const manualName = document.getElementById('editLocationManualInput').value.trim();
+
+	const update = editLocationPicked
+		? { latitude: editLocationPicked.lat, longitude: editLocationPicked.lng, location_name: manualName || editLocationPicked.name || null }
+		: { location_name: manualName || null };
+
+	const { error } = await supabaseClient.from('smokes').update(update).eq('ts', editingLocationTs);
+	if (error) { alert('Errore nel salvataggio della posizione.'); return; }
+
+	showMessage('✅ Posizione aggiornata!');
+	closeEditLocationModal();
+	await loadData();
+}
+
 // ========== STORICO: ricerca e filtri ==========
 function getFilteredHistorySmokes() {
 	const query = (document.getElementById('historySearch')?.value || '').trim().toLowerCase();
@@ -1423,7 +1521,7 @@ function updateHistory() {
         <div>
             <span style="font-weight: bold; color: var(--primary);">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${parseFloat(personalGrams(s).toFixed(2))}g
             ${s.not_mine ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">👥 non mia</span>` : ''}
-            ${s.location_name ? `<br><small style="color: var(--color-text-muted);">📍 ${s.location_name}</small>` : ''}
+            <br><small style="color: var(--color-text-muted);">${s.location_name ? `📍 ${s.location_name}` : '📍 <em>nessuna posizione</em>'} <a onclick="openEditLocationModal(${s.ts})" style="color:var(--primary-light); cursor:pointer; text-decoration:underline;">modifica</a></small>
         </div>
         <button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
     </div>
@@ -2289,6 +2387,11 @@ function renderBreakHistory() {
 // evitando toISOString() che converte in UTC e può far slittare il giorno di uno per i fusi orari > UTC.
 function toDateStr(d) {
 	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function nowTimeStr() {
+	const d = new Date();
+	return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 const HEATMAP_COLORS = ['#a5d6a7', '#4caf50', '#2e7d32', '#1b5e20'];
@@ -3542,7 +3645,8 @@ async function confirmCloseStock() {
 
 
 	// ========== INIZIALIZZAZIONE ==========
-	document.getElementById("date").value = new Date().toISOString().split("T")[0];
+	document.getElementById("date").value = toDateStr(new Date());
+	document.getElementById("time").value = nowTimeStr();
 
 	document.querySelectorAll('input[name="g"]').forEach(r => {
 		r.addEventListener("change", e => {
