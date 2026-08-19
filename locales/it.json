@@ -149,7 +149,12 @@
     "dateFrom": "Dal",
     "dateTo": "Al",
     "removeFilters": "✕ Rimuovi filtri",
-    "confirmDeleteEntry": "Vuoi eliminare questo inserimento?"
+    "confirmDeleteEntry": "Vuoi eliminare questo inserimento?",
+    "noDataYet": "Nessun dato presente.",
+    "noResultsForFilters": "Nessun risultato per questi filtri.",
+    "notMineBadge": "👥 non mia",
+    "noLocation": "nessuna posizione",
+    "editLink": "modifica"
   },
   "gallery": {
     "title": "📷 Galleria",
@@ -176,13 +181,17 @@
     "streak": "🔥 Streak",
     "streakDays": "🔥 Giorni",
     "bestStreak": "🏆 Miglior streak",
-    "streakFootnote": "*Il calcolo parte dalla tua prima J inserita. ({days} giorni fa)",
+    "streakFootnote_one": "*Il calcolo parte dalla tua prima J inserita. ({days} giorno fa)",
+    "streakFootnote_other": "*Il calcolo parte dalla tua prima J inserita. ({days} giorni fa)",
     "yearlyRecap": "🎉 Riepilogo Annuale",
     "insight": "💡 Insight",
     "contextAndMood": "🏷️ Contesto & Umore",
     "achievements": "🏅 Traguardi",
     "breakTolerance": "💤 Pausa / Tolleranza",
-    "personalGoal": "🎯 Obiettivo Personale"
+    "personalGoal": "🎯 Obiettivo Personale",
+    "unknownPlace": "❓ Sconosciuta",
+    "noDataWithLocation": "Nessun dato con posizione.",
+    "jointUnit": "joint"
   },
   "charts": {
     "calendarHeatmap": "🗓️ Calendario Consumi (ultimi 12 mesi)",

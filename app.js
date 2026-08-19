@@ -1793,11 +1793,11 @@ function updateHistory() {
 	const visibleSmokes = filterActive ? getFilteredHistorySmokes() : smokes;
 
 	if (smokes.length === 0) {
-		hList.innerHTML = "<p style='text-align:center; color:var(--color-text-muted);'>Nessun dato presente.</p>";
+		hList.innerHTML = `<p style='text-align:center; color:var(--color-text-muted);'>${t('history.noDataYet')}</p>`;
 	} else if (visibleSmokes.length === 0) {
-		hList.innerHTML = "<p style='text-align:center; color:var(--color-text-muted);'>Nessun risultato per questi filtri.</p>";
+		hList.innerHTML = `<p style='text-align:center; color:var(--color-text-muted);'>${t('history.noResultsForFilters')}</p>`;
 	} else {
-		const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+		const months = t('common.months');
 		const byYear = {};
 
 		visibleSmokes.forEach(s => {
@@ -1849,8 +1849,8 @@ function updateHistory() {
     <div class="history-item">
         <div>
             <span style="font-weight: bold; color: var(--primary);">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${parseFloat(personalGrams(s).toFixed(2))}g
-            ${s.not_mine ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">👥 non mia</span>` : ''}
-            <br><small style="color: var(--color-text-muted);">${s.location_name ? `📍 ${s.location_name}` : '📍 <em>nessuna posizione</em>'} <a onclick="openEditLocationModal(${s.ts})" style="color:var(--primary-light); cursor:pointer; text-decoration:underline;">modifica</a>${s.photo_path ? ` · <a onclick="openPhotoViewer(${s.ts})" style="cursor:pointer;">📷</a>` : ''}</small>
+            ${s.not_mine ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">${t('history.notMineBadge')}</span>` : ''}
+            <br><small style="color: var(--color-text-muted);">${s.location_name ? `📍 ${s.location_name}` : `📍 <em>${t('history.noLocation')}</em>`} <a onclick="openEditLocationModal(${s.ts})" style="color:var(--primary-light); cursor:pointer; text-decoration:underline;">${t('history.editLink')}</a>${s.photo_path ? ` · <a onclick="openPhotoViewer(${s.ts})" style="cursor:pointer;">📷</a>` : ''}</small>
         </div>
         <button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
     </div>
@@ -1910,7 +1910,7 @@ smokes.forEach(s => {
 			const today = new Date();
 			diffDays = Math.ceil(Math.abs(today - firstJ) / (1000 * 60 * 60 * 24)) || 1;
 		}
-		document.getElementById("diffDays").innerText = diffDays.toFixed(0);
+		document.getElementById("streakFootnoteText").textContent = tn('stats.streakFootnote', diffDays, { days: diffDays });
 
 		document.getElementById("avgDaily").innerText = (smokes.length / diffDays).toFixed(2);
 		document.getElementById("avgMonthly").innerText = ((smokes.length / diffDays) * 30.44).toFixed(1);
@@ -1979,7 +1979,7 @@ smokes.forEach(s => {
     // Raggruppa tutte le sessioni per location_name
     const grouped = {};
     smokes.forEach(s => {
-        const name = s.location_name || '❓ Sconosciuta';
+        const name = s.location_name || t('stats.unknownPlace');
         if (!grouped[name]) grouped[name] = { j: 0, fumo: 0, erba: 0 };
         grouped[name].j++;
         grouped[name].fumo += (s.my_fumo_grams ?? s.fumo_grams ?? 0);
@@ -1987,7 +1987,7 @@ smokes.forEach(s => {
     });
 
     if (Object.keys(grouped).length === 0) {
-        el.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessun dato con posizione.</p>';
+        el.innerHTML = `<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">${t('stats.noDataWithLocation')}</p>`;
         return;
     }
 
@@ -2012,7 +2012,7 @@ smokes.forEach(s => {
             </div>
             <div style="text-align:right;">
                 <span style="font-size:18px; font-weight:700; color:var(--primary);">${data.j}</span><br>
-                <small style="color:var(--color-text-muted);">joint</small>
+                <small style="color:var(--color-text-muted);">${t('stats.jointUnit')}</small>
             </div>
         </div>
     `;
