@@ -354,7 +354,7 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 		} else {
 			showLoginPage();
 			if (window.va) {
-				window.va('event', { name: 'page_view_landing' });
+				window.va('pageview', { route: '/virtual/login-shown' });
 			}
 		}
 	}
@@ -503,7 +503,7 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 			// 🆕 SE È SIGNUP, MOSTRA MESSAGGIO DI CONFERMA EMAIL
 if (mode === 'signup') {
 	if (window.va) {
-		window.va('event', { name: 'signup_completed' });
+		window.va('pageview', { route: '/virtual/signup-completed' });
 	}
 	content.innerHTML = `
 		<div style="text-align: center; padding: 30px 20px;">
