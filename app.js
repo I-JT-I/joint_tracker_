@@ -189,12 +189,12 @@ async function getMyFriendsList() {
 async function renderFriendsQuickList() {
     const el = document.getElementById('friendsQuickList');
     if (!el) return;
-    el.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted);">Caricamento...</p>';
+    el.innerHTML = `<p style="font-size:12px; color:var(--color-text-muted);">${t('common.loading')}</p>`;
 
     const friends = await getMyFriendsList();
 
     if (friends.length === 0) {
-        el.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted);">Non hai ancora amici. Aggiungili dalla pagina Social.</p>';
+        el.innerHTML = `<p style="font-size:12px; color:var(--color-text-muted);">${t('shared.noFriendsYet')}</p>`;
         return;
     }
 
@@ -224,13 +224,13 @@ async function searchParticipant() {
         .neq('id', currentUser.id);
 
     if (error || !data || data.length === 0) {
-        return alert("Nessun utente trovato con questo nickname.");
+        return alert(t('shared.noUserFound'));
     }
 
     const match = data.find(u => u.username.toLowerCase() === query.toLowerCase()) || data[0];
 
     if (sessionParticipants.some(p => p.user_id === match.id)) {
-        return alert("Già aggiunto alla sessione.");
+        return alert(t('shared.alreadyAdded'));
     }
 
     sessionParticipants.push({ user_id: match.id, username: match.username });
@@ -259,7 +259,7 @@ function renderContributorsPanel() {
 
     const hasFumo = document.getElementById("fumo").checked;
     const hasErba = document.getElementById("erba").checked;
-    const all = [{ user_id: currentUser.id, username: 'Tu' }, ...sessionParticipants];
+    const all = [{ user_id: currentUser.id, username: t('shared.you') }, ...sessionParticipants];
 
     let fumoTotal = 0, erbaTotal = 0;
     if (hasFumo && hasErba) {
@@ -272,7 +272,7 @@ function renderContributorsPanel() {
         if (hasErba) erbaTotal = grams || 0;
     }
 
-    let html = '<p style="font-size:12px; color:var(--color-text-muted); margin-top:0;">Chi ha portato la roba, e quanto? Puoi modificare i grammi a mano.</p>';
+    let html = `<p style="font-size:12px; color:var(--color-text-muted); margin-top:0;">${t('shared.whoBroughtIt')}</p>`;
 
     const isFirstRender = document.querySelectorAll('.contrib-fumo, .contrib-erba').length === 0;
 
@@ -281,7 +281,7 @@ function renderContributorsPanel() {
         const activeIds = isFirstRender ? all.map(p => p.user_id) : prevChecked;
         const share = activeIds.length > 0 ? (fumoTotal / activeIds.length).toFixed(2) : '0.00';
 
-        html += `<label style="margin-top:10px; font-size:12px;">🍫 Fumo portato da:</label>`;
+        html += `<label style="margin-top:10px; font-size:12px;">${t('shared.smokeBroughtBy')}</label>`;
         html += all.map(p => `
             <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
                 <label style="display:flex; align-items:center; gap:4px; font-size:13px; font-weight:normal; flex:1; margin-top:0;">
@@ -302,7 +302,7 @@ function renderContributorsPanel() {
         const activeIds = isFirstRender ? all.map(p => p.user_id) : prevChecked;
         const share = activeIds.length > 0 ? (erbaTotal / activeIds.length).toFixed(2) : '0.00';
 
-        html += `<label style="margin-top:14px; font-size:12px;">🍃 Erba portata da:</label>`;
+        html += `<label style="margin-top:14px; font-size:12px;">${t('shared.weedBroughtBy')}</label>`;
         html += all.map(p => `
             <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
                 <label style="display:flex; align-items:center; gap:4px; font-size:13px; font-weight:normal; flex:1; margin-top:0;">
@@ -351,44 +351,44 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 		const content = document.getElementById('authContent');
 		content.innerHTML = `
 			<form onsubmit="handleAuth(event, 'login')">
-				<label for="email">Email</label>
-				<input type="email" id="email" placeholder="tua-email@gmail.com" required>
-				
-				<label for="password">Password</label>
-				<input type="password" id="password" placeholder="Password (min 6 caratteri)" required>
-				
-				<button type="submit" class="main-btn">🔓 Accedi</button>
+				<label for="email">${t('auth.email')}</label>
+				<input type="email" id="email" placeholder="${t('auth.emailPlaceholder')}" required>
+
+				<label for="password">${t('auth.password')}</label>
+				<input type="password" id="password" placeholder="${t('auth.passwordPlaceholder')}" required>
+
+				<button type="submit" class="main-btn">${t('auth.login')}</button>
 			</form>
-			
+
 			<p style="text-align: center; margin-top: 20px; color: var(--color-text-secondary);">
-				Non hai un account? <a onclick="toggleAuthMode(); return false;" style="cursor: pointer; color: var(--primary-light);">Registrati</a>
+				${t('auth.noAccount')} <a onclick="toggleAuthMode(); return false;" style="cursor: pointer; color: var(--primary-light);" data-signup-link>${t('auth.signupLink')}</a>
 			</p>
 		`;
 	}
 
 	function toggleAuthMode() {
 		const content = document.getElementById('authContent');
-		if (content.innerHTML.includes('Registrati')) {
+		if (content.querySelector('[data-signup-link]')) {
 			content.innerHTML = `
 				<form onsubmit="handleAuth(event, 'signup')">
-					<label for="username">Nickname</label>
-					<input type="text" id="reg-username" placeholder="Scegli un nickname" oninput="checkLiveUsername(this)" required>
+					<label for="username">${t('auth.nickname')}</label>
+					<input type="text" id="reg-username" placeholder="${t('auth.chooseNickname')}" oninput="checkLiveUsername(this)" required>
 					<span id="username-status" style="font-size: 12px; font-weight: bold;"></span>
-					
-					<label for="email">Email</label>
-					<input type="email" id="email" placeholder="tua-email@gmail.com" required>
-					
-					<label for="password">Password</label>
-					<input type="password" id="password" placeholder="Password (min 6 caratteri)" required>
-					
-					<label for="confirm">Conferma Password</label>
-					<input type="password" id="confirm" placeholder="Ripeti password" required>
-					
-					<button type="submit" class="main-btn">📝 Registrati</button>
+
+					<label for="email">${t('auth.email')}</label>
+					<input type="email" id="email" placeholder="${t('auth.emailPlaceholder')}" required>
+
+					<label for="password">${t('auth.password')}</label>
+					<input type="password" id="password" placeholder="${t('auth.passwordPlaceholder')}" required>
+
+					<label for="confirm">${t('auth.confirmPassword')}</label>
+					<input type="password" id="confirm" placeholder="${t('auth.repeatPassword')}" required>
+
+					<button type="submit" class="main-btn">${t('auth.signup')}</button>
 				</form>
-				
+
 				<p style="text-align: center; margin-top: 20px; color: var(--color-text-secondary);">
-					Hai già un account? <a onclick="toggleAuthMode(); return false;" style="cursor: pointer; color: var(--primary-light);">Accedi</a>
+					${t('auth.haveAccount')} <a onclick="toggleAuthMode(); return false;" style="cursor: pointer; color: var(--primary-light);">${t('auth.loginLink')}</a>
 				</p>
 			`;
 		} else {
@@ -399,15 +399,15 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 	async function checkLiveUsername(input) {
 		const username = input.value.trim();
 		const statusLabel = document.getElementById('username-status');
-		
+
 		if (username.length < 3) {
-			statusLabel.innerText = "Troppo corto...";
+			statusLabel.innerText = t('auth.tooShort');
 			statusLabel.style.color = "orange";
 			return;
 		}
 
 		if (/[<>"'`&]/.test(username)) {
-			statusLabel.innerText = "❌ Niente < > \" ' ` &";
+			statusLabel.innerText = t('auth.noSpecialChars');
 			statusLabel.style.color = "red";
 			input.style.borderColor = "red";
 			return;
@@ -420,11 +420,11 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 			.single();
 
 		if (data) {
-			statusLabel.innerText = "❌ Già preso";
+			statusLabel.innerText = t('auth.usernameTaken');
 			statusLabel.style.color = "red";
 			input.style.borderColor = "red";
 		} else {
-			statusLabel.innerText = "✅ Disponibile";
+			statusLabel.innerText = t('auth.usernameAvailable');
 			statusLabel.style.color = "green";
 			input.style.borderColor = "green";
 		}
@@ -438,17 +438,17 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 		const confirm = document.getElementById('confirm')?.value;
 
 		if (mode === 'signup' && password !== confirm) {
-			showError('Le password non corrispondono!');
+			showError(t('auth.passwordsMismatch'));
 			return;
 		}
 
 		if (mode === 'signup' && /[<>"'`&]/.test(username || '')) {
-			showError("Il nickname non può contenere < > \" ' ` &");
+			showError(t('auth.nicknameNoSpecialChars'));
 			return;
 		}
 
 		const content = document.getElementById('authContent');
-		content.innerHTML = '<div class="spinner"></div><p style="text-align: center; margin-top: 10px;">Un momento...</p>';
+		content.innerHTML = `<div class="spinner"></div><p style="text-align: center; margin-top: 10px;">${t('auth.oneMoment')}</p>`;
 
 		try {
 			let result;
@@ -465,11 +465,11 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 			}
 
 			if (result.error) {
-				if (result.error.message.toLowerCase().includes("profiles_username_key") || 
+				if (result.error.message.toLowerCase().includes("profiles_username_key") ||
 					result.error.message.toLowerCase().includes("unique constraint")) {
-					showError("❌ Questo nickname è già occupato. Scegline un altro!");
+					showError(t('auth.nicknameAlreadyTaken'));
 				} else if (result.error.status === 429) {
-					showError("Too many requests: aspetta un minuto prima di riprovare.");
+					showError(t('auth.tooManyRequests'));
 				} else {
 					showError(result.error.message);
 				}
@@ -489,29 +489,30 @@ if (mode === 'signup') {
 	content.innerHTML = `
 		<div style="text-align: center; padding: 30px 20px;">
 			<div style="font-size: 50px; margin-bottom: 20px;">📧</div>
-			<h2 style="color: var(--primary); margin-bottom: 10px;">Conferma la tua Email!</h2>
+			<h2 style="color: var(--primary); margin-bottom: 10px;">${t('auth.confirmEmailTitle')}</h2>
 			<p style="color: var(--color-text-secondary); font-size: 16px; line-height: 1.6;">
-				Abbiamo inviato un link di conferma a:<br>
+				${t('auth.confirmEmailSentTo')}<br>
 				<strong style="color: var(--primary);">${email}</strong>
 			</p>
 			<p style="color: var(--color-text-muted); font-size: 14px; margin-top: 20px;">
-				Controlla la tua casella di posta (e lo spam) e clicca sul link per completare la registrazione.
+				${t('auth.checkInboxAndSpam')}
 			</p>
 			<hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
 			<p style="color: var(--color-text-secondary); font-size: 13px; margin-bottom: 20px;">
-				Non hai ricevuto l'email?
+				${t('auth.didntReceiveEmail')}
 			</p>
 			<button onclick="toggleAuthMode()" style="background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px;">
-				← Torna al Login
+				${t('auth.backToLogin')}
 			</button>
 		</div>
 	`;
 	return;
 }
 			currentUser = result.data.user;
+			await initI18n();
 			showApp();
 			await loadData();
-			showMessage('Benvenuto! 🎉');
+			showMessage(t('auth.welcome'));
 		} catch (err) {
 			showError(err.message);
 		}
@@ -610,7 +611,7 @@ async function flushPendingSessions() {
 	const pending = getPendingSessions();
 	if (pending.length === 0) return;
 
-	showMessage(`🔄 Sincronizzazione di ${pending.length} sessioni in sospeso...`);
+	showMessage(tn('sync.syncingSessions', pending.length));
 
 	const stillFailed = [];
 	for (const payload of pending) {
@@ -621,10 +622,10 @@ async function flushPendingSessions() {
 	localStorage.setItem('jt_pending_sessions', JSON.stringify(stillFailed));
 
 	if (stillFailed.length === 0) {
-		showMessage('✅ Tutte le sessioni sono state sincronizzate!');
+		showMessage(t('sync.allSynced'));
 		await loadData();
 	} else {
-		showMessage(`⚠️ ${stillFailed.length} sessioni non sincronizzate, riproverò più tardi.`);
+		showMessage(tn('sync.syncFailedRetry', stillFailed.length));
 	}
 }
 
@@ -648,7 +649,7 @@ async function flushPendingSessions() {
 			if (cached) {
 				smokes = cached;
 				update();
-				showMessage('📡 Offline: dati non aggiornati');
+				showMessage(t('sync.offlineDataStale'));
 			}
 			return;
 		}
@@ -661,15 +662,15 @@ async function flushPendingSessions() {
 	// ========== SALVATAGGIO DATI ==========
 	async function saveData() {
 	if (isLocatingNow) {
-		if (!confirm("📍 Sto ancora cercando la posizione. Salvare comunque senza aspettare?")) return;
+		if (!confirm(t('add.stillLocatingConfirm'))) return;
 	}
 	const hasFumo = document.getElementById("fumo").checked;
 	const hasErba = document.getElementById("erba").checked;
-	
+
 	if (!hasFumo && !hasErba) {
-		return alert("Seleziona almeno Fumo o Erba!");
+		return alert(t('add.selectSmokeOrWeed'));
 	}
-	
+
 	let fumo_grams = 0;
 	let erba_grams = 0;
 
@@ -677,12 +678,12 @@ async function flushPendingSessions() {
 		fumo_grams = parseFloat(document.getElementById("fumoGramsInput").value) || 0;
 		erba_grams = parseFloat(document.getElementById("erbaGramsInput").value) || 0;
 		if (fumo_grams <= 0 && erba_grams <= 0) {
-			return alert("Inserisci almeno una quantità!");
+			return alert(t('add.enterAtLeastOneQuantity'));
 		}
 	} else {
 		const gVal = document.querySelector('input[name="g"]:checked').value;
 		const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) : parseFloat(gVal);
-		if(!grams || grams <= 0) return alert("Inserisci un peso valido");
+		if(!grams || grams <= 0) return alert(t('add.enterValidWeight'));
 		if (hasFumo) fumo_grams = grams; else erba_grams = grams;
 	}
 
@@ -706,9 +707,9 @@ async function flushPendingSessions() {
 	if (selectedPhotoFile) {
 		if (navigator.onLine) {
 			photoPath = await uploadSessionPhoto(ts);
-			if (!photoPath) showMessage('⚠️ Foto non caricata, salvo comunque la sessione');
+			if (!photoPath) showMessage(t('add.photoNotUploaded'));
 		} else {
-			showMessage('📡 Offline: foto non allegata, salvo comunque la sessione');
+			showMessage(t('add.offlinePhotoNotAttached'));
 		}
 	}
 
@@ -750,7 +751,7 @@ async function flushPendingSessions() {
 
 		if (error) {
 			console.error('Errore salvataggio condiviso:', error);
-			alert('Errore nel salvataggio della sessione condivisa.');
+			alert(t('add.sharedSessionSaveError'));
 			return;
 		}
 	} else {
@@ -773,19 +774,19 @@ async function flushPendingSessions() {
 
 		if (!navigator.onLine) {
 			addPendingSession(payload);
-			showMessage('📡 Offline: sessione salvata in locale, si sincronizzerà da sola');
+			showMessage(t('add.offlineSessionSavedLocally'));
 		} else {
 			const { error } = await supabaseClient.from('smokes').insert(payload);
 
 			if (error) {
 				// rete instabile: non perdere la sessione, mettila in coda
 				addPendingSession(payload);
-				showMessage('⚠️ Connessione instabile: sessione salvata in locale, riproverò a sincronizzare');
+				showMessage(t('add.unstableConnectionSavedLocally'));
 			}
 		}
 	}
 
-	showMessage('✅ Sessione salvata!');
+	showMessage(t('add.sessionSaved'));
 	document.getElementById("fumo").checked = false;
 	document.getElementById("erba").checked = false;
 	document.getElementById("notMineCheck").checked = false;

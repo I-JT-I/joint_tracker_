@@ -34,7 +34,53 @@
     "banner": "📡 You're offline — showing the last saved data. Changes will sync when your connection is back."
   },
   "auth": {
-    "title": "🌿 JointTracker"
+    "title": "🌿 JointTracker",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "your-email@gmail.com",
+    "passwordPlaceholder": "Password (min 6 characters)",
+    "login": "🔓 Log in",
+    "noAccount": "Don't have an account?",
+    "signupLink": "Sign up",
+    "nickname": "Nickname",
+    "chooseNickname": "Choose a nickname",
+    "confirmPassword": "Confirm Password",
+    "repeatPassword": "Repeat password",
+    "signup": "📝 Sign up",
+    "haveAccount": "Already have an account?",
+    "loginLink": "Log in",
+    "tooShort": "Too short...",
+    "noSpecialChars": "❌ No < > \" ' ` &",
+    "usernameTaken": "❌ Already taken",
+    "usernameAvailable": "✅ Available",
+    "passwordsMismatch": "Passwords don't match!",
+    "nicknameNoSpecialChars": "The nickname can't contain < > \" ' ` &",
+    "oneMoment": "One moment...",
+    "nicknameAlreadyTaken": "❌ This nickname is already taken. Choose another one!",
+    "tooManyRequests": "Too many attempts: wait a minute before trying again.",
+    "confirmEmailTitle": "Confirm your Email!",
+    "confirmEmailSentTo": "We sent a confirmation link to:",
+    "checkInboxAndSpam": "Check your inbox (and spam folder) and click the link to complete registration.",
+    "didntReceiveEmail": "Didn't receive the email?",
+    "backToLogin": "← Back to Login",
+    "welcome": "Welcome! 🎉"
+  },
+  "sync": {
+    "syncingSessions_one": "🔄 Syncing {count} pending session...",
+    "syncingSessions_other": "🔄 Syncing {count} pending sessions...",
+    "allSynced": "✅ All sessions have been synced!",
+    "syncFailedRetry_one": "⚠️ {count} session not synced, will retry later.",
+    "syncFailedRetry_other": "⚠️ {count} sessions not synced, will retry later.",
+    "offlineDataStale": "📡 Offline: data not up to date"
+  },
+  "shared": {
+    "noFriendsYet": "You don't have any friends yet. Add some from the Social page.",
+    "noUserFound": "No user found with that nickname.",
+    "alreadyAdded": "Already added to the session.",
+    "whoBroughtIt": "Who brought the stuff, and how much? You can edit the grams by hand.",
+    "smokeBroughtBy": "🍫 Hash brought by:",
+    "weedBroughtBy": "🍃 Weed brought by:",
+    "you": "You"
   },
   "home": {
     "greeting": "Hi 👋",
@@ -76,7 +122,17 @@
     "searchingLocation": "🔄 Searching...",
     "photo": "📷 Photo (optional)",
     "takeAttachPhoto": "📷 Take/attach photo",
-    "saveSession": "SAVE SESSION"
+    "saveSession": "SAVE SESSION",
+    "stillLocatingConfirm": "📍 Still looking for your location. Save anyway without waiting?",
+    "selectSmokeOrWeed": "Select at least Hash or Weed!",
+    "enterAtLeastOneQuantity": "Enter at least one quantity!",
+    "enterValidWeight": "Enter a valid weight",
+    "photoNotUploaded": "⚠️ Photo not uploaded, saving the session anyway",
+    "offlinePhotoNotAttached": "📡 Offline: photo not attached, saving the session anyway",
+    "sharedSessionSaveError": "Error saving the shared session.",
+    "offlineSessionSavedLocally": "📡 Offline: session saved locally, it will sync on its own",
+    "unstableConnectionSavedLocally": "⚠️ Unstable connection: session saved locally, will retry syncing",
+    "sessionSaved": "✅ Session saved!"
   },
   "history": {
     "title": "📜 History Log",

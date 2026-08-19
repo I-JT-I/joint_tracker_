@@ -34,7 +34,53 @@
     "banner": "📡 Sei offline — stai vedendo gli ultimi dati salvati. Le modifiche verranno sincronizzate al ritorno della connessione."
   },
   "auth": {
-    "title": "🌿 JointTracker"
+    "title": "🌿 JointTracker",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "tua-email@gmail.com",
+    "passwordPlaceholder": "Password (min 6 caratteri)",
+    "login": "🔓 Accedi",
+    "noAccount": "Non hai un account?",
+    "signupLink": "Registrati",
+    "nickname": "Nickname",
+    "chooseNickname": "Scegli un nickname",
+    "confirmPassword": "Conferma Password",
+    "repeatPassword": "Ripeti password",
+    "signup": "📝 Registrati",
+    "haveAccount": "Hai già un account?",
+    "loginLink": "Accedi",
+    "tooShort": "Troppo corto...",
+    "noSpecialChars": "❌ Niente < > \" ' ` &",
+    "usernameTaken": "❌ Già preso",
+    "usernameAvailable": "✅ Disponibile",
+    "passwordsMismatch": "Le password non corrispondono!",
+    "nicknameNoSpecialChars": "Il nickname non può contenere < > \" ' ` &",
+    "oneMoment": "Un momento...",
+    "nicknameAlreadyTaken": "❌ Questo nickname è già occupato. Scegline un altro!",
+    "tooManyRequests": "Troppi tentativi: aspetta un minuto prima di riprovare.",
+    "confirmEmailTitle": "Conferma la tua Email!",
+    "confirmEmailSentTo": "Abbiamo inviato un link di conferma a:",
+    "checkInboxAndSpam": "Controlla la tua casella di posta (e lo spam) e clicca sul link per completare la registrazione.",
+    "didntReceiveEmail": "Non hai ricevuto l'email?",
+    "backToLogin": "← Torna al Login",
+    "welcome": "Benvenuto! 🎉"
+  },
+  "sync": {
+    "syncingSessions_one": "🔄 Sincronizzazione di {count} sessione in sospeso...",
+    "syncingSessions_other": "🔄 Sincronizzazione di {count} sessioni in sospeso...",
+    "allSynced": "✅ Tutte le sessioni sono state sincronizzate!",
+    "syncFailedRetry_one": "⚠️ {count} sessione non sincronizzata, riproverò più tardi.",
+    "syncFailedRetry_other": "⚠️ {count} sessioni non sincronizzate, riproverò più tardi.",
+    "offlineDataStale": "📡 Offline: dati non aggiornati"
+  },
+  "shared": {
+    "noFriendsYet": "Non hai ancora amici. Aggiungili dalla pagina Social.",
+    "noUserFound": "Nessun utente trovato con questo nickname.",
+    "alreadyAdded": "Già aggiunto alla sessione.",
+    "whoBroughtIt": "Chi ha portato la roba, e quanto? Puoi modificare i grammi a mano.",
+    "smokeBroughtBy": "🍫 Fumo portato da:",
+    "weedBroughtBy": "🍃 Erba portata da:",
+    "you": "Tu"
   },
   "home": {
     "greeting": "Ciao 👋",
@@ -76,7 +122,17 @@
     "searchingLocation": "🔄 Cercando...",
     "photo": "📷 Foto (opzionale)",
     "takeAttachPhoto": "📷 Scatta/allega foto",
-    "saveSession": "SALVA SESSIONE"
+    "saveSession": "SALVA SESSIONE",
+    "stillLocatingConfirm": "📍 Sto ancora cercando la posizione. Salvare comunque senza aspettare?",
+    "selectSmokeOrWeed": "Seleziona almeno Fumo o Erba!",
+    "enterAtLeastOneQuantity": "Inserisci almeno una quantità!",
+    "enterValidWeight": "Inserisci un peso valido",
+    "photoNotUploaded": "⚠️ Foto non caricata, salvo comunque la sessione",
+    "offlinePhotoNotAttached": "📡 Offline: foto non allegata, salvo comunque la sessione",
+    "sharedSessionSaveError": "Errore nel salvataggio della sessione condivisa.",
+    "offlineSessionSavedLocally": "📡 Offline: sessione salvata in locale, si sincronizzerà da sola",
+    "unstableConnectionSavedLocally": "⚠️ Connessione instabile: sessione salvata in locale, riproverò a sincronizzare",
+    "sessionSaved": "✅ Sessione salvata!"
   },
   "history": {
     "title": "📜 Registro Storico",
