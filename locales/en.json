@@ -31,6 +31,14 @@
     "notifications": "🔔 Notifications",
     "changeTheme": "Change theme"
   },
+  "reminder": {
+    "streakRisk": "🔥 You risk losing your {streak}-day streak! You haven't logged anything today yet.",
+    "nothingLoggedToday": "📝 You haven't logged anything today yet.",
+    "noNotifications": "No notifications.",
+    "justNow": "Just now",
+    "minutesAgo": "{count} min ago",
+    "hoursAgo": "{count} h ago"
+  },
   "offline": {
     "banner": "📡 You're offline — showing the last saved data. Changes will sync when your connection is back."
   },
@@ -384,6 +392,20 @@
     "slide6Text": "Add friends to compare stats: they'll need to accept your request before you can see theirs. In Snapshots you'll find the latest photos from you and them.",
     "slide7Title": "Settings",
     "slide7Text": "From here you manage theme, reminders, push notifications, and export your data as JSON or CSV whenever you want. You can review this tutorial again anytime from here."
+  },
+  "breaks": {
+    "daysWithoutSmoking": "days without smoking 💪",
+    "moneySaved": "💰 ~€{amount} saved",
+    "gramsNotConsumed": "~{grams}g not consumed",
+    "endBreak": "End break",
+    "noActiveBreak": "No active break.",
+    "startBreak": "💤 Start a break",
+    "previousBreaks": "Previous breaks",
+    "startBreakError": "Error starting the break.",
+    "breakStarted": "💤 Break started, good luck!",
+    "confirmEndBreak": "Do you want to end the current break?",
+    "endBreakError": "Error ending the break.",
+    "breakEnded": "✅ Break ended, great job!"
   },
   "settings": {
     "profile": "👤 Profile",

@@ -31,6 +31,14 @@
     "notifications": "🔔 Notifiche",
     "changeTheme": "Cambia tema"
   },
+  "reminder": {
+    "streakRisk": "🔥 Rischi di perdere lo streak di {streak} giorni! Non hai ancora segnato oggi.",
+    "nothingLoggedToday": "📝 Non hai ancora segnato nulla oggi.",
+    "noNotifications": "Nessuna notifica.",
+    "justNow": "Adesso",
+    "minutesAgo": "{count} min fa",
+    "hoursAgo": "{count} h fa"
+  },
   "offline": {
     "banner": "📡 Sei offline — stai vedendo gli ultimi dati salvati. Le modifiche verranno sincronizzate al ritorno della connessione."
   },
@@ -384,6 +392,20 @@
     "slide6Text": "Aggiungi amici per confrontare le statistiche: dovranno accettare la tua richiesta prima che tu possa vedere le loro. Nelle Istantanee trovi le foto più recenti tue e loro.",
     "slide7Title": "Impostazioni",
     "slide7Text": "Da qui gestisci tema, promemoria, notifiche push, ed esporti i tuoi dati in JSON o CSV quando vuoi. Puoi rivedere questo tutorial in qualsiasi momento da qui."
+  },
+  "breaks": {
+    "daysWithoutSmoking": "giorni senza fumare 💪",
+    "moneySaved": "💰 ~€{amount} risparmiati",
+    "gramsNotConsumed": "~{grams}g non consumati",
+    "endBreak": "Interrompi pausa",
+    "noActiveBreak": "Nessuna pausa attiva.",
+    "startBreak": "💤 Inizia una pausa",
+    "previousBreaks": "Pause precedenti",
+    "startBreakError": "Errore nell'avvio della pausa.",
+    "breakStarted": "💤 Pausa iniziata, in bocca al lupo!",
+    "confirmEndBreak": "Vuoi terminare la pausa attuale?",
+    "endBreakError": "Errore nella chiusura della pausa.",
+    "breakEnded": "✅ Pausa conclusa, ottimo lavoro!"
   },
   "settings": {
     "profile": "👤 Profilo",

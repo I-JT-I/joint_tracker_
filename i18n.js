@@ -5,6 +5,12 @@ const I18N_FALLBACK = 'it';
 let currentLocale = I18N_FALLBACK;
 const i18nDicts = {};
 
+// Codice locale da passare a toLocaleDateString()/toLocaleString() per formattare
+// date/numeri nella lingua correntemente attiva.
+function localeCode() {
+	return currentLocale === 'it' ? 'it-IT' : 'en-US';
+}
+
 function detectBrowserLocale() {
 	const lang = ((navigator.language || navigator.userLanguage || '') + '').toLowerCase();
 	return lang.startsWith('it') ? 'it' : 'en';

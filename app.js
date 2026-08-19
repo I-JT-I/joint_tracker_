@@ -2070,7 +2070,7 @@ if (ctxPie) {
 				const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
 				const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
 				monthKeys.push(key);
-				monthLabels.push(d.toLocaleDateString('it-IT', { month: 'short', year: '2-digit' }));
+				monthLabels.push(d.toLocaleDateString(localeCode(), { month: 'short', year: '2-digit' }));
 			}
 
 			const spendingByMonth = computeMonthlySpending(monthKeys);
@@ -2614,16 +2614,16 @@ function renderBreakCard() {
 		el.innerHTML = `
 			<div style="text-align:center; padding:10px;">
 				<div style="font-size:36px; font-weight:800; color:var(--primary);">${days}</div>
-				<div style="font-size:13px; color:var(--color-text-secondary); margin-bottom:15px;">giorni senza fumare 💪</div>
-				${savedMoney !== null ? `<div style="font-size:15px; font-weight:700; color:#9c27b0;">💰 ~€${savedMoney.toFixed(2)} risparmiati</div>` : ''}
-				<div style="font-size:12px; color:var(--color-text-muted); margin-top:4px;">~${savedGrams.toFixed(1)}g non consumati</div>
-				<button class="secondary-btn" onclick="endBreak()" style="margin-top:15px;">Interrompi pausa</button>
+				<div style="font-size:13px; color:var(--color-text-secondary); margin-bottom:15px;">${t('breaks.daysWithoutSmoking')}</div>
+				${savedMoney !== null ? `<div style="font-size:15px; font-weight:700; color:#9c27b0;">${t('breaks.moneySaved', { amount: savedMoney.toFixed(2) })}</div>` : ''}
+				<div style="font-size:12px; color:var(--color-text-muted); margin-top:4px;">${t('breaks.gramsNotConsumed', { grams: savedGrams.toFixed(1) })}</div>
+				<button class="secondary-btn" onclick="endBreak()" style="margin-top:15px;">${t('breaks.endBreak')}</button>
 			</div>
 		`;
 	} else {
 		el.innerHTML = `
-			<p style="text-align:center; color:var(--color-text-muted); font-size:13px; margin-bottom:10px;">Nessuna pausa attiva.</p>
-			<button class="main-btn" onclick="startBreak()" style="margin-top:0;">💤 Inizia una pausa</button>
+			<p style="text-align:center; color:var(--color-text-muted); font-size:13px; margin-bottom:10px;">${t('breaks.noActiveBreak')}</p>
+			<button class="main-btn" onclick="startBreak()" style="margin-top:0;">${t('breaks.startBreak')}</button>
 		`;
 	}
 
@@ -2637,7 +2637,7 @@ function renderBreakHistory() {
 	const past = allBreaks.filter(b => !b.is_active);
 	if (past.length === 0) { el.innerHTML = ''; return; }
 
-	el.innerHTML = '<hr style="margin:15px 0;"><p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">Pause precedenti</p>' +
+	el.innerHTML = `<hr style="margin:15px 0;"><p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">${t('breaks.previousBreaks')}</p>` +
 		past.map(b => {
 			const days = Math.ceil((new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24));
 			return `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:13px;">
@@ -3092,14 +3092,14 @@ async function startBreak() {
 		is_active: true
 	});
 
-	if (error) { alert('Errore nell\'avvio della pausa.'); return; }
-	showMessage('💤 Pausa iniziata, in bocca al lupo!');
+	if (error) { alert(t('breaks.startBreakError')); return; }
+	showMessage(t('breaks.breakStarted'));
 	await loadBreaks();
 }
 
 async function endBreak() {
 	if (!activeBreak) return;
-	if (!confirm('Vuoi terminare la pausa attuale?')) return;
+	if (!confirm(t('breaks.confirmEndBreak'))) return;
 
 	const today = new Date().toISOString().split('T')[0];
 	const { error } = await supabaseClient
@@ -3107,8 +3107,8 @@ async function endBreak() {
 		.update({ is_active: false, end_date: today })
 		.eq('id', activeBreak.id);
 
-	if (error) { alert('Errore nella chiusura della pausa.'); return; }
-	showMessage('✅ Pausa conclusa, ottimo lavoro!');
+	if (error) { alert(t('breaks.endBreakError')); return; }
+	showMessage(t('breaks.breakEnded'));
 	await loadBreaks();
 }
 
@@ -3133,9 +3133,9 @@ function checkReminderBanner() {
 
 	const streak = calculateStreak();
 	if (streak >= 1) {
-		textEl.textContent = `🔥 Rischi di perdere lo streak di ${streak} giorni! Non hai ancora segnato oggi.`;
+		textEl.textContent = t('reminder.streakRisk', { streak });
 	} else {
-		textEl.textContent = `📝 Non hai ancora segnato nulla oggi.`;
+		textEl.textContent = t('reminder.nothingLoggedToday');
 	}
 	banner.style.display = 'block';
 }
@@ -3165,7 +3165,7 @@ function renderNotifications() {
 	if (!list) return;
 
 	if (notifications.length === 0) {
-		list.innerHTML = '<p style="padding:15px; text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna notifica.</p>';
+		list.innerHTML = `<p style="padding:15px; text-align:center; color:var(--color-text-muted); font-size:13px;">${t('reminder.noNotifications')}</p>`;
 		return;
 	}
 
@@ -3181,11 +3181,11 @@ function formatNotifTime(iso) {
 	const d = new Date(iso);
 	const now = new Date();
 	const diffMin = Math.floor((now - d) / 60000);
-	if (diffMin < 1) return 'Adesso';
-	if (diffMin < 60) return `${diffMin} min fa`;
+	if (diffMin < 1) return t('reminder.justNow');
+	if (diffMin < 60) return t('reminder.minutesAgo', { count: diffMin });
 	const diffH = Math.floor(diffMin / 60);
-	if (diffH < 24) return `${diffH} h fa`;
-	return d.toLocaleDateString('it-IT');
+	if (diffH < 24) return t('reminder.hoursAgo', { count: diffH });
+	return d.toLocaleDateString(localeCode());
 }
 
 function updateNotifBadge() {
@@ -3350,7 +3350,7 @@ async function loadBackupStatus() {
 		el.innerHTML = data.files.slice(0, 5).map(f => `
 			<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:12px;">
 				<span>${f.name}</span>
-				<span style="color:var(--color-text-muted);">${new Date(f.created_at).toLocaleDateString('it-IT')}</span>
+				<span style="color:var(--color-text-muted);">${new Date(f.created_at).toLocaleDateString(localeCode())}</span>
 			</div>
 		`).join('');
 	} catch (err) {
@@ -3395,7 +3395,7 @@ async function renderPushDevices(devices) {
 
 	el.innerHTML = devices.map(d => {
 		const isThis = d.endpoint === currentEndpoint;
-		const dateStr = new Date(d.created_at).toLocaleDateString('it-IT');
+		const dateStr = new Date(d.created_at).toLocaleDateString(localeCode());
 		return `
 			<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(var(--overlay-rgb),0.05); border-radius:10px; margin-bottom:6px;">
 				<div>
@@ -3576,7 +3576,7 @@ function renderStockPrediction(type) {
 	const daysLeft = Math.round(remaining / dailyRate);
 	const exhaustDate = new Date();
 	exhaustDate.setDate(exhaustDate.getDate() + daysLeft);
-	const dateStr = exhaustDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+	const dateStr = exhaustDate.toLocaleDateString(localeCode(), { day: 'numeric', month: 'short' });
 
 	const urgencyColor = daysLeft > 7 ? '#4CAF50' : daysLeft > 3 ? '#FF9800' : '#f44336';
 
