@@ -2208,12 +2208,13 @@ if (ctxPie) {
 	}
 
 	async function resetAll() {
-		const conferma = confirm("ATTENZIONE: Questa operazione cancellerà DEFINITIVAMENTE tutte le tue sessioni salvate. Non potrai tornare indietro. Sei davvero sicuro?");
-		
+		const conferma = confirm(t('settings.resetConfirmQuestion'));
+
 		if (conferma) {
-			const confermaFinale = prompt("Per confermare la cancellazione totale, scrivi 'ELIMINA' (tutto maiuscolo):");
-			
-			if (confermaFinale === "ELIMINA") {
+			const confirmWord = t('settings.resetConfirmWord');
+			const confermaFinale = prompt(t('settings.resetConfirmPrompt', { word: confirmWord }));
+
+			if (confermaFinale === confirmWord) {
 				try {
 					const { error } = await supabaseClient
 						.from('smokes')
@@ -2222,15 +2223,15 @@ if (ctxPie) {
 
 					if (error) throw error;
 
-					showMessage("✅ Tutti i dati sono stati cancellati.");
+					showMessage(t('settings.resetDone'));
 					await loadData();
 					showPage('add');
 				} catch (err) {
 					console.error(err);
-					alert("Errore durante il reset.");
+					alert(t('settings.resetError'));
 				}
 			} else {
-				alert("Reset annullato.");
+				alert(t('settings.resetCancelled'));
 			}
 		}
 	}
@@ -2259,7 +2260,7 @@ if (ctxPie) {
 		list.innerHTML = '<div class="spinner"></div>';
 
 		if (!currentUser) {
-			list.innerHTML = "<p style='text-align:center;'>Effettua il login per vedere la classifica.</p>";
+			list.innerHTML = `<p style='text-align:center;'>${t('social.loginToSeeLeaderboard')}</p>`;
 			return;
 		}
 
@@ -2276,13 +2277,13 @@ if (ctxPie) {
 
 			if (error) {
 				console.error("Errore Supabase RPC:", error);
-				list.innerHTML = "<p class='error'>Errore nel recupero dati dal database.</p>";
+				list.innerHTML = `<p class='error'>${t('social.fetchDataError')}</p>`;
 				return;
 			}
 
 			if (!data || data.length === 0) {
 				list.innerHTML = `<p style='text-align:center; padding: 20px;'>
-					${isGlobal ? "Nessun dato globale." : "Non hai ancora amici. Aggiungili con il loro nickname!"}
+					${isGlobal ? t('social.noGlobalData') : t('social.noFriendsAddWithNickname')}
 				</p>`;
 				return;
 			}
@@ -2302,22 +2303,22 @@ if (ctxPie) {
 
 				const shared = sharedMap[u.user_id];
 				const sharedBadge = (!isGlobal && shared && shared.sessions_together > 0)
-					? `<br><small style="color: var(--primary-light); font-weight:600;">👥 ${shared.sessions_together} insieme</small>`
+					? `<br><small style="color: var(--primary-light); font-weight:600;">${t('social.togetherBadge', { count: shared.sessions_together })}</small>`
 					: '';
 
 				return `
-					<div class="lb-item" onclick="viewFriendStats('${u.user_id}', '${u.username}')" 
+					<div class="lb-item" onclick="viewFriendStats('${u.user_id}', '${u.username}')"
 						 style="${isMe ? 'background: rgba(76, 175, 80, 0.1);' : ''}">
 						<div style="display: flex; align-items: center;">
 							<span class="lb-rank ${rankClass}">${rankStr}</span>
 							<span style="font-weight: ${isMe ? 'bold' : '500'};">
-								${u.username} ${isMe ? '(Tu)' : ''}
+								${u.username} ${isMe ? t('social.youSuffix') : ''}
 								${sharedBadge}
 							</span>
 						</div>
 						<div style="text-align: right;">
 							<span style="font-weight: bold; color: var(--primary);">${Number(u.total_g).toFixed(1)}g</span><br>
-							<small style="color: var(--color-text-muted);">${u.total_j} joint</small>
+							<small style="color: var(--color-text-muted);">${u.total_j} ${t('stats.jointUnit')}</small>
 						</div>
 					</div>
 				`;
@@ -2325,7 +2326,7 @@ if (ctxPie) {
 
 		} catch (err) {
 			console.error("Errore generico loadSocial:", err);
-			list.innerHTML = "<p class='error'>Errore di connessione.</p>";
+			list.innerHTML = `<p class='error'>${t('social.connectionError')}</p>`;
 		}
 	}
 
@@ -2337,7 +2338,7 @@ if (ctxPie) {
 
 			if (error) {
 				console.error("Errore leaderboard condivise:", error);
-				list.innerHTML = "<p class='error'>Errore nel recupero dati dal database.</p>";
+				list.innerHTML = `<p class='error'>${t('social.fetchDataError')}</p>`;
 				return;
 			}
 
@@ -2345,7 +2346,7 @@ if (ctxPie) {
 
 			if (filtered.length === 0) {
 				list.innerHTML = `<p style='text-align:center; padding: 20px;'>
-					${sharedPeriod === 'month' ? "Nessuna sessione condivisa questo mese." : "Nessuna sessione condivisa ancora."}
+					${sharedPeriod === 'month' ? t('social.noSharedSessionsMonth') : t('social.noSharedSessionsEver')}
 				</p>`;
 				return;
 			}
@@ -2362,7 +2363,7 @@ if (ctxPie) {
 						</div>
 						<div style="text-align: right;">
 							<span style="font-weight: bold; color: var(--primary);">${u.sessions_together}</span><br>
-							<small style="color: var(--color-text-muted);">${Number(u.grams_together).toFixed(1)}g insieme</small>
+							<small style="color: var(--color-text-muted);">${t('social.gramsTogetherSuffix', { grams: Number(u.grams_together).toFixed(1) })}</small>
 						</div>
 					</div>
 				`;
@@ -2370,23 +2371,23 @@ if (ctxPie) {
 
 		} catch (err) {
 			console.error("Errore generico leaderboard condivise:", err);
-			list.innerHTML = "<p class='error'>Errore di connessione.</p>";
+			list.innerHTML = `<p class='error'>${t('social.connectionError')}</p>`;
 		}
 	}
 
 	async function addFriend() {
 		const username = document.getElementById('friendUsername').value.trim();
-		if (!username) return alert("Inserisci un nickname");
+		if (!username) return alert(t('social.enterNickname'));
 
 		const { error } = await supabaseClient.rpc('send_friend_request', { target_username: username });
 
 		if (error) {
-			if (error.message && error.message.includes('non trovato')) alert("Utente non trovato!");
-			else if (error.message && error.message.includes('te stesso')) alert("Non puoi aggiungere te stesso!");
-			else if (error.message && error.message.includes('gia')) alert("Richiesta già inviata o siete già amici!");
-			else alert("Errore durante l'invio della richiesta.");
+			if (error.message && error.message.includes('non trovato')) alert(t('social.userNotFound'));
+			else if (error.message && error.message.includes('te stesso')) alert(t('social.cantAddYourself'));
+			else if (error.message && error.message.includes('gia')) alert(t('social.requestAlreadySentOrFriends'));
+			else alert(t('social.requestSendError'));
 		} else {
-			showMessage("👥 Richiesta di amicizia inviata!");
+			showMessage(t('social.requestSent'));
 			document.getElementById('friendUsername').value = "";
 			if(currentSocialTab === 'friends') loadSocial();
 		}
@@ -2407,13 +2408,13 @@ if (ctxPie) {
 
 		el.style.display = 'block';
 		el.innerHTML = `
-			<h3 style="margin-top:0;">🔔 Richieste di amicizia</h3>
+			<h3 style="margin-top:0;">${t('social.friendRequestsTitle')}</h3>
 			${data.map(r => `
 				<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(76,175,80,0.08); border-radius:10px; margin-bottom:8px;">
 					<span style="font-weight:600; font-size:14px;">👤 ${r.username}</span>
 					<div style="display:flex; gap:8px;">
-						<button class="action-btn" onclick="respondFriendRequest('${r.requester_id}', true)" style="margin-top:0; padding:8px 14px;">✅ Accetta</button>
-						<button class="secondary-btn" onclick="respondFriendRequest('${r.requester_id}', false)" style="margin-top:0; padding:8px 14px;">✕ Rifiuta</button>
+						<button class="action-btn" onclick="respondFriendRequest('${r.requester_id}', true)" style="margin-top:0; padding:8px 14px;">${t('social.accept')}</button>
+						<button class="secondary-btn" onclick="respondFriendRequest('${r.requester_id}', false)" style="margin-top:0; padding:8px 14px;">${t('social.reject')}</button>
 					</div>
 				</div>
 			`).join('')}
@@ -2422,9 +2423,9 @@ if (ctxPie) {
 
 	async function respondFriendRequest(requesterId, accept) {
 		const { error } = await supabaseClient.rpc('respond_friend_request', { requester_id: requesterId, accept });
-		if (error) { alert('Errore nella risposta alla richiesta.'); return; }
+		if (error) { alert(t('social.respondError')); return; }
 
-		showMessage(accept ? '🤝 Amicizia accettata!' : 'Richiesta rifiutata');
+		showMessage(accept ? t('social.friendshipAccepted') : t('social.requestRejected'));
 		await loadFriendRequests();
 		if (currentSocialTab === 'friends') loadSocial();
 	}
@@ -2434,16 +2435,16 @@ if (ctxPie) {
 	async function viewFriendStats(targetId, username) {
 		const { data, error } = await supabaseClient.rpc('get_friend_stats', { target_user_id: targetId });
 
-		if (error || !data || data.length === 0) return alert("Impossibile caricare le statistiche.");
+		if (error || !data || data.length === 0) return alert(t('social.unableToLoadStats'));
 
-		document.getElementById('modalFriendName').innerText = `📊 Statistiche di ${username}`;
+		document.getElementById('modalFriendName').innerText = t('social.statsOf', { username });
 		document.getElementById('modaleFumo').innerText = data[0].fumo_g.toFixed(1);
 		document.getElementById('modaleErba').innerText = data[0].erba_g.toFixed(1);
 
 		const { data: shared } = await supabaseClient.rpc('get_shared_stats', { target_user_id: targetId });
 		const sharedEl = document.getElementById('modaleShared');
 		if (sharedEl && shared && shared[0]) {
-			sharedEl.innerText = `👥 ${shared[0].sessions_together} sessioni insieme · ${Number(shared[0].grams_together).toFixed(1)}g`;
+			sharedEl.innerText = t('social.sessionsTogetherLine', { count: shared[0].sessions_together, grams: Number(shared[0].grams_together).toFixed(1) });
 		} else if (sharedEl) {
 			sharedEl.innerText = "";
 		}
@@ -2457,12 +2458,12 @@ if (ctxPie) {
 
 	async function removeFriendFromModal() {
 		if (!currentModalFriendId) return;
-		if (!confirm("Rimuovere questa amicizia? Non vedrete più a vicenda le rispettive statistiche e foto.")) return;
+		if (!confirm(t('social.confirmRemoveFriendship'))) return;
 
 		const { error } = await supabaseClient.rpc('remove_friend', { target_id: currentModalFriendId });
-		if (error) { alert("Errore nella rimozione dell'amicizia."); return; }
+		if (error) { alert(t('social.removeFriendshipError')); return; }
 
-		showMessage('🗑️ Amicizia rimossa');
+		showMessage(t('social.friendshipRemoved'));
 		closeFriendModal();
 		loadSocial();
 	}
@@ -2474,17 +2475,17 @@ if (ctxPie) {
 	// ========== PROFILO ==========
 	async function updateProfile() {
 		const newName = document.getElementById('usernameInput').value.trim();
-		if(newName.length < 3) return alert("Il nickname deve avere almeno 3 caratteri!");
-		if(/[<>"'`&]/.test(newName)) return alert("Il nickname non può contenere < > \" ' ` &");
+		if(newName.length < 3) return alert(t('settings.nicknameMinLength'));
+		if(/[<>"'`&]/.test(newName)) return alert(t('auth.nicknameNoSpecialChars'));
 
 		const { error } = await supabaseClient
 			.from('profiles')
 			.upsert({ id: currentUser.id, username: newName });
 
 		if (error) {
-			alert(error.code === '23505' ? "❌ Nickname già in uso! Scegline un altro." : "Errore salvataggio profilo.");
+			alert(error.code === '23505' ? t('settings.nicknameTaken') : t('settings.profileSaveError'));
 		} else {
-			showMessage("✅ Nickname aggiornato!");
+			showMessage(t('settings.nicknameUpdated'));
 			document.getElementById('usernameInput').value = "";
 			loadUserProfile();
 		}
