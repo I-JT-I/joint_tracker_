@@ -446,6 +446,23 @@
     "nicknameTaken": "❌ Nickname già in uso! Scegline un altro.",
     "profileSaveError": "Errore salvataggio profilo.",
     "nicknameUpdated": "✅ Nickname aggiornato!",
+    "saveReminderError": "Errore nel salvataggio delle preferenze.",
+    "preferencesSaved": "✅ Preferenze salvate!",
+    "pushNotSupported": "❌ Il tuo browser non supporta le notifiche push.",
+    "pushActivating": "⏳ Attivazione in corso...",
+    "pushPermissionDenied": "❌ Permesso negato. Abilita le notifiche dalle impostazioni del browser.",
+    "pushSubscriptionSaveError": "❌ Errore nel salvataggio della sottoscrizione.",
+    "pushActivated": "✅ Notifiche push attivate su questo dispositivo!",
+    "pushActivationError": "❌ Errore durante l'attivazione.",
+    "noBackupsYet": "Nessun backup automatico ancora eseguito.",
+    "backupStatusError": "Impossibile verificare lo stato dei backup.",
+    "noPushDevices": "Nessun dispositivo con notifiche attive.",
+    "deviceLabel": "📱 Dispositivo",
+    "thisDeviceSuffix": "(questo)",
+    "activatedOn": "Attivato il {date}",
+    "confirmRevokeDevice": "Disattivare le notifiche push per questo dispositivo?",
+    "removeDeviceError": "Errore nella rimozione.",
+    "deviceRemoved": "🗑️ Dispositivo rimosso",
     "logout": "🚪 Logout"
   }
 }

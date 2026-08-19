@@ -3268,9 +3268,9 @@ async function saveReminderSettings() {
 		.eq('id', currentUser.id);
 
 	if (error) {
-		alert('Errore nel salvataggio delle preferenze.');
+		alert(t('settings.saveReminderError'));
 	} else {
-		showMessage('✅ Preferenze salvate!');
+		showMessage(t('settings.preferencesSaved'));
 	}
 }
 
@@ -3288,19 +3288,19 @@ async function enablePushNotifications() {
 	const statusEl = document.getElementById('pushStatus');
 
 	if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-		statusEl.textContent = '❌ Il tuo browser non supporta le notifiche push.';
+		statusEl.textContent = t('settings.pushNotSupported');
 		return;
 	}
 
 	try {
-		statusEl.textContent = '⏳ Attivazione in corso...';
+		statusEl.textContent = t('settings.pushActivating');
 
 		const registration = await navigator.serviceWorker.register('/sw.js');
 		await navigator.serviceWorker.ready;
 
 		const permission = await Notification.requestPermission();
 		if (permission !== 'granted') {
-			statusEl.textContent = '❌ Permesso negato. Abilita le notifiche dalle impostazioni del browser.';
+			statusEl.textContent = t('settings.pushPermissionDenied');
 			return;
 		}
 
@@ -3319,16 +3319,16 @@ async function enablePushNotifications() {
 		}, { onConflict: 'endpoint' });
 
 		if (error) {
-			statusEl.textContent = '❌ Errore nel salvataggio della sottoscrizione.';
+			statusEl.textContent = t('settings.pushSubscriptionSaveError');
 			console.error(error);
 			return;
 		}
 
-		statusEl.textContent = '✅ Notifiche push attivate su questo dispositivo!';
+		statusEl.textContent = t('settings.pushActivated');
 		loadPushDevices();
 	} catch (err) {
 		console.error(err);
-		statusEl.textContent = '❌ Errore durante l\'attivazione.';
+		statusEl.textContent = t('settings.pushActivationError');
 	}
 }
 
@@ -3336,14 +3336,14 @@ async function enablePushNotifications() {
 async function loadBackupStatus() {
 	const el = document.getElementById('backupStatusList');
 	if (!el) return;
-	el.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted); text-align:center;">Caricamento...</p>';
+	el.innerHTML = `<p style="font-size:12px; color:var(--color-text-muted); text-align:center;">${t('common.loading')}</p>`;
 
 	try {
 		const { data, error } = await supabaseClient.functions.invoke('list-backups');
 		if (error || !data?.ok) throw error || new Error('Risposta non valida');
 
 		if (!data.files || data.files.length === 0) {
-			el.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted); text-align:center;">Nessun backup automatico ancora eseguito.</p>';
+			el.innerHTML = `<p style="font-size:12px; color:var(--color-text-muted); text-align:center;">${t('settings.noBackupsYet')}</p>`;
 			return;
 		}
 
@@ -3355,7 +3355,7 @@ async function loadBackupStatus() {
 		`).join('');
 	} catch (err) {
 		console.error('Errore stato backup:', err);
-		el.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted); text-align:center;">Impossibile verificare lo stato dei backup.</p>';
+		el.innerHTML = `<p style="font-size:12px; color:var(--color-text-muted); text-align:center;">${t('settings.backupStatusError')}</p>`;
 	}
 }
 
@@ -3387,7 +3387,7 @@ async function renderPushDevices(devices) {
 	if (!el) return;
 
 	if (devices.length === 0) {
-		el.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessun dispositivo con notifiche attive.</p>';
+		el.innerHTML = `<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">${t('settings.noPushDevices')}</p>`;
 		return;
 	}
 
@@ -3399,8 +3399,8 @@ async function renderPushDevices(devices) {
 		return `
 			<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(var(--overlay-rgb),0.05); border-radius:10px; margin-bottom:6px;">
 				<div>
-					<span style="font-size:13px; font-weight:600;">📱 Dispositivo${isThis ? ' <span style="color:var(--primary); font-size:11px;">(questo)</span>' : ''}</span><br>
-					<small style="color:var(--color-text-muted);">Attivato il ${dateStr}</small>
+					<span style="font-size:13px; font-weight:600;">${t('settings.deviceLabel')}${isThis ? ` <span style="color:var(--primary); font-size:11px;">${t('settings.thisDeviceSuffix')}</span>` : ''}</span><br>
+					<small style="color:var(--color-text-muted);">${t('settings.activatedOn', { date: dateStr })}</small>
 				</div>
 				<button onclick="revokePushDevice(${d.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:16px;">🗑️</button>
 			</div>
@@ -3409,10 +3409,10 @@ async function renderPushDevices(devices) {
 }
 
 async function revokePushDevice(id) {
-	if (!confirm('Disattivare le notifiche push per questo dispositivo?')) return;
+	if (!confirm(t('settings.confirmRevokeDevice'))) return;
 	const { error } = await supabaseClient.from('push_subscriptions').delete().eq('id', id);
-	if (error) { alert('Errore nella rimozione.'); return; }
-	showMessage('🗑️ Dispositivo rimosso');
+	if (error) { alert(t('settings.removeDeviceError')); return; }
+	showMessage(t('settings.deviceRemoved'));
 	loadPushDevices();
 }
 

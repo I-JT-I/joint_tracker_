@@ -446,6 +446,23 @@
     "nicknameTaken": "❌ Nickname already in use! Choose another one.",
     "profileSaveError": "Error saving profile.",
     "nicknameUpdated": "✅ Nickname updated!",
+    "saveReminderError": "Error saving preferences.",
+    "preferencesSaved": "✅ Preferences saved!",
+    "pushNotSupported": "❌ Your browser doesn't support push notifications.",
+    "pushActivating": "⏳ Activating...",
+    "pushPermissionDenied": "❌ Permission denied. Enable notifications from your browser settings.",
+    "pushSubscriptionSaveError": "❌ Error saving the subscription.",
+    "pushActivated": "✅ Push notifications enabled on this device!",
+    "pushActivationError": "❌ Error during activation.",
+    "noBackupsYet": "No automatic backup has run yet.",
+    "backupStatusError": "Unable to check backup status.",
+    "noPushDevices": "No devices with notifications enabled.",
+    "deviceLabel": "📱 Device",
+    "thisDeviceSuffix": "(this one)",
+    "activatedOn": "Activated on {date}",
+    "confirmRevokeDevice": "Turn off push notifications for this device?",
+    "removeDeviceError": "Error removing.",
+    "deviceRemoved": "🗑️ Device removed",
     "logout": "🚪 Logout"
   }
 }
