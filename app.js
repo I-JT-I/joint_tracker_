@@ -1332,6 +1332,7 @@ function updateMap() {
 		renderInsights();
 		renderContextStats();
 		renderGoalCard();
+		renderBreakCard();
 		if (achievementsLoaded) checkAchievements();
 	}
 
