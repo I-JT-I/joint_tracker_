@@ -333,6 +333,9 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 		const { data: { session } } = await supabaseClient.auth.getSession();
 		if (session) {
 			currentUser = session.user;
+		}
+		await initI18n();
+		if (session) {
 			showApp();
 			await loadData();
 		} else {
@@ -1168,6 +1171,12 @@ async function addPlaceFromMap() {
 		const activeBtn = document.querySelectorAll(".menu-content button")[pageToIndex[p]];
 		if(activeBtn) activeBtn.classList.add("active-tab");
 
+		refreshPageDynamicContent(p);
+	}
+
+	// Ricarica i dati/render dinamici di una pagina. Estratto da showPage() così può essere
+	// richiamato anche al cambio lingua, per aggiornare il testo generato via JS senza reload.
+	function refreshPageDynamicContent(p) {
 		if (p === 'gallery') loadGallery();
 
 		if (p === 'map') {
@@ -1188,6 +1197,16 @@ async function addPlaceFromMap() {
 		}
 		update();
 	}
+
+	function getCurrentPageName() {
+		const activePage = document.querySelector('.page.active');
+		return activePage ? activePage.id.replace('page-', '') : null;
+	}
+
+	document.addEventListener('i18n:change', () => {
+		const p = getCurrentPageName();
+		if (p && p !== 'auth') refreshPageDynamicContent(p);
+	});
 
 	// ========== MAPPA (CORRETTA DAL PRIMO CODICE) ==========
 	let markerClusterGroup = null; // Aggiungi questa variabile globale all'inizio

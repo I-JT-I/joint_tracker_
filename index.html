@@ -30,6 +30,8 @@
 	<link rel="manifest" href="/manifest.json">
 	<link rel="icon" type="image/png" href="/icon-192.png">
 	<link rel="stylesheet" href="style.css">
+	<!-- i18n -->
+	<script src="i18n.js"></script>
 	<!-- Supabase -->
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 	
@@ -58,14 +60,14 @@
 
 <!-- BANNER OFFLINE -->
 <div id="offlineBanner" style="display:none; position:sticky; top:0; z-index:998; background:#555; color:white; padding:10px 15px; text-align:center; font-size:13px; font-weight:600;">
-	📡 Sei offline — stai vedendo gli ultimi dati salvati. Le modifiche verranno sincronizzate al ritorno della connessione.
+	<span data-i18n="offline.banner">📡 Sei offline — stai vedendo gli ultimi dati salvati. Le modifiche verranno sincronizzate al ritorno della connessione.</span>
 </div>
 
 <!-- PAGINA LOGIN -->
 <div id="page-auth" class="page active">
 	<div class="auth-container">
 		<div class="auth-box">
-			<h2>🌿 JointTracker</h2>
+			<h2 data-i18n="auth.title">🌿 JointTracker</h2>
 			<div id="authContent"></div>
 		</div>
 	</div>
@@ -73,9 +75,9 @@
 
 <!-- PAGINA PRINCIPALE (quando loggato) -->
 <header id="header" style="display:none; position:sticky;">
-	<h1>🌿 JointTracker</h1>
+	<h1 data-i18n="auth.title">🌿 JointTracker</h1>
 	<div style="display:flex; align-items:center; gap:6px;">
-		<button class="menu-btn theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Cambia tema">
+		<button class="menu-btn theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" data-i18n-title="nav.changeTheme" title="Cambia tema">
 			<span class="theme-icon-light">🌙</span><span class="theme-icon-dark">☀️</span>
 		</button>
 		<button class="menu-btn" id="notifBtn" onclick="toggleNotifications()" style="position:relative;">
@@ -85,19 +87,19 @@
 		<button class="menu-btn" id="hamburgerBtn" onclick="toggleMenu()">☰</button>
 	</div>
 	<div class="menu-content" id="menu">
-    <button onclick="showPage('home')"><span style="font-size:18px;">🏠</span>Home</button>
-    <button onclick="showPage('add')"><span style="font-size:18px;">➕</span>Aggiungi</button>
-    <button onclick="showPage('history')"><span style="font-size:18px;">📜</span>Registro</button>
-    <button onclick="showPage('gallery')"><span style="font-size:18px;">📷</span>Galleria</button>
-    <button onclick="showPage('stats')"><span style="font-size:18px;">📊</span>Stats</button>
-    <button onclick="showPage('charts')"><span style="font-size:18px;">📈</span>Grafici</button>
-    <button onclick="showPage('map')"><span style="font-size:18px;">🗺️</span>Luoghi</button>
-    <button onclick="showPage('social')"><span style="font-size:18px;">🏆</span>Social</button>
-    <button onclick="showPage('stock')"><span style="font-size:18px;">🛒</span>Scorte</button>
-    <button onclick="showPage('settings')"><span style="font-size:18px;">⚙️</span>Impostazioni</button>
+    <button onclick="showPage('home')"><span style="font-size:18px;">🏠</span><span data-i18n="nav.home">Home</span></button>
+    <button onclick="showPage('add')"><span style="font-size:18px;">➕</span><span data-i18n="nav.add">Aggiungi</span></button>
+    <button onclick="showPage('history')"><span style="font-size:18px;">📜</span><span data-i18n="nav.history">Registro</span></button>
+    <button onclick="showPage('gallery')"><span style="font-size:18px;">📷</span><span data-i18n="nav.gallery">Galleria</span></button>
+    <button onclick="showPage('stats')"><span style="font-size:18px;">📊</span><span data-i18n="nav.stats">Stats</span></button>
+    <button onclick="showPage('charts')"><span style="font-size:18px;">📈</span><span data-i18n="nav.charts">Grafici</span></button>
+    <button onclick="showPage('map')"><span style="font-size:18px;">🗺️</span><span data-i18n="nav.places">Luoghi</span></button>
+    <button onclick="showPage('social')"><span style="font-size:18px;">🏆</span><span data-i18n="nav.social">Social</span></button>
+    <button onclick="showPage('stock')"><span style="font-size:18px;">🛒</span><span data-i18n="nav.stock">Scorte</span></button>
+    <button onclick="showPage('settings')"><span style="font-size:18px;">⚙️</span><span data-i18n="nav.settings">Impostazioni</span></button>
 </div>
 	<div class="menu-content" id="notifPanel" style="min-width:280px; max-width:320px;">
-		<div style="padding:12px 15px; font-weight:700; color:var(--heading); border-bottom:1px solid rgba(var(--overlay-rgb),0.08);">🔔 Notifiche</div>
+		<div style="padding:12px 15px; font-weight:700; color:var(--heading); border-bottom:1px solid rgba(var(--overlay-rgb),0.08);" data-i18n="nav.notifications">🔔 Notifiche</div>
 		<div id="notifList"></div>
 	</div>
 </header>
@@ -105,30 +107,30 @@
 <!-- PAGINA HOME -->
 <div id="page-home" class="page">
 	<div class="card home-hero">
-		<div id="homeGreeting" style="font-size:15px; color:var(--color-text-secondary); font-weight:600;">Ciao 👋</div>
+		<div id="homeGreeting" style="font-size:15px; color:var(--color-text-secondary); font-weight:600;" data-i18n="home.greeting">Ciao 👋</div>
 		<div class="streak-num"><span id="homeStreak">0</span>🔥</div>
-		<div style="font-size:13px; color:var(--color-text-muted);">giorni di streak</div>
+		<div style="font-size:13px; color:var(--color-text-muted);" data-i18n="home.streakLabel">giorni di streak</div>
 		<div class="home-quick-row">
-			<span id="homeMonthStat">Questo mese: – sessioni</span>
+			<span id="homeMonthStat" data-i18n="home.monthStatPlaceholder">Questo mese: – sessioni</span>
 			<span id="homeReminderLine" style="display:none;"></span>
 		</div>
-		<button class="main-btn" onclick="showPage('add')">➕ Nuova sessione</button>
+		<button class="main-btn" onclick="showPage('add')" data-i18n="home.newSession">➕ Nuova sessione</button>
 		<div id="homeAchievementTeaser" style="display:none; margin-top:12px; font-size:13px; color:var(--heading); font-weight:600;"></div>
 	</div>
 
 	<div class="card">
-		<h3>📦 Scorte</h3>
+		<h3 data-i18n="home.stockTitle">📦 Scorte</h3>
 		<div id="miniStockWidget" style="display:none;">
 		  <div style="display:flex; gap:10px;">
 		    <div style="flex:1; background: rgba(139,69,19,0.08); border:1px solid rgba(139,69,19,0.2); border-radius:12px; padding:10px;">
-		      <div style="font-size:11px; font-weight:600; color:#795548; margin-bottom:6px;">🍫 Fumo rimanente</div>
+		      <div style="font-size:11px; font-weight:600; color:#795548; margin-bottom:6px;" data-i18n="home.stockSmokeRemaining">🍫 Fumo rimanente</div>
 		      <div style="font-size:15px; font-weight:700; color:#5D4037;" id="miniFumoGrams">–</div>
 		      <div style="background:rgba(139,69,19,0.15); border-radius:6px; height:6px; margin-top:6px; overflow:hidden;">
 		        <div id="miniFumoBar" style="height:100%; background:#795548; border-radius:6px; transition: width 0.5s ease; width:0%;"></div>
 		      </div>
 		    </div>
 		    <div style="flex:1; background: rgba(76,175,80,0.08); border:1px solid rgba(76,175,80,0.2); border-radius:12px; padding:10px;">
-		      <div style="font-size:11px; font-weight:600; color:var(--primary); margin-bottom:6px;">🍃 Erba rimanente</div>
+		      <div style="font-size:11px; font-weight:600; color:var(--primary); margin-bottom:6px;" data-i18n="home.stockWeedRemaining">🍃 Erba rimanente</div>
 		      <div style="font-size:15px; font-weight:700; color:var(--heading);" id="miniErbaGrams">–</div>
 		      <div style="background:rgba(76,175,80,0.15); border-radius:6px; height:6px; margin-top:6px; overflow:hidden;">
 		        <div id="miniErbaBar" style="height:100%; background:var(--primary-light); border-radius:6px; transition: width 0.5s ease; width:0%;"></div>
@@ -136,36 +138,36 @@
 		    </div>
 		  </div>
 		</div>
-		<p id="homeNoStock" style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna scorta attiva. Registrane una dalla pagina Scorte.</p>
+		<p id="homeNoStock" style="text-align:center; color:var(--color-text-muted); font-size:13px;" data-i18n="home.noStock">Nessuna scorta attiva. Registrane una dalla pagina Scorte.</p>
 	</div>
 </div>
 
 <!-- PAGINA AGGIUNGI -->
 <div id="page-add" class="page">
 	<div class="card">
-		<div class="user-info">Loggato come <strong id="emailDisplay"></strong></div>
-		<h3>➕ Nuovo Inserimento</h3>
+		<div class="user-info"><span data-i18n="settings.loggedInAs">Loggato come</span> <strong id="emailDisplay"></strong></div>
+		<h3 data-i18n="add.title">➕ Nuovo Inserimento</h3>
 
-		<label>Cosa fumi?</label>
+		<label data-i18n="add.whatAreYouSmoking">Cosa fumi?</label>
 <div class="substance-checkbox-group" id="substanceGroup">
 	<label>
-		<input type="checkbox" id="fumo" value="fumo"> 🍫 Fumo
+		<input type="checkbox" id="fumo" value="fumo"> <span data-i18n="add.smoke">🍫 Fumo</span>
 	</label>
 	<label>
-		<input type="checkbox" id="erba" value="erba"> 🍃 Erba
+		<input type="checkbox" id="erba" value="erba"> <span data-i18n="add.weed">🍃 Erba</span>
 	</label>
 </div>
 
 <!-- MESSAGGIO QUANDO ENTRAMBI SELEZIONATI -->
 <div id="divideMessage" style="display: none; background: rgba(76, 175, 80, 0.15); border: 2px solid var(--primary-light); border-radius: 12px; padding: 12px; margin-top: 10px;">
-    <p style="text-align:center; font-weight: 600; color: var(--heading); margin: 0 0 10px;">📊 Quanti grammi per ciascuno?</p>
+    <p style="text-align:center; font-weight: 600; color: var(--heading); margin: 0 0 10px;" data-i18n="add.howManyGramsEach">📊 Quanti grammi per ciascuno?</p>
     <div style="display: flex; gap: 10px;">
         <div style="flex:1;">
-            <label style="margin-top:0; font-size:12px;">🍫 Fumo (g)</label>
+            <label style="margin-top:0; font-size:12px;" data-i18n="add.smokeGrams">🍫 Fumo (g)</label>
             <input type="number" id="fumoGramsInput" step="0.1" value="0.2" min="0" style="margin-top:4px;">
         </div>
         <div style="flex:1;">
-            <label style="margin-top:0; font-size:12px;">🍃 Erba (g)</label>
+            <label style="margin-top:0; font-size:12px;" data-i18n="add.weedGrams">🍃 Erba (g)</label>
             <input type="number" id="erbaGramsInput" step="0.1" value="0.3" min="0" style="margin-top:4px;">
         </div>
     </div>
@@ -174,7 +176,7 @@
 <!-- TOGGLE NON MIA -->
 <div id="notMineToggle" style="display:none; margin-top: 12px;">
     <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; background: rgba(255,152,0,0.08); border: 1px solid rgba(255,152,0,0.3); border-radius:12px; padding:12px; cursor:pointer;">
-        <span style="font-size:14px; font-weight:600; color:var(--warning-text);">👥 Non è mia (non scala dalla scorta)</span>
+        <span style="font-size:14px; font-weight:600; color:var(--warning-text);" data-i18n="add.notMine">👥 Non è mia (non scala dalla scorta)</span>
         <input type="checkbox" id="notMineCheck" style="width:20px; height:20px; margin:0; padding:0; border:none; background:none; cursor:pointer; accent-color: var(--warning);">
     </label>
 </div>
@@ -182,50 +184,50 @@
 <!-- SESSIONE CONDIVISA -->
 <div style="margin-top:12px;">
     <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; background: rgba(76,175,80,0.08); border: 1px solid rgba(76,175,80,0.3); border-radius:12px; padding:12px; cursor:pointer;">
-        <span style="font-size:14px; font-weight:600; color:var(--heading);">👥 Sessione condivisa con amici</span>
+        <span style="font-size:14px; font-weight:600; color:var(--heading);" data-i18n="add.sharedSession">👥 Sessione condivisa con amici</span>
         <input type="checkbox" id="sharedSessionCheck" onchange="toggleSharedSession()" style="width:20px; height:20px; margin:0; accent-color: var(--primary-light);">
     </label>
 </div>
 
 <div id="sharedSessionPanel" style="display:none; margin-top:10px;">
-    <label style="margin-top:0;">Cerca amico o nickname</label>
+    <label style="margin-top:0;" data-i18n="add.searchFriendOrNickname">Cerca amico o nickname</label>
     <div style="display:flex; gap:10px;">
-        <input type="text" id="participantSearch" placeholder="Nickname..." style="margin-top:0; flex:1;">
-        <button class="action-btn" onclick="searchParticipant()" style="margin-top:0;">Cerca</button>
+        <input type="text" id="participantSearch" data-i18n-placeholder="add.nicknamePlaceholder" placeholder="Nickname..." style="margin-top:0; flex:1;">
+        <button class="action-btn" onclick="searchParticipant()" style="margin-top:0;" data-i18n="add.search">Cerca</button>
     </div>
     <div id="participantChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
 
-    <label style="margin-top:15px; font-size:12px;">I tuoi amici</label>
+    <label style="margin-top:15px; font-size:12px;" data-i18n="add.yourFriends">I tuoi amici</label>
     <div id="friendsQuickList" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;"></div>
 
     <div id="contributorsPanel" style="margin-top:12px;"></div>
 </div>
 
-		<label>Quantità</label>
+		<label data-i18n="add.quantity">Quantità</label>
 		<div class="grams-row" id="gCont">
 			<label><input type="radio" name="g" value="0.3" checked> 0.3g</label>
 			<label><input type="radio" name="g" value="0.5"> 0.5g</label>
-			<label><input type="radio" name="g" value="custom"> Altro</label>
+			<label><input type="radio" name="g" value="custom"> <span data-i18n="add.other">Altro</span></label>
 		</div>
 
-		<input type="number" id="customGrams" step="0.1" placeholder="Grammi manuali" style="display:none;">
+		<input type="number" id="customGrams" step="0.1" data-i18n-placeholder="add.manualGramsPlaceholder" placeholder="Grammi manuali" style="display:none;">
 
-		<label for="date">Data e ora</label>
+		<label for="date" data-i18n="add.dateAndTime">Data e ora</label>
 		<div style="display:flex; gap:10px;">
 			<input type="date" id="date" style="flex:1; margin-top:0;">
 			<input type="time" id="time" style="flex:1; margin-top:0;">
 		</div>
-		
-		<label>🏷️ Contesto (opzionale)</label>
+
+		<label data-i18n="add.context">🏷️ Contesto (opzionale)</label>
 		<div class="tag-row" id="contextTagGroup">
-			<label class="selected"><input type="radio" name="contextTag" value="" checked> Nessuno</label>
-			<label><input type="radio" name="contextTag" value="relax"> 😌 Relax</label>
-			<label><input type="radio" name="contextTag" value="social"> 👥 Social</label>
-			<label><input type="radio" name="contextTag" value="creativo"> 🎨 Creativo</label>
-			<label><input type="radio" name="contextTag" value="sonno"> 😴 Sonno</label>
+			<label class="selected"><input type="radio" name="contextTag" value="" checked> <span data-i18n="add.contextNone">Nessuno</span></label>
+			<label><input type="radio" name="contextTag" value="relax"> <span data-i18n="add.contextRelax">😌 Relax</span></label>
+			<label><input type="radio" name="contextTag" value="social"> <span data-i18n="add.contextSocial">👥 Social</span></label>
+			<label><input type="radio" name="contextTag" value="creativo"> <span data-i18n="add.contextCreative">🎨 Creativo</span></label>
+			<label><input type="radio" name="contextTag" value="sonno"> <span data-i18n="add.contextSleep">😴 Sonno</span></label>
 		</div>
 
-		<label>😊 Umore dopo (opzionale)</label>
+		<label data-i18n="add.moodAfter">😊 Umore dopo (opzionale)</label>
 		<div class="tag-row" id="moodRatingGroup">
 			<label><input type="radio" name="moodRating" value="1"> 1</label>
 			<label><input type="radio" name="moodRating" value="2"> 2</label>
@@ -234,40 +236,40 @@
 			<label><input type="radio" name="moodRating" value="5"> 5</label>
 		</div>
 
-		<label>📍 Localizzazione</label>
+		<label data-i18n="add.location">📍 Localizzazione</label>
 		<div style="display: flex; gap: 10px; margin-top: 8px;">
-			<button type="button" class="main-btn" onclick="getLocation()" style="margin-top: 0; flex: 1;">📍 Prendi</button>
-			<input type="text" id="locationDisplay" placeholder="🔄 Cercando..." style="margin-top: 0; flex: 1; background: rgba(76, 175, 80, 0.08);" readonly>
+			<button type="button" class="main-btn" onclick="getLocation()" style="margin-top: 0; flex: 1;" data-i18n="add.getLocation">📍 Prendi</button>
+			<input type="text" id="locationDisplay" data-i18n-placeholder="add.searchingLocation" placeholder="🔄 Cercando..." style="margin-top: 0; flex: 1; background: rgba(76, 175, 80, 0.08);" readonly>
 		</div>
 
-		<label>📷 Foto (opzionale)</label>
+		<label data-i18n="add.photo">📷 Foto (opzionale)</label>
 		<input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoSelected(event)">
-		<button type="button" class="action-btn" onclick="document.getElementById('photoInput').click()" style="width:100%;">📷 Scatta/allega foto</button>
+		<button type="button" class="action-btn" onclick="document.getElementById('photoInput').click()" style="width:100%;" data-i18n="add.takeAttachPhoto">📷 Scatta/allega foto</button>
 		<div id="photoPreviewWrap" style="display:none; margin-top:10px; position:relative;">
 			<img id="photoPreview" style="width:100%; max-height:220px; object-fit:cover; border-radius:12px; display:block;">
 			<button type="button" onclick="clearSelectedPhoto()" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; font-size:16px;">✕</button>
 		</div>
 
-		<button class="main-btn" onclick="saveData()">SALVA SESSIONE</button>
+		<button class="main-btn" onclick="saveData()" data-i18n="add.saveSession">SALVA SESSIONE</button>
 	</div>
 </div>
 
 <!-- PAGINA STORIA -->
 <div id="page-history" class="page">
 	<div class="card">
-		<h3>📜 Registro Storico</h3>
-		<input type="text" id="historySearch" placeholder="🔍 Cerca per luogo..." oninput="applyHistoryFilters()" style="margin-top:0;">
+		<h3 data-i18n="history.title">📜 Registro Storico</h3>
+		<input type="text" id="historySearch" data-i18n-placeholder="history.searchByPlace" placeholder="🔍 Cerca per luogo..." oninput="applyHistoryFilters()" style="margin-top:0;">
 		<div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
 			<select id="historyTypeFilter" onchange="applyHistoryFilters()" style="flex:1; min-width:110px; margin-top:0;">
-				<option value="all">Tutti i tipi</option>
-				<option value="fumo">🍫 Fumo</option>
-				<option value="erba">🍃 Erba</option>
-				<option value="fumo-erba">🍫🍃 Fumo+Erba</option>
+				<option value="all" data-i18n="history.allTypes">Tutti i tipi</option>
+				<option value="fumo" data-i18n="common.smoke">🍫 Fumo</option>
+				<option value="erba" data-i18n="common.weed">🍃 Erba</option>
+				<option value="fumo-erba" data-i18n="common.smokeWeed">🍫🍃 Fumo+Erba</option>
 			</select>
-			<input type="date" id="historyDateFrom" onchange="applyHistoryFilters()" title="Dal" style="flex:1; min-width:130px; margin-top:0;">
-			<input type="date" id="historyDateTo" onchange="applyHistoryFilters()" title="Al" style="flex:1; min-width:130px; margin-top:0;">
+			<input type="date" id="historyDateFrom" onchange="applyHistoryFilters()" data-i18n-title="history.dateFrom" title="Dal" style="flex:1; min-width:130px; margin-top:0;">
+			<input type="date" id="historyDateTo" onchange="applyHistoryFilters()" data-i18n-title="history.dateTo" title="Al" style="flex:1; min-width:130px; margin-top:0;">
 		</div>
-		<button type="button" class="secondary-btn" id="historyFilterReset" onclick="resetHistoryFilters()" style="display:none; margin-top:10px;">✕ Rimuovi filtri</button>
+		<button type="button" class="secondary-btn" id="historyFilterReset" onclick="resetHistoryFilters()" style="display:none; margin-top:10px;" data-i18n="history.removeFilters">✕ Rimuovi filtri</button>
 		<div id="historyList" style="margin-top:15px;"></div>
 	</div>
 </div>
@@ -275,7 +277,7 @@
 <!-- PAGINA GALLERIA -->
 <div id="page-gallery" class="page">
 	<div class="card">
-		<h3>📷 Galleria</h3>
+		<h3 data-i18n="gallery.title">📷 Galleria</h3>
 		<div id="galleryGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;"></div>
 	</div>
 </div>
@@ -283,60 +285,60 @@
 <!-- PAGINA STATISTICHE -->
 <div id="page-stats" class="page">
 	<div class="card">
-		<h3>📊 Quantità Totali</h3>
+		<h3 data-i18n="stats.totalQuantities">📊 Quantità Totali</h3>
 		<div class="stat-grid">
-			<div class="stat-box"><big id="sFumo">0</big><small>Grammi Fumo</small></div>
-			<div class="stat-box"><big id="sErba">0</big><small>Grammi Erba</small></div>
-			<div class="stat-box"><big id="sJTot">0</big><small>Joint Totali</small></div>
-			<div class="stat-box"><big id="sGTot">0</big><small>Grammi Totali</small></div>
+			<div class="stat-box"><big id="sFumo">0</big><small data-i18n="stats.smokeGrams">Grammi Fumo</small></div>
+			<div class="stat-box"><big id="sErba">0</big><small data-i18n="stats.weedGrams">Grammi Erba</small></div>
+			<div class="stat-box"><big id="sJTot">0</big><small data-i18n="stats.totalJoints">Joint Totali</small></div>
+			<div class="stat-box"><big id="sGTot">0</big><small data-i18n="stats.totalGrams">Grammi Totali</small></div>
 		</div>
 
 		<hr>
 
-		<h3>📊 Questo Mese vs Mese Scorso</h3>
+		<h3 data-i18n="stats.monthVsMonth">📊 Questo Mese vs Mese Scorso</h3>
 		<div id="periodComparison"></div>
 
 		<hr>
 
-		<h3>Medie Reali (tutti i giorni)</h3>
+		<h3 data-i18n="stats.realAverages">Medie Reali (tutti i giorni)</h3>
 		<div class="stat-grid">
-			<div class="stat-box"><big id="avgDaily">0</big><small>J / Giorno</small></div>
-			<div class="stat-box"><big id="avgMonthly">0</big><small>J / Mese</small></div>
-			<div class="stat-box"><big id="avgYearly">0</big><small>J / Anno</small></div>
-			<div class="stat-box"><big id="avgGrams">0</big><small>Grammi / Giorno</small></div>
+			<div class="stat-box"><big id="avgDaily">0</big><small data-i18n="stats.jPerDay">J / Giorno</small></div>
+			<div class="stat-box"><big id="avgMonthly">0</big><small data-i18n="stats.jPerMonth">J / Mese</small></div>
+			<div class="stat-box"><big id="avgYearly">0</big><small data-i18n="stats.jPerYear">J / Anno</small></div>
+			<div class="stat-box"><big id="avgGrams">0</big><small data-i18n="stats.gramsPerDay">Grammi / Giorno</small></div>
 		</div>
 
 		<hr>
 
-		<h3>🔥 Streak</h3>
+		<h3 data-i18n="stats.streak">🔥 Streak</h3>
 		<div class="stat-grid" id="streakBox">
-			<div class="stat-box"><big id="streakDays">0</big><small>🔥 Giorni</small></div>
-			<div class="stat-box"><big id="bestStreak">0</big><small>🏆 Miglior streak</small></div>
+			<div class="stat-box"><big id="streakDays">0</big><small data-i18n="stats.streakDays">🔥 Giorni</small></div>
+			<div class="stat-box"><big id="bestStreak">0</big><small data-i18n="stats.bestStreak">🏆 Miglior streak</small></div>
 		</div>
 
-		<p style="font-size: 12px; color: var(--color-text-muted); margin-top: 10px;">*Il calcolo parte dalla tua prima J inserita. (<span id="diffDays">0</span> giorni fa)</p>
-		<button class="action-btn" onclick="openWrapped()" style="width:100%; margin-top:15px; background: linear-gradient(135deg,#9c27b0,#6a1b9a); color:white;">🎉 Riepilogo Annuale</button>
+		<p style="font-size: 12px; color: var(--color-text-muted); margin-top: 10px;"><span id="streakFootnoteText">*Il calcolo parte dalla tua prima J inserita. (<span id="diffDays">0</span> giorni fa)</span></p>
+		<button class="action-btn" onclick="openWrapped()" style="width:100%; margin-top:15px; background: linear-gradient(135deg,#9c27b0,#6a1b9a); color:white;" data-i18n="stats.yearlyRecap">🎉 Riepilogo Annuale</button>
 
 		<div class="card">
-		    <h3>💡 Insight</h3>
+		    <h3 data-i18n="stats.insight">💡 Insight</h3>
 		    <div id="insightsList"></div>
 		</div>
 
 		<div class="card">
-		    <h3>🏷️ Contesto & Umore</h3>
+		    <h3 data-i18n="stats.contextAndMood">🏷️ Contesto & Umore</h3>
 		    <div id="contextStatsList"></div>
 		</div>
 		<div class="card">
-		    <h3>🏅 Traguardi</h3>
+		    <h3 data-i18n="stats.achievements">🏅 Traguardi</h3>
 		    <div id="achievementsList"></div>
 		</div>
 		<div class="card">
-		    <h3>💤 Pausa / Tolleranza</h3>
+		    <h3 data-i18n="stats.breakTolerance">💤 Pausa / Tolleranza</h3>
 		    <div id="breakCard"></div>
 		    <div id="breakHistory"></div>
 		</div>
 		<div class="card">
-		    <h3>🎯 Obiettivo Personale</h3>
+		    <h3 data-i18n="stats.personalGoal">🎯 Obiettivo Personale</h3>
 		    <div id="goalCard"></div>
 		</div>
 	</div>
@@ -345,45 +347,45 @@
 <!-- PAGINA GRAFICI -->
 <div id="page-charts" class="page">
 	<div class="card">
-		<h3>🗓️ Calendario Consumi (ultimi 12 mesi)</h3>
+		<h3 data-i18n="charts.calendarHeatmap">🗓️ Calendario Consumi (ultimi 12 mesi)</h3>
 		<div style="overflow-x:auto; padding-bottom:6px;">
 			<div id="calendarHeatmap"></div>
 		</div>
 		<div style="display:flex; align-items:center; gap:6px; margin-top:10px; font-size:11px; color:var(--color-text-muted); justify-content:flex-end;">
-			<span>Meno</span>
+			<span data-i18n="charts.less">Meno</span>
 			<span id="heatmapLegend" style="display:flex; gap:3px;"></span>
-			<span>Più</span>
+			<span data-i18n="charts.more">Più</span>
 		</div>
 	</div>
 
 	<div class="card">
-		<h3>📅 Joint per Giorno (Storico Completo)</h3>
+		<h3 data-i18n="charts.jointsPerDay">📅 Joint per Giorno (Storico Completo)</h3>
 		<div class="chart-container"><canvas id="cDailyAll"></canvas></div>
 	</div>
 
 	<div class="card">
-		<h3>📊 Consumo Grammi (Ultimi 7gg)</h3>
+		<h3 data-i18n="charts.gramsConsumption">📊 Consumo Grammi (Ultimi 7gg)</h3>
 		<div class="chart-container"><canvas id="cWeight"></canvas></div>
 	</div>
 
 	<div class="card">
-		<h3>📈 Giorni della Settimana</h3>
+		<h3 data-i18n="charts.weekDays">📈 Giorni della Settimana</h3>
 		<div class="chart-container"><canvas id="cWeekDays"></canvas></div>
 	</div>
 
 	<div class="card">
-		<h3>⏰ Fasce Orarie</h3>
+		<h3 data-i18n="charts.timeSlots">⏰ Fasce Orarie</h3>
 		<div class="chart-container"><canvas id="cTime"></canvas></div>
 	</div>
 
 	<div class="card">
-		<h3>🥦 Differenza Fumo/Erba</h3>
+		<h3 data-i18n="charts.smokeWeedDiff">🥦 Differenza Fumo/Erba</h3>
 		<div class="chart-container"><canvas id="cPie"></canvas></div>
 	</div>
 
 	<div class="card">
-		<h3>💰 Spesa Mensile</h3>
-		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Il costo di ogni acquisto è spalmato sui mesi in cui è stato davvero consumato, non su quello in cui l'hai comprato.</p>
+		<h3 data-i18n="charts.monthlySpending">💰 Spesa Mensile</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" data-i18n="charts.spendingNote">Il costo di ogni acquisto è spalmato sui mesi in cui è stato davvero consumato, non su quello in cui l'hai comprato.</p>
 		<div class="chart-container"><canvas id="cSpending"></canvas></div>
 	</div>
 </div>
@@ -391,61 +393,61 @@
 <!-- PAGINA MAPPA / LUOGHI -->
 <div id="page-map" class="page">
 	<div class="card">
-		<h3>🗺️ Mappa delle Sessioni</h3>
+		<h3 data-i18n="places.sessionsMap">🗺️ Mappa delle Sessioni</h3>
 		<div id="mapContainer"></div>
 
-		<label>Filtra per tipo</label>
+		<label data-i18n="places.filterByType">Filtra per tipo</label>
 		<div class="grams-row" style="margin-bottom: 20px;">
-			<label><input type="radio" name="mapFilter" value="all" checked onclick="updateMap()"> Tutte</label>
-			<label><input type="radio" name="mapFilter" value="fumo" onclick="updateMap()"> 🍫 Fumo</label>
-			<label><input type="radio" name="mapFilter" value="erba" onclick="updateMap()"> 🍃 Erba</label>
+			<label><input type="radio" name="mapFilter" value="all" checked onclick="updateMap()"> <span data-i18n="places.all">Tutte</span></label>
+			<label><input type="radio" name="mapFilter" value="fumo" onclick="updateMap()"> <span data-i18n="common.smoke">🍫 Fumo</span></label>
+			<label><input type="radio" name="mapFilter" value="erba" onclick="updateMap()"> <span data-i18n="common.weed">🍃 Erba</span></label>
 		</div>
 
 		<div id="mapStats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"></div>
 	</div>
 
 	<div class="card">
-	    <h3>📍 I tuoi Posti</h3>
-	    <p style="font-size: 12px; color: var(--color-text-secondary);">Salva la posizione attuale o cercane una manualmente.</p>
+	    <h3 data-i18n="places.yourPlaces">📍 I tuoi Posti</h3>
+	    <p style="font-size: 12px; color: var(--color-text-secondary);" data-i18n="places.saveCurrentOrSearch">Salva la posizione attuale o cercane una manualmente.</p>
 
-	    <input type="text" id="newPlaceName" placeholder="Nome (es. Casa, Spot...)">
+	    <input type="text" id="newPlaceName" data-i18n-placeholder="places.namePlaceholder" placeholder="Nome (es. Casa, Spot...)">
 
 	    <!-- Metodo 1: GPS attuale -->
 	    <div style="display:flex; gap:10px; margin-top:10px;">
-	        <button class="action-btn" onclick="addNewPlace()" style="flex:1;">📍 Usa posizione attuale</button>
-	        <button class="action-btn" onclick="toggleAdvancedSearch()" id="btnToggleAdvanced" style="flex:1;">🗺️ Cerca sulla mappa</button>
+	        <button class="action-btn" onclick="addNewPlace()" style="flex:1;" data-i18n="places.useCurrentLocation">📍 Usa posizione attuale</button>
+	        <button class="action-btn" onclick="toggleAdvancedSearch()" id="btnToggleAdvanced" style="flex:1;" data-i18n="places.searchOnMap">🗺️ Cerca sulla mappa</button>
 	    </div>
 		<div id="userPlacesList" style="margin-top: 15px;"></div>
 	    <div id="advancedPlaceSearch" style="display:none;">
 	    <hr>
 
 	    <!-- Metodo 2: Cerca indirizzo -->
-	    <label>🔍 Cerca un indirizzo</label>
+	    <label data-i18n="places.searchAddress">🔍 Cerca un indirizzo</label>
 	    <div style="display:flex; gap:10px;">
-	        <input type="text" id="searchAddressInput" placeholder="Via Roma 1, Torino..." style="margin-top:0; flex:1;">
-	        <button class="action-btn" onclick="searchAddress()" style="margin-top:0; white-space:nowrap;">Cerca</button>
+	        <input type="text" id="searchAddressInput" data-i18n-placeholder="places.addressPlaceholder" placeholder="Via Roma 1, Torino..." style="margin-top:0; flex:1;">
+	        <button class="action-btn" onclick="searchAddress()" style="margin-top:0; white-space:nowrap;" data-i18n="places.search">Cerca</button>
 	    </div>
 
 	    <!-- Metodo 3: Mappa cliccabile -->
-	    <label>🗺️ Oppure clicca sulla mappa</label>
+	    <label data-i18n="places.orClickOnMap">🗺️ Oppure clicca sulla mappa</label>
 	    <div id="addPlaceMap" style="width:100%; height:250px; border-radius:12px; margin-top:8px; overflow:hidden;"></div>
-	    <div id="selectedPinInfo" style="display:none; font-size:12px; color:var(--primary); margin-top:6px; text-align:center; font-weight:600;">
+	    <div id="selectedPinInfo" style="display:none; font-size:12px; color:var(--primary); margin-top:6px; text-align:center; font-weight:600;" data-i18n="places.pointSelected">
 	        📌 Punto selezionato
 	    </div>
 
-	    <button class="action-btn" id="btnSaveFromMap" onclick="addPlaceFromMap()" style="width:100%; margin-top:10px; display:none;">📌 Salva punto sulla mappa</button>
+	    <button class="action-btn" id="btnSaveFromMap" onclick="addPlaceFromMap()" style="width:100%; margin-top:10px; display:none;" data-i18n="places.savePointOnMap">📌 Salva punto sulla mappa</button>
 	    </div>
 	</div>
 
 	<div class="card">
-	    <h3>🔄 Aggiorna Sessioni Vecchie</h3>
-	    <p style="font-size: 12px; color: var(--color-text-secondary);">Collega le sessioni passate ai posti salvati in base alla posizione GPS.</p>
-	    <button class="action-btn" onclick="fixOldSessions()" style="width:100%;">🔄 Aggiorna Sessioni</button>
+	    <h3 data-i18n="places.updateOldSessions">🔄 Aggiorna Sessioni Vecchie</h3>
+	    <p style="font-size: 12px; color: var(--color-text-secondary);" data-i18n="places.linkPastSessions">Collega le sessioni passate ai posti salvati in base alla posizione GPS.</p>
+	    <button class="action-btn" onclick="fixOldSessions()" style="width:100%;" data-i18n="places.updateSessions">🔄 Aggiorna Sessioni</button>
 	    <p id="fixStatus" style="font-size: 13px; text-align:center; margin-top: 10px; color: var(--primary);"></p>
 	</div>
 
 	<div class="card">
-	    <h3>📊 Statistiche per Posto</h3>
+	    <h3 data-i18n="places.statsByPlace">📊 Statistiche per Posto</h3>
 	    <div id="statsPlaces"></div>
 	</div>
 </div>
@@ -455,29 +457,29 @@
 	<div class="card" id="friendRequestsList" style="display:none;"></div>
 
 	<div class="card">
-		<h3>👥 Aggiungi un Amico</h3>
-		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Invia una richiesta: potrà vedere le tue statistiche e foto solo se l'accetta.</p>
+		<h3 data-i18n="social.addFriend">👥 Aggiungi un Amico</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" data-i18n="social.addFriendNote">Invia una richiesta: potrà vedere le tue statistiche e foto solo se l'accetta.</p>
 		<div style="display: flex; gap: 10px;">
-			<input type="text" id="friendUsername" placeholder="Nickname dell'amico" style="margin-top: 0; flex: 1;">
-			<button class="action-btn" onclick="addFriend()" style="margin-top: 0; width: 80px;">Aggiungi</button>
+			<input type="text" id="friendUsername" data-i18n-placeholder="social.friendNicknamePlaceholder" placeholder="Nickname dell'amico" style="margin-top: 0; flex: 1;">
+			<button class="action-btn" onclick="addFriend()" style="margin-top: 0; width: 80px;" data-i18n="social.add">Aggiungi</button>
 		</div>
 	</div>
 
 	<div class="card">
-		<h3>📸 Istantanee</h3>
-		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Le foto più recenti tue e degli amici che hai aggiunto.</p>
+		<h3 data-i18n="social.snapshots">📸 Istantanee</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" data-i18n="social.snapshotsNote">Le foto più recenti tue e degli amici che hai aggiunto.</p>
 		<div id="snapshotsGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;"></div>
 	</div>
 
 	<div class="card">
 		<div class="tabs-social">
-			<button id="tab-global" class="active" onclick="switchSocialTab('global')">🌍 Mondiale</button>
-			<button id="tab-friends" onclick="switchSocialTab('friends')">👥 Amici</button>
-			<button id="tab-shared" onclick="switchSocialTab('shared')">🤝 Insieme</button>
+			<button id="tab-global" class="active" onclick="switchSocialTab('global')" data-i18n="social.tabGlobal">🌍 Mondiale</button>
+			<button id="tab-friends" onclick="switchSocialTab('friends')" data-i18n="social.tabFriends">👥 Amici</button>
+			<button id="tab-shared" onclick="switchSocialTab('shared')" data-i18n="social.tabShared">🤝 Insieme</button>
 		</div>
 		<div id="sharedPeriodToggle" style="display:none; gap:8px; margin-bottom:15px;">
-			<button class="action-btn" id="periodMonthBtn" onclick="setSharedPeriod('month')" style="flex:1; margin-top:0;">Questo mese</button>
-			<button class="secondary-btn" id="periodAllBtn" onclick="setSharedPeriod('all')" style="flex:1; margin-top:0;">Sempre</button>
+			<button class="action-btn" id="periodMonthBtn" onclick="setSharedPeriod('month')" style="flex:1; margin-top:0;" data-i18n="social.thisMonth">Questo mese</button>
+			<button class="secondary-btn" id="periodAllBtn" onclick="setSharedPeriod('all')" style="flex:1; margin-top:0;" data-i18n="social.always">Sempre</button>
 		</div>
 		<div id="leaderboardList"></div>
 	</div>
@@ -486,14 +488,14 @@
 <!-- MODAL STATISTICHE AMICO -->
 <div id="friendModal" class="modal">
 	<div class="modal-content card">
-		<h3 id="modalFriendName">Statistiche</h3>
+		<h3 id="modalFriendName" data-i18n="social.stats">Statistiche</h3>
 		<div class="stat-grid" style="margin-bottom: 20px;">
-			<div class="stat-box"><big id="modaleFumo">0</big><small>g Fumo</small></div>
-			<div class="stat-box"><big id="modaleErba">0</big><small>g Erba</small></div>
+			<div class="stat-box"><big id="modaleFumo">0</big><small data-i18n="social.gSmoke">g Fumo</small></div>
+			<div class="stat-box"><big id="modaleErba">0</big><small data-i18n="social.gWeed">g Erba</small></div>
 		</div>
 		<p id="modaleShared" style="text-align:center; font-size:13px; color:var(--color-text-muted); margin-top:-8px; margin-bottom:15px;"></p>
-		<button class="secondary-btn" onclick="closeFriendModal()">Chiudi</button>
-		<button class="action-btn" id="btnRemoveFriendModal" onclick="removeFriendFromModal()" style="width:100%; margin-top:8px; display:none; background:var(--danger); color:white;">🗑️ Rimuovi amicizia</button>
+		<button class="secondary-btn" onclick="closeFriendModal()" data-i18n="social.close">Chiudi</button>
+		<button class="action-btn" id="btnRemoveFriendModal" onclick="removeFriendFromModal()" style="width:100%; margin-top:8px; display:none; background:var(--danger); color:white;" data-i18n="social.removeFriendship">🗑️ Rimuovi amicizia</button>
 	</div>
 </div>
 
@@ -503,28 +505,28 @@
 
   <!-- SCORTA ATTIVA FUMO -->
   <div class="card">
-    <h3>🍫 Scorta Fumo</h3>
+    <h3 data-i18n="stock.smokeStock">🍫 Scorta Fumo</h3>
     <div id="stockFumoDisplay">
-      <p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna scorta attiva</p>
+      <p style="text-align:center; color:var(--color-text-muted); font-size:13px;" data-i18n="stock.noActiveStock">Nessuna scorta attiva</p>
     </div>
-    <button class="action-btn" onclick="openBuyModal('fumo')" style="width:100%; margin-top:10px;">+ Registra acquisto</button>
-    <button id="btnCloseFumo" onclick="closeStock('fumo')" style="display:none; background:none; border:none; color:var(--danger); width:100%; margin-top:8px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Ho finito la scorta di fumo</button>
+    <button class="action-btn" onclick="openBuyModal('fumo')" style="width:100%; margin-top:10px;" data-i18n="stock.registerPurchase">+ Registra acquisto</button>
+    <button id="btnCloseFumo" onclick="closeStock('fumo')" style="display:none; background:none; border:none; color:var(--danger); width:100%; margin-top:8px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;" data-i18n="stock.outOfSmokeStock">⚠️ Ho finito la scorta di fumo</button>
   </div>
 
   <!-- SCORTA ATTIVA ERBA -->
   <div class="card">
-    <h3>🍃 Scorta Erba</h3>
+    <h3 data-i18n="stock.weedStock">🍃 Scorta Erba</h3>
     <div id="stockErbaDisplay">
-      <p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna scorta attiva</p>
+      <p style="text-align:center; color:var(--color-text-muted); font-size:13px;" data-i18n="stock.noActiveStock">Nessuna scorta attiva</p>
     </div>
-    <button class="action-btn" onclick="openBuyModal('erba')" style="width:100%; margin-top:10px;">+ Registra acquisto</button>
-    <button id="btnCloseErba" onclick="closeStock('erba')" style="display:none; background:none; border:none; color:var(--danger); width:100%; margin-top:8px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Ho finito la scorta di erba</button>
+    <button class="action-btn" onclick="openBuyModal('erba')" style="width:100%; margin-top:10px;" data-i18n="stock.registerPurchase">+ Registra acquisto</button>
+    <button id="btnCloseErba" onclick="closeStock('erba')" style="display:none; background:none; border:none; color:var(--danger); width:100%; margin-top:8px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;" data-i18n="stock.outOfWeedStock">⚠️ Ho finito la scorta di erba</button>
   </div>
 
   <!-- STORICO ACQUISTI -->
   <div class="card">
-    <h3>📋 Storico Acquisti</h3>
-    <div id="purchaseHistory"><p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessun acquisto registrato.</p></div>
+    <h3 data-i18n="stock.purchaseHistory">📋 Storico Acquisti</h3>
+    <div id="purchaseHistory"><p style="text-align:center; color:var(--color-text-muted); font-size:13px;" data-i18n="stock.noPurchasesRegistered">Nessun acquisto registrato.</p></div>
   </div>
 
 </div>
@@ -532,23 +534,23 @@
 <!-- MODAL ACQUISTO -->
 <div id="buyModal" class="modal">
   <div class="modal-content card">
-    <h3 id="buyModalTitle">Registra acquisto</h3>
+    <h3 id="buyModalTitle" data-i18n="stock.registerPurchaseTitle">Registra acquisto</h3>
 
-    <label>Grammi acquistati</label>
-    <input type="number" id="buyGrams" step="0.1" min="0.1" placeholder="es. 5">
+    <label data-i18n="stock.gramsBought">Grammi acquistati</label>
+    <input type="number" id="buyGrams" step="0.1" min="0.1" data-i18n-placeholder="stock.gramsBoughtPlaceholder" placeholder="es. 5">
 
-    <label>Prezzo (opzionale)</label>
+    <label data-i18n="stock.price">Prezzo (opzionale)</label>
     <div style="position:relative;">
-      <input type="number" id="buyPrice" step="0.5" min="0" placeholder="es. 30" style="padding-right:40px;">
+      <input type="number" id="buyPrice" step="0.5" min="0" data-i18n-placeholder="stock.pricePlaceholder" placeholder="es. 30" style="padding-right:40px;">
       <span style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--color-text-muted); font-size:14px; margin-top:4px;">€</span>
     </div>
 
-    <label>Data acquisto</label>
+    <label data-i18n="stock.purchaseDate">Data acquisto</label>
     <input type="date" id="buyDate">
 
     <div style="display:flex; gap:10px; margin-top:15px;">
-      <button class="secondary-btn" onclick="closeBuyModal()" style="flex:1; margin-top:0;">Annulla</button>
-      <button class="main-btn" onclick="savePurchase()" style="flex:1; margin-top:0;">💾 Salva</button>
+      <button class="secondary-btn" onclick="closeBuyModal()" style="flex:1; margin-top:0;" data-i18n="common.cancel">Annulla</button>
+      <button class="main-btn" onclick="savePurchase()" style="flex:1; margin-top:0;" data-i18n="common.save">💾 Salva</button>
     </div>
   </div>
 </div>
@@ -556,9 +558,9 @@
 <!-- MODAL RIEPILOGO ANNUALE -->
 <div id="wrappedModal" class="modal">
   <div class="modal-content card" style="max-height:85vh; overflow-y:auto;">
-    <h3 id="wrappedTitle">🎉 Il tuo anno</h3>
+    <h3 id="wrappedTitle" data-i18n="modals.wrappedTitle">🎉 Il tuo anno</h3>
     <div id="wrappedContent"></div>
-    <button class="secondary-btn" onclick="closeWrapped()" style="margin-top:15px;">Chiudi</button>
+    <button class="secondary-btn" onclick="closeWrapped()" style="margin-top:15px;" data-i18n="common.close">Chiudi</button>
   </div>
 </div>
 
@@ -568,9 +570,9 @@
     <div id="tutorialSlide"></div>
     <div style="display:flex; justify-content:center; gap:6px; margin:15px 0;" id="tutorialDots"></div>
     <div style="display:flex; gap:10px;">
-      <button class="secondary-btn" id="tutorialSkipBtn" onclick="skipTutorial()" style="flex:1; margin-top:0;">Salta</button>
-      <button class="secondary-btn" id="tutorialPrevBtn" onclick="tutorialPrev()" style="flex:1; margin-top:0; display:none;">← Indietro</button>
-      <button class="main-btn" id="tutorialNextBtn" onclick="tutorialNext()" style="flex:1; margin-top:0;">Avanti →</button>
+      <button class="secondary-btn" id="tutorialSkipBtn" onclick="skipTutorial()" style="flex:1; margin-top:0;" data-i18n="modals.tutorialSkip">Salta</button>
+      <button class="secondary-btn" id="tutorialPrevBtn" onclick="tutorialPrev()" style="flex:1; margin-top:0; display:none;" data-i18n="modals.tutorialBack">← Indietro</button>
+      <button class="main-btn" id="tutorialNextBtn" onclick="tutorialNext()" style="flex:1; margin-top:0;" data-i18n="modals.tutorialNext">Avanti →</button>
     </div>
   </div>
 </div>
@@ -581,8 +583,8 @@
     <img id="photoViewerImg" style="width:100%; border-radius:12px; max-height:60vh; object-fit:contain; background:#000; display:block;">
     <div id="photoViewerInfo" style="margin-top:12px; font-size:14px;"></div>
     <div style="display:flex; gap:10px; margin-top:15px;">
-      <button class="secondary-btn" onclick="closePhotoViewer()" style="flex:1; margin-top:0;">Chiudi</button>
-      <button class="action-btn" id="photoViewerDeleteBtn" onclick="deletePhotoFromViewer()" style="flex:1; margin-top:0; background:var(--danger); color:white;">🗑️ Rimuovi foto</button>
+      <button class="secondary-btn" onclick="closePhotoViewer()" style="flex:1; margin-top:0;" data-i18n="common.close">Chiudi</button>
+      <button class="action-btn" id="photoViewerDeleteBtn" onclick="deletePhotoFromViewer()" style="flex:1; margin-top:0; background:var(--danger); color:white;" data-i18n="modals.removePhoto">🗑️ Rimuovi foto</button>
     </div>
   </div>
 </div>
@@ -590,19 +592,19 @@
 <!-- MODAL MODIFICA POSIZIONE -->
 <div id="editLocationModal" class="modal">
   <div class="modal-content card">
-    <h3>📍 Modifica posizione</h3>
+    <h3 data-i18n="modals.editLocation">📍 Modifica posizione</h3>
     <p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" id="editLocationSessionInfo"></p>
 
     <div id="editLocationPlacesList" style="margin:10px 0;"></div>
 
-    <button class="action-btn" onclick="useCurrentLocationForEdit()" style="width:100%;">📍 Usa posizione attuale (GPS)</button>
+    <button class="action-btn" onclick="useCurrentLocationForEdit()" style="width:100%;" data-i18n="modals.useCurrentLocationGps">📍 Usa posizione attuale (GPS)</button>
 
-    <label style="margin-top:12px;">Oppure scrivi/modifica il nome</label>
-    <input type="text" id="editLocationManualInput" placeholder="Nome del posto">
+    <label style="margin-top:12px;" data-i18n="modals.orWritePlaceName">Oppure scrivi/modifica il nome</label>
+    <input type="text" id="editLocationManualInput" data-i18n-placeholder="modals.placeNamePlaceholder" placeholder="Nome del posto">
 
     <div style="display:flex; gap:10px; margin-top:15px;">
-      <button class="secondary-btn" onclick="closeEditLocationModal()" style="flex:1; margin-top:0;">Annulla</button>
-      <button class="main-btn" onclick="saveEditedLocation()" style="flex:1; margin-top:0;">💾 Salva</button>
+      <button class="secondary-btn" onclick="closeEditLocationModal()" style="flex:1; margin-top:0;" data-i18n="common.cancel">Annulla</button>
+      <button class="main-btn" onclick="saveEditedLocation()" style="flex:1; margin-top:0;" data-i18n="common.save">💾 Salva</button>
     </div>
   </div>
 </div>
@@ -610,13 +612,13 @@
 <!-- MODAL DISCREPANZA -->
 <div id="discrepancyModal" class="modal">
   <div class="modal-content card">
-    <h3>⚠️ Discrepanza rilevata</h3>
+    <h3 data-i18n="modals.discrepancyDetected">⚠️ Discrepanza rilevata</h3>
     <p id="discrepancyText" style="font-size:14px; line-height:1.6; color:var(--color-text-secondary);"></p>
 
     <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
-      <button class="main-btn" onclick="fixProportional()" style="margin-top:0;">⚖️ Scala proporzionalmente</button>
-      <button class="action-btn" onclick="fixManual()" style="margin-top:0; background: linear-gradient(135deg,#FF9800,#E65100);">✏️ Correggi manualmente</button>
-      <button class="secondary-btn" onclick="closeDiscrepancyModal()" style="margin-top:0;">Annulla</button>
+      <button class="main-btn" onclick="fixProportional()" style="margin-top:0;" data-i18n="modals.scaleProportionally">⚖️ Scala proporzionalmente</button>
+      <button class="action-btn" onclick="fixManual()" style="margin-top:0; background: linear-gradient(135deg,#FF9800,#E65100);" data-i18n="modals.fixManually">✏️ Correggi manualmente</button>
+      <button class="secondary-btn" onclick="closeDiscrepancyModal()" style="margin-top:0;" data-i18n="common.cancel">Annulla</button>
     </div>
   </div>
 </div>
@@ -624,12 +626,12 @@
 <!-- MODAL CORREZIONE MANUALE -->
 <div id="manualFixModal" class="modal">
   <div class="modal-content card" style="max-height:80vh; overflow-y:auto;">
-    <h3>✏️ Correggi sessioni</h3>
+    <h3 data-i18n="modals.fixSessionsTitle">✏️ Correggi sessioni</h3>
     <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:15px;" id="manualFixHint"></p>
     <div id="manualFixList"></div>
     <div style="display:flex; gap:10px; margin-top:15px;">
-      <button class="secondary-btn" onclick="closeManualFix()" style="flex:1; margin-top:0;">Annulla</button>
-      <button class="main-btn" onclick="saveManualFix()" style="flex:1; margin-top:0;">💾 Salva correzioni</button>
+      <button class="secondary-btn" onclick="closeManualFix()" style="flex:1; margin-top:0;" data-i18n="common.cancel">Annulla</button>
+      <button class="main-btn" onclick="saveManualFix()" style="flex:1; margin-top:0;" data-i18n="modals.saveCorrections">💾 Salva correzioni</button>
     </div>
   </div>
 </div>
@@ -638,65 +640,74 @@
 <!-- PAGINA IMPOSTAZIONI -->
 <div id="page-settings" class="page">
 	<div class="card">
-		<h3>👤 Profilo</h3>
-		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Loggato come <strong id="settingsEmailDisplay">...</strong></p>
-		<p>Il tuo nickname attuale: <strong id="currentUsernameDisplay" style="color: var(--primary);">...</strong></p>
+		<h3 data-i18n="settings.profile">👤 Profilo</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;"><span data-i18n="settings.loggedInAs">Loggato come</span> <strong id="settingsEmailDisplay">...</strong></p>
+		<p><span data-i18n="settings.currentNickname">Il tuo nickname attuale:</span> <strong id="currentUsernameDisplay" style="color: var(--primary);">...</strong></p>
 
-		<label for="usernameInput">Cambia Nickname</label>
-		<input type="text" id="usernameInput" placeholder="Nuovo nickname">
-		<button class="action-btn" onclick="updateProfile()">Aggiorna Nome</button>
+		<label for="usernameInput" data-i18n="settings.changeNickname">Cambia Nickname</label>
+		<input type="text" id="usernameInput" data-i18n-placeholder="settings.newNicknamePlaceholder" placeholder="Nuovo nickname">
+		<button class="action-btn" onclick="updateProfile()" data-i18n="settings.updateName">Aggiorna Nome</button>
 	</div>
 
 	<div class="card">
-		<h3>❓ Guida</h3>
-		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Un ripasso veloce delle funzioni principali dell'app.</p>
-		<button class="action-btn" onclick="openTutorial()" style="width:100%;">🎓 Rivedi il tutorial</button>
+		<h3 data-i18n="settings.help">❓ Guida</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" data-i18n="settings.helpNote">Un ripasso veloce delle funzioni principali dell'app.</p>
+		<button class="action-btn" onclick="openTutorial()" style="width:100%;" data-i18n="settings.reviewTutorial">🎓 Rivedi il tutorial</button>
 	</div>
 
 	<div class="card">
-		<h3>🎨 Aspetto</h3>
-		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Scegli il tema dell'app.</p>
+		<h3 data-i18n="settings.appearance">🎨 Aspetto</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" data-i18n="settings.appearanceNote">Scegli il tema dell'app.</p>
 		<div class="grams-row" id="themeOptions">
-			<label><input type="radio" name="themeChoice" value="light" onchange="setTheme('light')"> ☀️ Chiaro</label>
-			<label><input type="radio" name="themeChoice" value="dark" onchange="setTheme('dark')"> 🌙 Scuro</label>
-			<label><input type="radio" name="themeChoice" value="auto" onchange="setTheme('auto')"> 🔄 Automatico</label>
+			<label><input type="radio" name="themeChoice" value="light" onchange="setTheme('light')"> <span data-i18n="settings.themeLight">☀️ Chiaro</span></label>
+			<label><input type="radio" name="themeChoice" value="dark" onchange="setTheme('dark')"> <span data-i18n="settings.themeDark">🌙 Scuro</span></label>
+			<label><input type="radio" name="themeChoice" value="auto" onchange="setTheme('auto')"> <span data-i18n="settings.themeAuto">🔄 Automatico</span></label>
 		</div>
 	</div>
 
 	<div class="card">
-		<h3>🔔 Notifiche & Promemoria</h3>
+		<h3 data-i18n="settings.language">🌐 Lingua</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" data-i18n="settings.languageNote">Scegli la lingua dell'app.</p>
+		<div class="grams-row" id="languageOptions">
+			<label><input type="radio" name="languageChoice" value="it" onchange="setLocale('it')"> <span data-i18n="settings.langItalian">🇮🇹 Italiano</span></label>
+			<label><input type="radio" name="languageChoice" value="en" onchange="setLocale('en')"> <span data-i18n="settings.langEnglish">🇬🇧 English</span></label>
+		</div>
+	</div>
+
+	<div class="card">
+		<h3 data-i18n="settings.notificationsReminders">🔔 Notifiche & Promemoria</h3>
 		<label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
-			<span style="font-size:14px; font-weight:600; color:var(--color-text-secondary);">Attiva promemoria giornaliero</span>
+			<span style="font-size:14px; font-weight:600; color:var(--color-text-secondary);" data-i18n="settings.enableDailyReminder">Attiva promemoria giornaliero</span>
 			<input type="checkbox" id="reminderEnabledCheck" style="width:20px; height:20px; margin:0; accent-color: var(--primary-light);">
 		</label>
 
-		<label for="reminderTimeInput">Orario promemoria</label>
+		<label for="reminderTimeInput" data-i18n="settings.reminderTime">Orario promemoria</label>
 		<input type="time" id="reminderTimeInput" value="20:00">
 
-		<button class="action-btn" onclick="saveReminderSettings()" style="width:100%; margin-top:15px;">💾 Salva Preferenze</button>
+		<button class="action-btn" onclick="saveReminderSettings()" style="width:100%; margin-top:15px;" data-i18n="settings.savePreferences">💾 Salva Preferenze</button>
 
 		<hr>
 
-		<p style="font-size:12px; color:var(--color-text-secondary);">Per ricevere notifiche push anche ad app chiusa, attivale sul dispositivo:</p>
-		<button class="action-btn" id="btnEnablePush" onclick="enablePushNotifications()" style="width:100%; background: linear-gradient(135deg, #FF9800, #E65100);">🔔 Attiva Notifiche Push</button>
+		<p style="font-size:12px; color:var(--color-text-secondary);" data-i18n="settings.pushNote">Per ricevere notifiche push anche ad app chiusa, attivale sul dispositivo:</p>
+		<button class="action-btn" id="btnEnablePush" onclick="enablePushNotifications()" style="width:100%; background: linear-gradient(135deg, #FF9800, #E65100);" data-i18n="settings.enablePush">🔔 Attiva Notifiche Push</button>
 		<p id="pushStatus" style="font-size:12px; text-align:center; margin-top:8px; color:var(--color-text-muted);"></p>
 
 		<hr>
-		<label style="margin-top:0;">📱 Dispositivi con notifiche attive</label>
+		<label style="margin-top:0;" data-i18n="settings.devicesWithPush">📱 Dispositivi con notifiche attive</label>
 		<div id="pushDevicesList" style="margin-top:8px;"></div>
 	</div>
 
 
-	
+
 	<div class="card">
-		<h3>☁️ Backup Automatici</h3>
-		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;">Un backup di sicurezza gira automaticamente ogni settimana lato server (contenuto non scaricabile qui per motivi di privacy: include dati aggregati di tutti gli utenti).</p>
+		<h3 data-i18n="settings.automaticBackups">☁️ Backup Automatici</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" data-i18n="settings.automaticBackupsNote">Un backup di sicurezza gira automaticamente ogni settimana lato server (contenuto non scaricabile qui per motivi di privacy: include dati aggregati di tutti gli utenti).</p>
 		<div id="backupStatusList"></div>
 	</div>
 
 	<div class="card">
-		<button onclick="resetAll()" style="background:none; border:none; color:var(--danger); width:100%; margin-bottom:15px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;">⚠️ Reset completo dati</button>
-		<button class="secondary-btn" onclick="logout()" style="background:var(--danger)">🚪 Logout</button>
+		<button onclick="resetAll()" style="background:none; border:none; color:var(--danger); width:100%; margin-bottom:15px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;" data-i18n="settings.fullReset">⚠️ Reset completo dati</button>
+		<button class="secondary-btn" onclick="logout()" style="background:var(--danger)" data-i18n="settings.logout">🚪 Logout</button>
 	</div>
 </div>
 
