@@ -3573,7 +3573,7 @@ function renderStockPrediction(type) {
 
 	const dailyRate = computeDailyRate(type);
 	if (dailyRate <= 0) {
-		return `<p style="font-size:12px; color:var(--color-text-muted); margin-top:10px; text-align:center;">⏳ Consumo troppo basso negli ultimi 14gg per stimare la durata</p>`;
+		return `<p style="font-size:12px; color:var(--color-text-muted); margin-top:10px; text-align:center;">${t('stock.consumptionTooLowToEstimate')}</p>`;
 	}
 
 	const daysLeft = Math.round(remaining / dailyRate);
@@ -3586,7 +3586,7 @@ function renderStockPrediction(type) {
 	return `
 		<div style="background:rgba(var(--overlay-rgb),0.05); border-radius:10px; padding:10px; margin-top:10px; text-align:center;">
 			<span style="font-size:13px; color:${urgencyColor}; font-weight:600;">
-				⏳ Al ritmo attuale, dura ancora ~${daysLeft} giorni (fino al ${dateStr})
+				${tn('stock.durationEstimate', daysLeft, { days: daysLeft, date: dateStr })}
 			</span>
 		</div>
 	`;
@@ -3611,7 +3611,7 @@ function renderStockCard(type, stock) {
     const openPurchases = getOpenPurchasesFIFO(type);
 
     if (openPurchases.length === 0) {
-        displayEl.innerHTML = `<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna scorta attiva</p>`;
+        displayEl.innerHTML = `<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">${t('stock.noActiveStock')}</p>`;
         if (closeBtn) closeBtn.style.display = 'none';
         return;
     }
@@ -3630,31 +3630,31 @@ function renderStockCard(type, stock) {
         const barColor = pct > 50 ? '#4CAF50' : pct > 20 ? '#FF9800' : '#f44336';
 
         const oldestLabel = isOldest && openPurchases.length > 1
-            ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:2px 8px; border-radius:20px; margin-left:6px;">In uso</span>`
+            ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:2px 8px; border-radius:20px; margin-left:6px;">${t('stock.inUseBadge')}</span>`
             : '';
 
         html += `
             <div style="background:${colorLight}; border-radius:12px; padding:14px; margin-bottom:${idx < openPurchases.length-1 ? '12px' : '0'};">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <span style="font-size:13px; color:var(--color-text-secondary);">
-                        ${emoji} Acquisto del ${p.date.split('-').reverse().join('/')}${oldestLabel}
+                        ${emoji} ${t('stock.purchaseOfDate', { date: p.date.split('-').reverse().join('/') })}${oldestLabel}
                     </span>
                     <span style="font-weight:700; color:${color};">${p.grams}g${priceStr}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <span style="font-size:13px; color:var(--color-text-secondary);">Consumati</span>
+                    <span style="font-size:13px; color:var(--color-text-secondary);">${t('stock.consumedLabel')}</span>
                     <span style="font-weight:600; color:var(--color-text-secondary);">${consumed.toFixed(2)}g</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <span style="font-size:14px; font-weight:700; color:${color};">Rimanenti</span>
+                    <span style="font-size:14px; font-weight:700; color:${color};">${t('stock.remainingLabel')}</span>
                     <span style="font-size:18px; font-weight:800; color:${color};">${remaining.toFixed(2)}g</span>
                 </div>
                 <div style="background:rgba(var(--overlay-rgb),0.12); border-radius:8px; height:10px; overflow:hidden;">
                     <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:8px; transition: width 0.5s ease;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                    <span style="font-size:11px; color:var(--color-text-muted);">${pct.toFixed(0)}% rimanente</span>
-                    ${isOldest ? `<button onclick="closeStock('${type}', ${p.id})" style="background:none; border:none; color:var(--danger); font-size:12px; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0;">⚠️ Ho finito questa scorta</button>` : ''}
+                    <span style="font-size:11px; color:var(--color-text-muted);">${t('stock.percentRemaining', { pct: pct.toFixed(0) })}</span>
+                    ${isOldest ? `<button onclick="closeStock('${type}', ${p.id})" style="background:none; border:none; color:var(--danger); font-size:12px; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0;">${t('stock.outOfThisStock')}</button>` : ''}
                 </div>
             </div>
         `;
@@ -3715,18 +3715,18 @@ function renderPurchaseHistory() {
     if (!el) return;
 
     if (purchases.length === 0) {
-        el.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessun acquisto registrato.</p>';
+        el.innerHTML = `<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">${t('stock.noPurchasesRegistered')}</p>`;
         return;
     }
 
     el.innerHTML = purchases.map(p => {
         const emoji = p.type === 'fumo' ? '🍫' : '🍃';
-        const label = p.type === 'fumo' ? 'Fumo' : 'Erba';
+        const label = p.type === 'fumo' ? t('charts.labelSmoke') : t('charts.labelWeed');
         const priceStr = p.price ? ` · <span style="color:var(--warning);">€${p.price}</span>` : '';
 
         const statusStr = p.is_closed
-            ? `<span style="background:rgba(var(--overlay-rgb),0.08); color:var(--color-text-muted); font-size:11px; padding:2px 8px; border-radius:20px;">Chiusa</span>`
-            : `<span style="background:rgba(76,175,80,0.12); color:var(--primary); font-size:11px; padding:2px 8px; border-radius:20px;">Attiva</span>`;
+            ? `<span style="background:rgba(var(--overlay-rgb),0.08); color:var(--color-text-muted); font-size:11px; padding:2px 8px; border-radius:20px;">${t('stock.closedBadge')}</span>`
+            : `<span style="background:rgba(76,175,80,0.12); color:var(--primary); font-size:11px; padding:2px 8px; border-radius:20px;">${t('stock.activeBadge')}</span>`;
 
         let consumedStr = '–';
         let barHtml = '';
@@ -3736,7 +3736,7 @@ function renderPurchaseHistory() {
             const remaining = gramsRemainingForPurchase(p);
             const pct = Math.min(100, Math.max(0, (remaining / parseFloat(p.grams)) * 100));
             const barColor = pct > 50 ? '#4CAF50' : pct > 20 ? '#FF9800' : '#f44336';
-            consumedStr = `${consumed.toFixed(2)}g consumati · ${remaining.toFixed(2)}g rimanenti`;
+            consumedStr = t('stock.consumedRemainingLine', { consumed: consumed.toFixed(2), remaining: remaining.toFixed(2) });
             barHtml = `
                 <div style="background:rgba(var(--overlay-rgb),0.12); border-radius:6px; height:6px; overflow:hidden; margin-top:6px;">
                     <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:6px; transition: width 0.5s ease;"></div>
@@ -3744,7 +3744,7 @@ function renderPurchaseHistory() {
             `;
         } else if (p.closed_at) {
             const days = Math.max(0, Math.round((new Date(p.closed_at) - new Date(p.date)) / 86400000));
-            consumedStr = `Terminata il ${p.closed_at.split('-').reverse().join('/')} · durata: ${days} giorno${days === 1 ? '' : 'i'}`;
+            consumedStr = tn('stock.closedOnDuration', days, { date: p.closed_at.split('-').reverse().join('/'), days });
         }
 
         return `
@@ -3768,7 +3768,7 @@ function renderPurchaseHistory() {
 function openBuyModal(type) {
     currentBuyType = type;
     document.getElementById('buyModalTitle').textContent =
-        `Registra acquisto ${type === 'fumo' ? '🍫 Fumo' : '🍃 Erba'}`;
+        t('stock.buyModalTitleFor', { type: type === 'fumo' ? t('add.smoke') : t('add.weed') });
     document.getElementById('buyGrams').value = '';
     document.getElementById('buyPrice').value = '';
     document.getElementById('buyDate').value = new Date().toISOString().split('T')[0];
@@ -3785,13 +3785,14 @@ async function savePurchase() {
     const price = parseFloat(document.getElementById('buyPrice').value) || null;
     const date = document.getElementById('buyDate').value;
 
-    if (!grams || grams <= 0) return alert('Inserisci una quantità valida!');
-    if (!date) return alert('Inserisci una data!');
+    if (!grams || grams <= 0) return alert(t('stock.enterValidQuantity'));
+    if (!date) return alert(t('stock.enterDate'));
 
     // Se c'è già una scorta attiva dello stesso tipo, chiedi conferma
     const existing = currentBuyType === 'fumo' ? activeFumoStock : activeErbaStock;
     if (existing) {
-        if (!confirm(`Hai già una scorta di ${currentBuyType} attiva. Vuoi aggiungere un nuovo acquisto separato?`)) return;
+        const typeLabel = currentBuyType === 'fumo' ? t('stock.typeSmoke') : t('stock.typeWeed');
+        if (!confirm(t('stock.confirmAddSeparatePurchase', { type: typeLabel }))) return;
     }
 
     const { error } = await supabaseClient.from('purchases').insert({
@@ -3803,17 +3804,17 @@ async function savePurchase() {
         is_closed: false
     });
 
-    if (error) { alert('Errore nel salvataggio.'); return; }
+    if (error) { alert(t('stock.saveError')); return; }
 
     closeBuyModal();
-    showMessage('✅ Acquisto registrato!');
+    showMessage(t('stock.purchaseRegistered'));
     await loadPurchases();
 }
 
 async function deletePurchase(id) {
-    if (!confirm('Vuoi eliminare questo acquisto?')) return;
+    if (!confirm(t('stock.confirmDeletePurchase'))) return;
     const { error } = await supabaseClient.from('purchases').delete().eq('id', id);
-    if (!error) { showMessage('🗑️ Acquisto eliminato'); await loadPurchases(); }
+    if (!error) { showMessage(t('stock.purchaseDeleted')); await loadPurchases(); }
 }
 
 // ========== CHIUSURA SCORTA + CONTROLLO DISCREPANZA ==========
@@ -3839,17 +3840,12 @@ function closeStock(type, purchaseId) {
         return;
     }
 
+    const typeLabel = type === 'fumo' ? t('stock.typeSmoke') : t('stock.typeWeed');
     let msg = '';
     if (diff > 0) {
-        msg = `Hai registrato <strong>${consumed.toFixed(2)}g</strong> di ${type} nelle sessioni,
-               ma ne avevi comprati solo <strong>${stock.grams}g</strong>.<br><br>
-               Differenza: <strong style="color:var(--danger);">+${absDiff.toFixed(2)}g in eccesso</strong>.<br><br>
-               Come vuoi procedere?`;
+        msg = t('stock.discrepancyExcess', { consumed: consumed.toFixed(2), type: typeLabel, grams: stock.grams, diff: absDiff.toFixed(2) });
     } else {
-        msg = `Hai registrato <strong>${consumed.toFixed(2)}g</strong> di ${type},
-               ma ne avevi comprati <strong>${stock.grams}g</strong>.<br><br>
-               Differenza: <strong style="color:var(--warning);">${absDiff.toFixed(2)}g non contabilizzati</strong>.<br><br>
-               Come vuoi procedere?`;
+        msg = t('stock.discrepancyShortfall', { consumed: consumed.toFixed(2), type: typeLabel, grams: stock.grams, diff: absDiff.toFixed(2) });
     }
 
     document.getElementById('discrepancyText').innerHTML = msg;
@@ -3885,7 +3881,7 @@ async function fixProportional() {
     }
 
     document.getElementById('discrepancyModal').style.display = 'none';
-    showMessage('⚖️ Sessioni ricalcolate!');
+    showMessage(t('stock.sessionsRecalculated'));
     await loadData();
     confirmCloseStock();
 }
@@ -3896,7 +3892,7 @@ function fixManual() {
     const { type, stock } = pendingCloseStock;
 
     document.getElementById('manualFixHint').textContent =
-        `Modifica i grammi di ${type} per ciascuna sessione del periodo. Totale acquistato: ${stock.grams}g`;
+        t('stock.manualFixHint', { type: type === 'fumo' ? t('stock.typeSmoke') : t('stock.typeWeed'), grams: stock.grams });
 
     const listEl = document.getElementById('manualFixList');
     listEl.innerHTML = sessionsToFix.map(s => {
@@ -3907,7 +3903,7 @@ function fixManual() {
                 <div>
                     <span style="font-weight:600;">${s.date.split('-').reverse().join('/')}</span>
                     <span style="color:var(--color-text-muted); font-size:12px;"> ${s.time}</span><br>
-                    <small style="color:var(--color-text-muted);">Totale sessione: ${s.grams}g</small>
+                    <small style="color:var(--color-text-muted);">${t('stock.sessionTotal', { grams: s.grams })}</small>
                 </div>
                 <input type="number" step="0.01" min="0"
                        data-id="${s.id}"
@@ -3942,7 +3938,7 @@ async function saveManualFix() {
     }
 
     closeManualFix();
-    showMessage('✅ Sessioni corrette!');
+    showMessage(t('stock.sessionsFixed'));
     await loadData();
     confirmCloseStock();
 }
@@ -3963,9 +3959,9 @@ async function confirmCloseStock() {
         .update({ is_closed: true, closed_at: new Date().toISOString().split('T')[0] })
         .eq('id', stock.id);
 
-    if (error) { alert('Errore nella chiusura della scorta.'); return; }
+    if (error) { alert(t('stock.closeStockError')); return; }
 
-    showMessage('✅ Scorta chiusa!');
+    showMessage(t('stock.stockClosed'));
     pendingCloseStock = null;
     sessionsToFix = [];
     await loadPurchases();
