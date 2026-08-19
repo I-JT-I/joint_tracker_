@@ -353,6 +353,9 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 			await loadData();
 		} else {
 			showLoginPage();
+			if (window.va) {
+				window.va('event', { name: 'page_view_landing' });
+			}
 		}
 	}
 
@@ -499,6 +502,9 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 			}
 			// 🆕 SE È SIGNUP, MOSTRA MESSAGGIO DI CONFERMA EMAIL
 if (mode === 'signup') {
+	if (window.va) {
+		window.va('event', { name: 'signup_completed' });
+	}
 	content.innerHTML = `
 		<div style="text-align: center; padding: 30px 20px;">
 			<div style="font-size: 50px; margin-bottom: 20px;">📧</div>
