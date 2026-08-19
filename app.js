@@ -1542,7 +1542,7 @@ async function openPhotoViewer(ts) {
 
 	document.getElementById('photoViewerImg').src = data.signedUrl;
 	document.getElementById('photoViewerInfo').innerHTML = `
-		<strong>${session.date.split('-').reverse().join('/')} · ${session.time}</strong><br>
+		<strong>${formatShortDate(session.date)} · ${session.time}</strong><br>
 		<span style="color:var(--color-text-muted); font-size:13px;">
 			${session.type === 'fumo' ? t('common.smoke') : session.type === 'erba' ? t('common.weed') : t('common.smokeWeed')} · ${parseFloat(personalGrams(session).toFixed(2))}g
 			${session.location_name ? ' · 📍 ' + session.location_name : ''}
@@ -1615,7 +1615,7 @@ async function openSnapshotViewer(index) {
 	document.getElementById('photoViewerImg').src = data.signedUrl;
 	const grams = (s.my_fumo_grams || 0) + (s.my_erba_grams || 0);
 	document.getElementById('photoViewerInfo').innerHTML = `
-		<strong>${isMe ? t('shared.you') : s.username}</strong> · ${s.date.split('-').reverse().join('/')} · ${s.time}<br>
+		<strong>${isMe ? t('shared.you') : s.username}</strong> · ${formatShortDate(s.date)} · ${s.time}<br>
 		<span style="color:var(--color-text-muted); font-size:13px;">
 			${s.type === 'fumo' ? t('common.smoke') : s.type === 'erba' ? t('common.weed') : t('common.smokeWeed')} · ${grams.toFixed(2)}g
 			${s.location_name ? ' · 📍 ' + escapeHtml(s.location_name) : ''}
@@ -1658,7 +1658,7 @@ function openEditLocationModal(ts) {
 	editLocationPicked = null;
 
 	document.getElementById('editLocationSessionInfo').textContent =
-		t('modals.editLocationSessionInfo', { date: session.date.split('-').reverse().join('/'), time: session.time }) +
+		t('modals.editLocationSessionInfo', { date: formatShortDate(session.date), time: session.time }) +
 		(session.location_name ? t('modals.editLocationCurrent', { name: session.location_name }) : t('modals.editLocationNone'));
 	document.getElementById('editLocationManualInput').value = session.location_name || '';
 
@@ -1841,7 +1841,7 @@ function updateHistory() {
 					mGrams += dayWeight;
 					yearGrams += dayWeight;
 
-					const dDisplay = dKey.split('-').reverse().join('/');
+					const dDisplay = formatShortDate(dKey);
 
 					// SESSIONI DECRESCENTI PER ORA
 					const sortedSmokes = [...daySmokes].sort((a, b) => b.time.localeCompare(a.time));
@@ -2132,7 +2132,7 @@ if (ctxPie) {
 			charts.dailyAll = new Chart(ctxDaily, {
 				type: 'line',
 				data: { 
-					labels: sortedDates.map(d => d.split("-").reverse().join("/")),
+					labels: sortedDates.map(formatShortDate),
 					datasets: [{
 						label: t('charts.datasetJoints'),
 						data: dailyCounts,
@@ -2642,7 +2642,7 @@ function renderBreakHistory() {
 		past.map(b => {
 			const days = Math.ceil((new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24));
 			return `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:13px;">
-				<span>${b.start_date.split('-').reverse().join('/')} → ${b.end_date.split('-').reverse().join('/')}</span>
+				<span>${formatShortDate(b.start_date)} → ${formatShortDate(b.end_date)}</span>
 				<span style="font-weight:600; color:var(--primary);">${days}g</span>
 			</div>`;
 		}).join('');
@@ -2722,7 +2722,7 @@ function renderCalendarHeatmap() {
 	const gridHtml = weeks.map(week => `
 		<div style="display:flex; flex:0 0 11px; flex-direction:column; gap:3px;">
 			${week.map(d => d
-				? `<div title="${d.date.split('-').reverse().join('/')}: ${d.count} sessione/i" style="width:11px; height:11px; border-radius:2px; background:${colorFor(d.count)};"></div>`
+				? `<div title="${tn('charts.heatmapTooltip', d.count, { date: formatShortDate(d.date) })}" style="width:11px; height:11px; border-radius:2px; background:${colorFor(d.count)};"></div>`
 				: `<div style="width:11px; height:11px;"></div>`
 			).join('')}
 		</div>
@@ -3638,7 +3638,7 @@ function renderStockCard(type, stock) {
             <div style="background:${colorLight}; border-radius:12px; padding:14px; margin-bottom:${idx < openPurchases.length-1 ? '12px' : '0'};">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <span style="font-size:13px; color:var(--color-text-secondary);">
-                        ${emoji} ${t('stock.purchaseOfDate', { date: p.date.split('-').reverse().join('/') })}${oldestLabel}
+                        ${emoji} ${t('stock.purchaseOfDate', { date: formatShortDate(p.date) })}${oldestLabel}
                     </span>
                     <span style="font-weight:700; color:${color};">${p.grams}g${priceStr}</span>
                 </div>
@@ -3745,7 +3745,7 @@ function renderPurchaseHistory() {
             `;
         } else if (p.closed_at) {
             const days = Math.max(0, Math.round((new Date(p.closed_at) - new Date(p.date)) / 86400000));
-            consumedStr = tn('stock.closedOnDuration', days, { date: p.closed_at.split('-').reverse().join('/'), days });
+            consumedStr = tn('stock.closedOnDuration', days, { date: formatShortDate(p.closed_at), days });
         }
 
         return `
@@ -3754,7 +3754,7 @@ function renderPurchaseHistory() {
                     <div>
                         <span style="font-weight:700;">${emoji} ${label}</span>
                         ${statusStr}<br>
-                        <small style="color:var(--color-text-muted);">${p.date.split('-').reverse().join('/')} · ${p.grams}g${priceStr}</small><br>
+                        <small style="color:var(--color-text-muted);">${formatShortDate(p.date)} · ${p.grams}g${priceStr}</small><br>
                         <small style="color:var(--color-text-muted);">${consumedStr}</small>
                     </div>
                     <button onclick="deletePurchase(${p.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:18px;">🗑️</button>
@@ -3902,7 +3902,7 @@ function fixManual() {
             <div style="display:flex; justify-content:space-between; align-items:center;
                         padding:10px; border-bottom:1px solid rgba(var(--overlay-rgb),0.07);">
                 <div>
-                    <span style="font-weight:600;">${s.date.split('-').reverse().join('/')}</span>
+                    <span style="font-weight:600;">${formatShortDate(s.date)}</span>
                     <span style="color:var(--color-text-muted); font-size:12px;"> ${s.time}</span><br>
                     <small style="color:var(--color-text-muted);">${t('stock.sessionTotal', { grams: s.grams })}</small>
                 </div>

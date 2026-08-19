@@ -11,6 +11,16 @@ function localeCode() {
 	return currentLocale === 'it' ? 'it-IT' : 'en-US';
 }
 
+// Formatta una data "YYYY-MM-DD" come data breve nella lingua attiva:
+// GG/MM/AAAA in italiano, MM/GG/AAAA in inglese (entrambi zero-padded).
+// Costruisce la Date da componenti locali (non new Date(str) diretto) per evitare
+// lo slittamento di un giorno che darebbe l'interpretazione UTC su fusi > UTC.
+function formatShortDate(dateStr) {
+	const [y, m, d] = dateStr.split('-').map(Number);
+	const date = new Date(y, m - 1, d);
+	return new Intl.DateTimeFormat(localeCode(), { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+}
+
 function detectBrowserLocale() {
 	const lang = ((navigator.language || navigator.userLanguage || '') + '').toLowerCase();
 	return lang.startsWith('it') ? 'it' : 'en';

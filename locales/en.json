@@ -222,7 +222,9 @@
     "timeSlotNight": "Night",
     "timeSlotMorning": "Morning",
     "timeSlotAfternoon": "Afternoon",
-    "timeSlotEvening": "Evening"
+    "timeSlotEvening": "Evening",
+    "heatmapTooltip_one": "{date}: {count} session",
+    "heatmapTooltip_other": "{date}: {count} sessions"
   },
   "places": {
     "sessionsMap": "🗺️ Sessions Map",
