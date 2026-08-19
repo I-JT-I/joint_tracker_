@@ -82,7 +82,15 @@ function escapeHtml(str) {
 // Grammi personalmente consumati in una sessione (quota propria per le sessioni condivise,
 // non il totale grezzo "grams" che in passato poteva riflettere l'importo di un altro partecipante).
 function personalGrams(s) {
-	return (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0);
+	// Tre modi di leggere "quanto conta questa sessione per le mie statistiche personali":
+	// my_fumo/erba_grams (piu' recente, gestisce le condivise), fumo/erba_grams (contributo
+	// scorta), grams (colonna storica, l'unica popolata sulle sessioni piu' vecchie create
+	// prima che esistessero le altre colonne). Si prende il massimo cosi' nessuna sessione,
+	// vecchia o nuova, risulta a 0 solo perche' una colonna piu' recente non e' stata valorizzata.
+	const myTotal = (s.my_fumo_grams ?? 0) + (s.my_erba_grams ?? 0);
+	const contribTotal = (s.fumo_grams ?? 0) + (s.erba_grams ?? 0);
+	const rawTotal = s.grams ?? 0;
+	return Math.max(myTotal, contribTotal, rawTotal);
 }
 
 // title/desc si leggono da locales/*.json tramite achTitle()/achDesc(), non da qui,
