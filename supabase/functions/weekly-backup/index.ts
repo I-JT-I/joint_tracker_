@@ -10,7 +10,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Endpoint pubblico senza JWT (chiamato dal cron interno): questo header impedisce a
 // chiunque scopra l'URL di invocarlo a piacere e generare carico/costi inutili.
-const CRON_SECRET = "73883e010b636dd2f246502a0908aaf26ae4d353e05762700f48cfc2ee91712b";
+const CRON_SECRET = Deno.env.get("CRON_SECRET")!;
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
