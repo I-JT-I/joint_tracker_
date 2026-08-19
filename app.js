@@ -1453,7 +1453,7 @@ function handlePhotoSelected(event) {
 	if (!file) return;
 
 	if (file.size > 8 * 1024 * 1024) {
-		alert('Foto troppo grande (max 8MB).');
+		alert(t('gallery.photoTooLarge'));
 		event.target.value = '';
 		return;
 	}
@@ -1497,7 +1497,7 @@ async function loadGallery() {
 	const withPhotos = [...smokes].filter(s => s.photo_path).sort((a, b) => b.ts - a.ts);
 
 	if (withPhotos.length === 0) {
-		el.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px; padding:20px 0;">Nessuna foto ancora. Scattane una dalla pagina Aggiungi!</p>';
+		el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px; padding:20px 0;">${t('gallery.noPhotosYet')}</p>`;
 		return;
 	}
 
@@ -1505,7 +1505,7 @@ async function loadGallery() {
 	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrls(paths, 3600);
 
 	if (error || !data) {
-		el.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">Errore nel caricamento delle foto.</p>';
+		el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">${t('gallery.loadPhotosError')}</p>`;
 		return;
 	}
 
@@ -1528,14 +1528,14 @@ async function openPhotoViewer(ts) {
 
 	currentViewerTs = ts;
 	document.getElementById('photoViewerImg').src = '';
-	document.getElementById('photoViewerInfo').innerHTML = '<p style="text-align:center; color:var(--color-text-muted);">Caricamento...</p>';
+	document.getElementById('photoViewerInfo').innerHTML = `<p style="text-align:center; color:var(--color-text-muted);">${t('common.loading')}</p>`;
 	document.getElementById('photoViewerDeleteBtn').style.display = 'block';
 	document.getElementById('photoViewerModal').style.display = 'flex';
 
 	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrl(session.photo_path, 3600);
 
 	if (error || !data) {
-		document.getElementById('photoViewerInfo').innerHTML = '<p style="text-align:center; color:var(--danger);">Errore nel caricamento della foto.</p>';
+		document.getElementById('photoViewerInfo').innerHTML = `<p style="text-align:center; color:var(--danger);">${t('gallery.loadPhotoError')}</p>`;
 		return;
 	}
 
@@ -1543,7 +1543,7 @@ async function openPhotoViewer(ts) {
 	document.getElementById('photoViewerInfo').innerHTML = `
 		<strong>${session.date.split('-').reverse().join('/')} · ${session.time}</strong><br>
 		<span style="color:var(--color-text-muted); font-size:13px;">
-			${session.type === 'fumo' ? '🍫 Fumo' : session.type === 'erba' ? '🍃 Erba' : '🍫🍃 Fumo+Erba'} · ${parseFloat(personalGrams(session).toFixed(2))}g
+			${session.type === 'fumo' ? t('common.smoke') : session.type === 'erba' ? t('common.weed') : t('common.smokeWeed')} · ${parseFloat(personalGrams(session).toFixed(2))}g
 			${session.location_name ? ' · 📍 ' + session.location_name : ''}
 		</span>
 	`;
@@ -1560,14 +1560,14 @@ async function loadSnapshots() {
 	const { data, error } = await supabaseClient.rpc('get_friends_snapshots', { limit_count: 24 });
 	if (error) {
 		console.error('Errore istantanee:', error);
-		el.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">Errore nel caricamento delle istantanee.</p>';
+		el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">${t('social.loadSnapshotsError')}</p>`;
 		return;
 	}
 
 	snapshotItems = data || [];
 
 	if (snapshotItems.length === 0) {
-		el.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px; padding:10px 0;">Nessuna istantanea ancora. Le foto tue e dei tuoi amici compariranno qui.</p>';
+		el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px; padding:10px 0;">${t('social.noSnapshotsYet')}</p>`;
 		return;
 	}
 
@@ -1575,7 +1575,7 @@ async function loadSnapshots() {
 	const { data: signedData, error: signedError } = await supabaseClient.storage.from('session-photos').createSignedUrls(paths, 3600);
 
 	if (signedError || !signedData) {
-		el.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">Errore nel caricamento delle foto.</p>';
+		el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">${t('gallery.loadPhotosError')}</p>`;
 		return;
 	}
 
@@ -1586,7 +1586,7 @@ async function loadSnapshots() {
 		return `
 			<div onclick="openSnapshotViewer(${i})" style="position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; cursor:pointer; background:rgba(var(--overlay-rgb),0.08);">
 				<img src="${signed}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
-				<span style="position:absolute; bottom:4px; left:4px; right:4px; background:rgba(0,0,0,0.55); color:white; font-size:10px; padding:2px 6px; border-radius:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${isMe ? 'Tu' : s.username}</span>
+				<span style="position:absolute; bottom:4px; left:4px; right:4px; background:rgba(0,0,0,0.55); color:white; font-size:10px; padding:2px 6px; border-radius:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${isMe ? t('shared.you') : s.username}</span>
 			</div>
 		`;
 	}).join('');
@@ -1600,23 +1600,23 @@ async function openSnapshotViewer(index) {
 	currentViewerTs = isMe ? s.ts : null;
 
 	document.getElementById('photoViewerImg').src = '';
-	document.getElementById('photoViewerInfo').innerHTML = '<p style="text-align:center; color:var(--color-text-muted);">Caricamento...</p>';
+	document.getElementById('photoViewerInfo').innerHTML = `<p style="text-align:center; color:var(--color-text-muted);">${t('common.loading')}</p>`;
 	document.getElementById('photoViewerDeleteBtn').style.display = isMe ? 'block' : 'none';
 	document.getElementById('photoViewerModal').style.display = 'flex';
 
 	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrl(s.photo_path, 3600);
 
 	if (error || !data) {
-		document.getElementById('photoViewerInfo').innerHTML = '<p style="text-align:center; color:var(--danger);">Errore nel caricamento della foto.</p>';
+		document.getElementById('photoViewerInfo').innerHTML = `<p style="text-align:center; color:var(--danger);">${t('gallery.loadPhotoError')}</p>`;
 		return;
 	}
 
 	document.getElementById('photoViewerImg').src = data.signedUrl;
 	const grams = (s.my_fumo_grams || 0) + (s.my_erba_grams || 0);
 	document.getElementById('photoViewerInfo').innerHTML = `
-		<strong>${isMe ? 'Tu' : s.username}</strong> · ${s.date.split('-').reverse().join('/')} · ${s.time}<br>
+		<strong>${isMe ? t('shared.you') : s.username}</strong> · ${s.date.split('-').reverse().join('/')} · ${s.time}<br>
 		<span style="color:var(--color-text-muted); font-size:13px;">
-			${s.type === 'fumo' ? '🍫 Fumo' : s.type === 'erba' ? '🍃 Erba' : '🍫🍃 Fumo+Erba'} · ${grams.toFixed(2)}g
+			${s.type === 'fumo' ? t('common.smoke') : s.type === 'erba' ? t('common.weed') : t('common.smokeWeed')} · ${grams.toFixed(2)}g
 			${s.location_name ? ' · 📍 ' + escapeHtml(s.location_name) : ''}
 		</span>
 	`;
@@ -1629,7 +1629,7 @@ function closePhotoViewer() {
 
 async function deletePhotoFromViewer() {
 	if (!currentViewerTs) return;
-	if (!confirm('Eliminare questa foto?')) return;
+	if (!confirm(t('gallery.deletePhotoConfirm'))) return;
 
 	const session = smokes.find(s => s.ts === currentViewerTs);
 	if (!session || !session.photo_path) return;
@@ -1637,10 +1637,10 @@ async function deletePhotoFromViewer() {
 	await supabaseClient.storage.from('session-photos').remove([session.photo_path]);
 	const { error } = await supabaseClient.from('smokes').update({ photo_path: null }).eq('ts', currentViewerTs);
 
-	if (error) { alert('Errore nella rimozione della foto.'); return; }
+	if (error) { alert(t('gallery.deletePhotoError')); return; }
 
 	closePhotoViewer();
-	showMessage('🗑️ Foto rimossa');
+	showMessage(t('gallery.photoRemoved'));
 	await loadData();
 	await loadGallery();
 }
@@ -1657,16 +1657,16 @@ function openEditLocationModal(ts) {
 	editLocationPicked = null;
 
 	document.getElementById('editLocationSessionInfo').textContent =
-		`Sessione del ${session.date.split('-').reverse().join('/')} alle ${session.time}` +
-		(session.location_name ? ` · attuale: ${session.location_name}` : ' · nessuna posizione');
+		t('modals.editLocationSessionInfo', { date: session.date.split('-').reverse().join('/'), time: session.time }) +
+		(session.location_name ? t('modals.editLocationCurrent', { name: session.location_name }) : t('modals.editLocationNone'));
 	document.getElementById('editLocationManualInput').value = session.location_name || '';
 
 	const listEl = document.getElementById('editLocationPlacesList');
 	if (userPlaces.length === 0) {
-		listEl.innerHTML = '<p style="font-size:12px; color:var(--color-text-muted);">Nessun posto salvato: usa il GPS o scrivi un nome qui sotto.</p>';
+		listEl.innerHTML = `<p style="font-size:12px; color:var(--color-text-muted);">${t('modals.noPlacesUseGpsOrType')}</p>`;
 	} else {
 		listEl.innerHTML = `
-			<label style="margin-top:0; font-size:12px;">I tuoi posti salvati</label>
+			<label style="margin-top:0; font-size:12px;">${t('modals.yourSavedPlaces')}</label>
 			<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
 				${userPlaces.map(p => `
 					<button type="button" onclick="pickSavedPlaceForEdit(${p.id})"
@@ -1692,13 +1692,13 @@ function pickSavedPlaceForEdit(placeId) {
 	if (!place) return;
 	editLocationPicked = { lat: place.latitude, lng: place.longitude, name: place.name };
 	document.getElementById('editLocationManualInput').value = place.name;
-	showMessage(`📍 ${place.name} selezionato`);
+	showMessage(t('modals.placeSelected', { name: place.name }));
 }
 
 function useCurrentLocationForEdit() {
-	if (!navigator.geolocation) return alert('La geolocalizzazione non è supportata dal tuo browser.');
+	if (!navigator.geolocation) return alert(t('places.geolocationNotSupported'));
 
-	showMessage('📍 Cercando posizione...');
+	showMessage(t('modals.locatingPosition'));
 	navigator.geolocation.getCurrentPosition(async (position) => {
 		const lat = position.coords.latitude;
 		const lng = position.coords.longitude;
@@ -1721,9 +1721,9 @@ function useCurrentLocationForEdit() {
 
 		editLocationPicked = { lat, lng, name };
 		document.getElementById('editLocationManualInput').value = name || '';
-		showMessage('✅ Posizione trovata!');
+		showMessage(t('modals.locationFound'));
 	}, (error) => {
-		alert('Errore: ' + error.message);
+		alert(t('places.locationError', { message: error.message }));
 	});
 }
 
@@ -1736,9 +1736,9 @@ async function saveEditedLocation() {
 		: { location_name: manualName || null };
 
 	const { error } = await supabaseClient.from('smokes').update(update).eq('ts', editingLocationTs);
-	if (error) { alert('Errore nel salvataggio della posizione.'); return; }
+	if (error) { alert(t('modals.locationSaveError')); return; }
 
-	showMessage('✅ Posizione aggiornata!');
+	showMessage(t('modals.locationUpdated'));
 	closeEditLocationModal();
 	await loadData();
 }

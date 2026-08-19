@@ -152,7 +152,14 @@
     "confirmDeleteEntry": "Vuoi eliminare questo inserimento?"
   },
   "gallery": {
-    "title": "📷 Galleria"
+    "title": "📷 Galleria",
+    "photoTooLarge": "Foto troppo grande (max 8MB).",
+    "noPhotosYet": "Nessuna foto ancora. Scattane una dalla pagina Aggiungi!",
+    "loadPhotosError": "Errore nel caricamento delle foto.",
+    "loadPhotoError": "Errore nel caricamento della foto.",
+    "deletePhotoConfirm": "Eliminare questa foto?",
+    "deletePhotoError": "Errore nella rimozione della foto.",
+    "photoRemoved": "🗑️ Foto rimossa"
   },
   "stats": {
     "totalQuantities": "📊 Quantità Totali",
@@ -253,7 +260,9 @@
     "close": "Chiudi",
     "removeFriendship": "🗑️ Rimuovi amicizia",
     "gSmoke": "g Fumo",
-    "gWeed": "g Erba"
+    "gWeed": "g Erba",
+    "loadSnapshotsError": "Errore nel caricamento delle istantanee.",
+    "noSnapshotsYet": "Nessuna istantanea ancora. Le foto tue e dei tuoi amici compariranno qui."
   },
   "stock": {
     "smokeStock": "🍫 Scorta Fumo",
@@ -285,7 +294,17 @@
     "scaleProportionally": "⚖️ Scala proporzionalmente",
     "fixManually": "✏️ Correggi manualmente",
     "fixSessionsTitle": "✏️ Correggi sessioni",
-    "saveCorrections": "💾 Salva correzioni"
+    "saveCorrections": "💾 Salva correzioni",
+    "editLocationSessionInfo": "Sessione del {date} alle {time}",
+    "editLocationCurrent": " · attuale: {name}",
+    "editLocationNone": " · nessuna posizione",
+    "noPlacesUseGpsOrType": "Nessun posto salvato: usa il GPS o scrivi un nome qui sotto.",
+    "yourSavedPlaces": "I tuoi posti salvati",
+    "placeSelected": "📍 {name} selezionato",
+    "locatingPosition": "📍 Cercando posizione...",
+    "locationFound": "✅ Posizione trovata!",
+    "locationSaveError": "Errore nel salvataggio della posizione.",
+    "locationUpdated": "✅ Posizione aggiornata!"
   },
   "achievements": {
     "unlocked": "🏅 Traguardo sbloccato: {title}!",
