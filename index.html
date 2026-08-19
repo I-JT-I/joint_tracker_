@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 	<title>Joint Tracker</title>
 
 	<!-- TEMA: imposta subito data-theme prima del paint, per evitare flash -->
@@ -653,6 +653,13 @@
 		<label for="usernameInput" data-i18n="settings.changeNickname">Cambia Nickname</label>
 		<input type="text" id="usernameInput" data-i18n-placeholder="settings.newNicknamePlaceholder" placeholder="Nuovo nickname">
 		<button class="action-btn" onclick="updateProfile()" data-i18n="settings.updateName">Aggiorna Nome</button>
+	</div>
+
+	<div class="card" id="installAppCard" style="display:none;">
+		<h3 data-i18n="settings.installApp">📲 Installa l'app</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" data-i18n="settings.installAppNote">Installa JointTracker sulla schermata Home per usarla come un'app vera, a schermo intero.</p>
+		<button class="action-btn" id="installAppBtn" onclick="installApp()" style="width:100%; display:none;" data-i18n="settings.installAppButton">📲 Installa app</button>
+		<div id="installAppIosHint" style="display:none; font-size:13px; color:var(--color-text-secondary); background: rgba(76,175,80,0.08); border:1px solid rgba(76,175,80,0.3); border-radius:12px; padding:12px; line-height:1.6;" data-i18n="settings.installAppIosSteps">Tocca l'icona Condividi (⎋) nella barra di Safari, poi scegli "Aggiungi a Home".</div>
 	</div>
 
 	<div class="card">

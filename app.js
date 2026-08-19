@@ -4039,3 +4039,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	initTheme();
 	checkAuth();
+
+// ========== PWA INSTALL: bottone custom (Chromium) + istruzioni manuali (iOS) ==========
+let deferredInstallPrompt = null;
+
+function isStandaloneMode() {
+	return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+
+function isIOSDevice() {
+	return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
+// Chrome/Edge/Android: il browser spara questo evento invece di mostrare da solo
+// il proprio prompt d'installazione. Lo salviamo per poterlo attivare noi dal bottone custom.
+window.addEventListener('beforeinstallprompt', function(e) {
+	e.preventDefault();
+	deferredInstallPrompt = e;
+	updateInstallUI();
+});
+
+window.addEventListener('appinstalled', function() {
+	deferredInstallPrompt = null;
+	updateInstallUI();
+});
+
+// Safari/iOS non implementa beforeinstallprompt: se l'app non è già installata,
+// mostriamo le istruzioni manuali per "Aggiungi a Home" invece del bottone.
+function updateInstallUI() {
+	const card = document.getElementById('installAppCard');
+	const androidBtn = document.getElementById('installAppBtn');
+	const iosHint = document.getElementById('installAppIosHint');
+	if (!card || !androidBtn || !iosHint) return;
+
+	if (isStandaloneMode()) {
+		card.style.display = 'none';
+		return;
+	}
+
+	if (deferredInstallPrompt) {
+		card.style.display = 'block';
+		androidBtn.style.display = 'block';
+		iosHint.style.display = 'none';
+	} else if (isIOSDevice()) {
+		card.style.display = 'block';
+		androidBtn.style.display = 'none';
+		iosHint.style.display = 'block';
+	} else {
+		card.style.display = 'none';
+	}
+}
+
+async function installApp() {
+	if (!deferredInstallPrompt) return;
+	deferredInstallPrompt.prompt();
+	await deferredInstallPrompt.userChoice;
+	deferredInstallPrompt = null;
+	updateInstallUI();
+}
+
+updateInstallUI();
