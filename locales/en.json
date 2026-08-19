@@ -75,6 +75,22 @@
     "backToLogin": "← Back to Login",
     "welcome": "Welcome! 🎉"
   },
+  "guest": {
+    "or": "or",
+    "tryWithoutSignup": "🚀 Try without signing up",
+    "bannerText": "Guest mode: data is saved only on this device.",
+    "bannerCta": "Create an account",
+    "emailDisplay": "Guest mode",
+    "settingsTitle": "💾 Save your data",
+    "settingsNote": "You're in guest mode: your data is saved only on this device and will be lost if you clear your browser cache. Create an account to keep it safe.",
+    "settingsCta": "Save your data and create an account",
+    "exitToLogin": "🚪 Exit guest mode",
+    "migrating": "Saving your sessions...",
+    "migrationSuccess": "✅ Data saved to your account!",
+    "migrationError": "⚠️ We couldn't save all the data. We'll retry on your next login, nothing was lost.",
+    "featureLocked": "🔒 Sign up to use this",
+    "photoLocked": "📷 Available after signing up"
+  },
   "sync": {
     "syncingSessions_one": "🔄 Syncing {count} pending session...",
     "syncingSessions_other": "🔄 Syncing {count} pending sessions...",

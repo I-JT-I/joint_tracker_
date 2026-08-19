@@ -75,8 +75,17 @@
 		<div class="auth-box">
 			<h2 data-i18n="auth.title">🌿 JointTracker</h2>
 			<div id="authContent"></div>
+
+			<p style="text-align:center; margin:16px 0 4px; color:var(--color-text-muted); font-size:12px;" data-i18n="guest.or">oppure</p>
+			<button type="button" class="secondary-btn" onclick="enterGuestMode()" style="width:100%;" data-i18n="guest.tryWithoutSignup">🚀 Prova senza registrarti</button>
 		</div>
 	</div>
+</div>
+
+<!-- BANNER MODALITA' OSPITE -->
+<div id="guestModeBanner" style="display:none; position:sticky; top:0; z-index:997; background:linear-gradient(135deg,#6a1b9a,#4a148c); color:white; padding:10px 15px; text-align:center; font-size:13px; font-weight:600;">
+	<span data-i18n="guest.bannerText">Modalità ospite: i dati sono salvati solo su questo dispositivo.</span>
+	<button onclick="showPage('settings')" style="background:white; color:#4a148c; border:none; border-radius:8px; padding:4px 10px; font-weight:bold; margin-left:8px; cursor:pointer; font-size:12px;" data-i18n="guest.bannerCta">Crea un account</button>
 </div>
 
 <!-- PAGINA PRINCIPALE (quando loggato) -->
@@ -188,6 +197,7 @@
 </div>
 
 <!-- SESSIONE CONDIVISA -->
+<div id="sharedSessionFeature">
 <div style="margin-top:12px;">
     <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; background: rgba(76,175,80,0.08); border: 1px solid rgba(76,175,80,0.3); border-radius:12px; padding:12px; cursor:pointer;">
         <span style="font-size:14px; font-weight:600; color:var(--heading);" data-i18n="add.sharedSession">👥 Sessione condivisa con amici</span>
@@ -208,6 +218,8 @@
 
     <div id="contributorsPanel" style="margin-top:12px;"></div>
 </div>
+</div>
+<div id="sharedSessionLocked" style="display:none; margin-top:12px; background: rgba(var(--overlay-rgb),0.05); border: 1px solid rgba(var(--overlay-rgb),0.1); border-radius:12px; padding:12px; font-size:13px; color:var(--color-text-muted); text-align:center;" data-i18n="guest.featureLocked">🔒 Iscriviti per poterla usare</div>
 
 		<label data-i18n="add.quantity">Quantità</label>
 		<div class="grams-row" id="gCont">
@@ -249,8 +261,11 @@
 		</div>
 
 		<label data-i18n="add.photo">📷 Foto (opzionale)</label>
+		<div id="photoFeature">
 		<input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoSelected(event)">
-		<button type="button" class="action-btn" onclick="document.getElementById('photoInput').click()" style="width:100%;" data-i18n="add.takeAttachPhoto">📷 Scatta/allega foto</button>
+		<button type="button" class="action-btn" id="photoAttachBtn" onclick="document.getElementById('photoInput').click()" style="width:100%;" data-i18n="add.takeAttachPhoto">📷 Scatta/allega foto</button>
+		</div>
+		<div id="photoLocked" style="display:none; background: rgba(var(--overlay-rgb),0.05); border: 1px solid rgba(var(--overlay-rgb),0.1); border-radius:12px; padding:12px; font-size:13px; color:var(--color-text-muted); text-align:center;" data-i18n="guest.photoLocked">📷 Disponibile dopo la registrazione</div>
 		<div id="photoPreviewWrap" style="display:none; margin-top:10px; position:relative;">
 			<img id="photoPreview" style="width:100%; max-height:220px; object-fit:cover; border-radius:12px; display:block;">
 			<button type="button" onclick="clearSelectedPhoto()" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; font-size:16px;">✕</button>
@@ -460,6 +475,11 @@
 
 <!-- PAGINA SOCIAL -->
 <div id="page-social" class="page">
+	<div class="card" id="socialLocked" style="display:none; text-align:center;">
+		<div style="font-size:40px; margin-bottom:10px;">🔒</div>
+		<p style="color:var(--color-text-muted);" data-i18n="guest.featureLocked">🔒 Iscriviti per poterla usare</p>
+	</div>
+	<div id="socialContent">
 	<div class="card" id="friendRequestsList" style="display:none;"></div>
 
 	<div class="card">
@@ -488,6 +508,7 @@
 			<button class="secondary-btn" id="periodAllBtn" onclick="setSharedPeriod('all')" style="flex:1; margin-top:0;" data-i18n="social.always">Sempre</button>
 		</div>
 		<div id="leaderboardList"></div>
+	</div>
 	</div>
 </div>
 
@@ -645,7 +666,7 @@
 
 <!-- PAGINA IMPOSTAZIONI -->
 <div id="page-settings" class="page">
-	<div class="card">
+	<div class="card" id="profileCard">
 		<h3 data-i18n="settings.profile">👤 Profilo</h3>
 		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;"><span data-i18n="settings.loggedInAs">Loggato come</span> <strong id="settingsEmailDisplay">...</strong></p>
 		<p><span data-i18n="settings.currentNickname">Il tuo nickname attuale:</span> <strong id="currentUsernameDisplay" style="color: var(--primary);">...</strong></p>
@@ -653,6 +674,12 @@
 		<label for="usernameInput" data-i18n="settings.changeNickname">Cambia Nickname</label>
 		<input type="text" id="usernameInput" data-i18n-placeholder="settings.newNicknamePlaceholder" placeholder="Nuovo nickname">
 		<button class="action-btn" onclick="updateProfile()" data-i18n="settings.updateName">Aggiorna Nome</button>
+	</div>
+
+	<div class="card" id="guestConvertCard" style="display:none; background:linear-gradient(135deg, rgba(106,27,154,0.1), rgba(74,20,140,0.1)); border:1px solid rgba(106,27,154,0.3);">
+		<h3 data-i18n="guest.settingsTitle">💾 Salva i tuoi dati</h3>
+		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" data-i18n="guest.settingsNote">Sei in modalità ospite: i tuoi dati sono salvati solo su questo dispositivo e andranno persi se cancelli la cache del browser. Crea un account per metterli al sicuro.</p>
+		<button class="main-btn" onclick="startGuestConversion()" style="width:100%;" data-i18n="guest.settingsCta">Salva i tuoi dati e crea un account</button>
 	</div>
 
 	<div class="card" id="installAppCard" style="display:none;">
@@ -687,7 +714,7 @@
 		</div>
 	</div>
 
-	<div class="card">
+	<div class="card" id="remindersPushCard">
 		<h3 data-i18n="settings.notificationsReminders">🔔 Notifiche & Promemoria</h3>
 		<label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
 			<span style="font-size:14px; font-weight:600; color:var(--color-text-secondary);" data-i18n="settings.enableDailyReminder">Attiva promemoria giornaliero</span>
@@ -709,18 +736,26 @@
 		<label style="margin-top:0;" data-i18n="settings.devicesWithPush">📱 Dispositivi con notifiche attive</label>
 		<div id="pushDevicesList" style="margin-top:8px;"></div>
 	</div>
+	<div class="card" id="remindersPushLocked" style="display:none; text-align:center;">
+		<h3 data-i18n="settings.notificationsReminders">🔔 Notifiche & Promemoria</h3>
+		<p style="color:var(--color-text-muted); font-size:13px;" data-i18n="guest.featureLocked">🔒 Iscriviti per poterla usare</p>
+	</div>
 
 
 
-	<div class="card">
+	<div class="card" id="backupCard">
 		<h3 data-i18n="settings.automaticBackups">☁️ Backup Automatici</h3>
 		<p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" data-i18n="settings.automaticBackupsNote">Un backup di sicurezza gira automaticamente ogni settimana lato server (contenuto non scaricabile qui per motivi di privacy: include dati aggregati di tutti gli utenti).</p>
 		<div id="backupStatusList"></div>
 	</div>
+	<div class="card" id="backupLocked" style="display:none; text-align:center;">
+		<h3 data-i18n="settings.automaticBackups">☁️ Backup Automatici</h3>
+		<p style="color:var(--color-text-muted); font-size:13px;" data-i18n="guest.featureLocked">🔒 Iscriviti per poterla usare</p>
+	</div>
 
 	<div class="card">
 		<button onclick="resetAll()" style="background:none; border:none; color:var(--danger); width:100%; margin-bottom:15px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;" data-i18n="settings.fullReset">⚠️ Reset completo dati</button>
-		<button class="secondary-btn" onclick="logout()" style="background:var(--danger)" data-i18n="settings.logout">🚪 Logout</button>
+		<button class="secondary-btn" id="logoutBtn" onclick="logout()" style="background:var(--danger)" data-i18n="settings.logout">🚪 Logout</button>
 	</div>
 </div>
 

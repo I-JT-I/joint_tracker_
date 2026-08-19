@@ -75,6 +75,22 @@
     "backToLogin": "← Torna al Login",
     "welcome": "Benvenuto! 🎉"
   },
+  "guest": {
+    "or": "oppure",
+    "tryWithoutSignup": "🚀 Prova senza registrarti",
+    "bannerText": "Modalità ospite: i dati sono salvati solo su questo dispositivo.",
+    "bannerCta": "Crea un account",
+    "emailDisplay": "Modalità ospite",
+    "settingsTitle": "💾 Salva i tuoi dati",
+    "settingsNote": "Sei in modalità ospite: i tuoi dati sono salvati solo su questo dispositivo e andranno persi se cancelli la cache del browser. Crea un account per metterli al sicuro.",
+    "settingsCta": "Salva i tuoi dati e crea un account",
+    "exitToLogin": "🚪 Esci dalla modalità ospite",
+    "migrating": "Stiamo salvando le tue sessioni...",
+    "migrationSuccess": "✅ Dati salvati sul tuo account!",
+    "migrationError": "⚠️ Non siamo riusciti a salvare tutti i dati. Riproveremo al prossimo accesso, non li abbiamo persi.",
+    "featureLocked": "🔒 Iscriviti per poterla usare",
+    "photoLocked": "📷 Disponibile dopo la registrazione"
+  },
   "sync": {
     "syncingSessions_one": "🔄 Sincronizzazione di {count} sessione in sospeso...",
     "syncingSessions_other": "🔄 Sincronizzazione di {count} sessioni in sospeso...",

@@ -24,6 +24,7 @@
 	let unlockedAchievements = [];
 let friendsCountCache = 0;
 let achievementsLoaded = false;
+let isGuestMode = false;
 
 // ========== TEMA (chiaro/scuro/automatico) ==========
 function getStoredThemePref() {
@@ -170,6 +171,13 @@ function updateDivideMessage() {
 }
 
 function toggleSharedSession() {
+    if (isGuestMode) {
+        // La UI è nascosta in guest mode, ma la checkbox esiste ancora nel DOM:
+        // blindiamo comunque, niente account = niente amici da caricare.
+        document.getElementById('sharedSessionCheck').checked = false;
+        document.getElementById('sharedSessionPanel').style.display = 'none';
+        return;
+    }
     const checked = document.getElementById('sharedSessionCheck').checked;
     document.getElementById('sharedSessionPanel').style.display = checked ? 'block' : 'none';
     if (checked) {
@@ -349,7 +357,19 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 		}
 		await initI18n();
 		if (session) {
-			showApp();
+			const hadGuestData = isGuestModeStored() && hasGuestData();
+			isGuestMode = false;
+			await showApp();
+			await loadData();
+			if (hadGuestData) {
+				await migrateGuestDataToAccount(currentUser.id);
+			}
+		} else if (isGuestModeStored()) {
+			// Rientra in guest mode senza ri-tracciare l'evento: è già stato tracciato
+			// la prima volta che l'utente ha premuto "Prova senza registrarti".
+			isGuestMode = true;
+			currentUser = null;
+			await showApp();
 			await loadData();
 		} else {
 			showLoginPage();
@@ -527,10 +547,15 @@ if (mode === 'signup') {
 	`;
 	return;
 }
+			const wasGuestWithData = isGuestMode && hasGuestData();
 			currentUser = result.data.user;
+			isGuestMode = false;
 			await initI18n();
-			showApp();
+			await showApp();
 			await loadData();
+			if (wasGuestWithData) {
+				await migrateGuestDataToAccount(currentUser.id);
+			}
 			showMessage(t('auth.welcome'));
 		} catch (err) {
 			showError(err.message);
@@ -541,18 +566,34 @@ if (mode === 'signup') {
 		document.getElementById('page-auth').classList.remove('active');
 		document.getElementById('header').style.display = 'flex';
 		showPage('home');
-		document.getElementById('emailDisplay').textContent = currentUser.email;
+		document.getElementById('emailDisplay').textContent = isGuestMode ? t('guest.emailDisplay') : currentUser.email;
 		document.getElementById('date').value = toDateStr(new Date());
 		document.getElementById('time').value = nowTimeStr();
+		updateGuestBanner();
+		applyGuestModeUI();
 
 		const defaultRadio = document.querySelector('input[name="g"][value="0.3"]');
 		if(defaultRadio) {
 			defaultRadio.parentElement.classList.add('selected');
 		}
 
+		await loadPurchases();
+
+		if (isGuestMode) {
+			// Funzionalità multi-utente/lato server non disponibili in modalità ospite:
+			// niente luoghi salvati, promemoria, notifiche, obiettivi, pause tolleranza.
+			// Achievement e best streak restano attivi ma salvati in locale (vedi checkAchievements/updateBestStreak).
+			userPlaces = [];
+			notifications = [];
+			try { unlockedAchievements = JSON.parse(localStorage.getItem('jt_guest_achievements') || '[]'); } catch (e) { unlockedAchievements = []; }
+			achievementsLoaded = true;
+			renderAchievements();
+			getLocationAuto();
+			return;
+		}
+
 		// 🆕 AUTO GEOLOCALIZZAZIONE AL CARICAMENTO
 	await loadUserPlaces();
-	await loadPurchases();
 	await loadReminderSettings();
 	await loadNotifications();
 	await loadAchievements();
@@ -648,15 +689,189 @@ async function flushPendingSessions() {
 	}
 }
 
+	// ========== MODALITA' OSPITE: storage locale ==========
+	const GUEST_MODE_KEY = 'jt_guest_mode';
+	const GUEST_SMOKES_KEY = 'jt_guest_smokes';
+	const GUEST_PURCHASES_KEY = 'jt_guest_purchases';
+
+	function isGuestModeStored() {
+		try { return localStorage.getItem(GUEST_MODE_KEY) === '1'; } catch (e) { return false; }
+	}
+
+	function hasGuestData() {
+		return getGuestSmokes().length > 0 || getGuestPurchases().length > 0;
+	}
+
+	function getGuestSmokes() {
+		try {
+			const raw = localStorage.getItem(GUEST_SMOKES_KEY);
+			return raw ? JSON.parse(raw) : [];
+		} catch (e) { return []; }
+	}
+
+	function setGuestSmokes(arr) {
+		localStorage.setItem(GUEST_SMOKES_KEY, JSON.stringify(arr));
+	}
+
+	function getGuestPurchases() {
+		try {
+			const raw = localStorage.getItem(GUEST_PURCHASES_KEY);
+			return raw ? JSON.parse(raw) : [];
+		} catch (e) { return []; }
+	}
+
+	function setGuestPurchases(arr) {
+		localStorage.setItem(GUEST_PURCHASES_KEY, JSON.stringify(arr));
+	}
+
+	// Id locale univoco per record creati in guest mode: sempre positivo,
+	// generato da timestamp+contatore per evitare collisioni se due salvataggi
+	// capitano nello stesso millisecondo (es. tap rapidi).
+	let guestIdCounter = 0;
+	function genGuestId() {
+		guestIdCounter++;
+		return Date.now() * 1000 + (guestIdCounter % 1000);
+	}
+
+	function updateGuestBanner() {
+		const banner = document.getElementById('guestModeBanner');
+		if (banner) banner.style.display = isGuestMode ? 'block' : 'none';
+	}
+
+	// Mostra/nasconde le funzionalità non disponibili in modalità ospite (sessioni condivise,
+	// foto, social, promemoria/push, backup) e la card di conversione account nelle Impostazioni.
+	function applyGuestModeUI() {
+		const setVisible = (id, visible) => {
+			const el = document.getElementById(id);
+			if (el) el.style.display = visible ? '' : 'none';
+		};
+
+		setVisible('sharedSessionFeature', !isGuestMode);
+		setVisible('sharedSessionLocked', isGuestMode);
+		setVisible('photoFeature', !isGuestMode);
+		setVisible('photoLocked', isGuestMode);
+
+		setVisible('profileCard', !isGuestMode);
+		setVisible('guestConvertCard', isGuestMode);
+		setVisible('remindersPushCard', !isGuestMode);
+		setVisible('remindersPushLocked', isGuestMode);
+		setVisible('backupCard', !isGuestMode);
+		setVisible('backupLocked', isGuestMode);
+
+		setVisible('socialContent', !isGuestMode);
+		setVisible('socialLocked', isGuestMode);
+
+		const logoutBtn = document.getElementById('logoutBtn');
+		if (logoutBtn) logoutBtn.textContent = isGuestMode ? t('guest.exitToLogin') : t('settings.logout');
+	}
+
+	// Il cambio lingua ri-applica le traduzioni statiche (data-i18n) e sovrascriverebbe
+	// il testo del bottone logout impostato via JS in applyGuestModeUI(): lo riallineiamo.
+	document.addEventListener('i18n:change', () => applyGuestModeUI());
+
+	async function enterGuestMode() {
+		isGuestMode = true;
+		try { localStorage.setItem(GUEST_MODE_KEY, '1'); } catch (e) {}
+		currentUser = null;
+		await initI18n();
+		if (window.va) {
+			window.va('pageview', { route: '/virtual/guest-mode-started' });
+		}
+		await showApp();
+		await loadData();
+	}
+
+	// Torna alla schermata di login mantenendo i dati locali (non li cancella):
+	// l'utente può rientrare in modalità ospite in qualsiasi momento e ritrovarli.
+	function exitGuestMode() {
+		isGuestMode = false;
+		try { localStorage.removeItem(GUEST_MODE_KEY); } catch (e) {}
+		smokes = [];
+		purchases = [];
+		updateGuestBanner();
+		showLoginPage();
+	}
+
 	async function logout() {
+		if (isGuestMode) {
+			exitGuestMode();
+			return;
+		}
 		await supabaseClient.auth.signOut();
 		currentUser = null;
 		smokes = [];
 		showLoginPage();
 	}
 
+	// Porta l'utente ospite alla schermata di registrazione senza toccare i dati locali:
+	// se abbandona il form può tornare in modalità ospite e ritrovare tutto.
+	function startGuestConversion() {
+		showLoginPage();
+		toggleAuthMode();
+	}
+
+	// Chiamata dopo che l'utente, precedentemente in modalità ospite, ottiene una sessione
+	// Supabase valida (signup con autologin, oppure primo login dopo conferma email).
+	// Copia smokes/purchases locali su Supabase con lo user_id reale, poi ripulisce il locale
+	// SOLO se tutto è andato a buon fine: in caso di errore i dati restano (duplicati temporanei
+	// preferibili a una perdita) e si riprova al prossimo login.
+	async function migrateGuestDataToAccount(userId) {
+		if (!hasGuestData()) {
+			try { localStorage.removeItem(GUEST_MODE_KEY); } catch (e) {}
+			return;
+		}
+
+		const guestSmokes = getGuestSmokes();
+		const guestPurchases = getGuestPurchases();
+
+		const loadingTimer = setTimeout(() => {
+			showMessage(t('guest.migrating'));
+		}, 1000);
+
+		try {
+			if (guestSmokes.length > 0) {
+				const payload = guestSmokes.map(({ id, ...rest }) => ({ ...rest, user_id: userId }));
+				const { error } = await supabaseClient.from('smokes').insert(payload);
+				if (error) throw error;
+			}
+
+			if (guestPurchases.length > 0) {
+				const payload = guestPurchases.map(({ id, ...rest }) => ({ ...rest, user_id: userId }));
+				const { error } = await supabaseClient.from('purchases').insert(payload);
+				if (error) throw error;
+			}
+
+			// Tutto migrato con successo: ripuliamo solo i dati guest, non le preferenze (tema/lingua).
+			setGuestSmokes([]);
+			setGuestPurchases([]);
+			try {
+				localStorage.removeItem(GUEST_MODE_KEY);
+				localStorage.removeItem('jt_guest_achievements');
+				localStorage.removeItem('jt_guest_best_streak');
+			} catch (e) {}
+
+			clearTimeout(loadingTimer);
+			showMessage(t('guest.migrationSuccess'));
+			if (window.va) {
+				window.va('pageview', { route: '/virtual/guest-converted' });
+			}
+
+			await loadData();
+			await loadPurchases();
+		} catch (err) {
+			clearTimeout(loadingTimer);
+			console.error('Errore migrazione dati guest:', err);
+			showMessage(t('guest.migrationError'));
+		}
+	}
+
 	// ========== CARICAMENTO DATI ==========
 	async function loadData() {
+		if (isGuestMode) {
+			smokes = getGuestSmokes().slice().sort((a, b) => b.ts - a.ts);
+			update();
+			return;
+		}
 		const { data, error } = await supabaseClient
 			.from('smokes')
 			.select('*')
@@ -723,7 +938,7 @@ async function flushPendingSessions() {
 	const moodRating = moodRatingRaw ? parseInt(moodRatingRaw) : null;
 
 	let photoPath = null;
-	if (selectedPhotoFile) {
+	if (selectedPhotoFile && !isGuestMode) {
 		if (navigator.onLine) {
 			photoPath = await uploadSessionPhoto(ts);
 			if (!photoPath) showMessage(t('add.photoNotUploaded'));
@@ -732,9 +947,29 @@ async function flushPendingSessions() {
 		}
 	}
 
-	const isShared = document.getElementById('sharedSessionCheck')?.checked && sessionParticipants.length > 0;
+	const isShared = !isGuestMode && document.getElementById('sharedSessionCheck')?.checked && sessionParticipants.length > 0;
 
-	if (isShared) {
+	if (isGuestMode) {
+		const payload = {
+			id: genGuestId(),
+			type: (hasFumo && hasErba) ? "fumo-erba" : (hasFumo ? "fumo" : "erba"),
+			grams: fumo_grams + erba_grams,
+			fumo_grams, erba_grams,
+			my_fumo_grams: fumo_grams,
+			my_erba_grams: erba_grams,
+			date, time, ts,
+			latitude: currentLocation.lat || null,
+			longitude: currentLocation.lng || null,
+			location_name: finalLocationName,
+			not_mine: document.getElementById("notMineCheck").checked,
+			context_tag: contextTag,
+			mood_rating: moodRating,
+			photo_path: null,
+		};
+		const guestSmokes = getGuestSmokes();
+		guestSmokes.push(payload);
+		setGuestSmokes(guestSmokes);
+	} else if (isShared) {
 		const all = [{ user_id: currentUser.id }, ...sessionParticipants];
 		const fumoContribs = Array.from(document.querySelectorAll('.contrib-fumo:checked')).map(el => el.value);
 		const erbaContribs = Array.from(document.querySelectorAll('.contrib-erba:checked')).map(el => el.value);
@@ -827,6 +1062,12 @@ async function flushPendingSessions() {
 }
 	async function deleteItem(ts) {
 		if(!confirm(t('history.confirmDeleteEntry'))) return;
+
+		if (isGuestMode) {
+			setGuestSmokes(getGuestSmokes().filter(s => s.ts !== ts));
+			await loadData();
+			return;
+		}
 
 		const { error } = await supabaseClient.from('smokes').delete().eq('ts', ts);
 
@@ -1207,13 +1448,16 @@ async function addPlaceFromMap() {
 			}, 100);
 		}
 
-		if (p === 'social') { loadSocial(); loadSnapshots(); loadFriendRequests(); }
+		if (p === 'social' && !isGuestMode) { loadSocial(); loadSnapshots(); loadFriendRequests(); }
 		if (p === 'stock' || p === 'charts') loadPurchases();
 		if (p === 'settings') {
-		    loadUserProfile();
-		    loadReminderSettings();
-		    loadPushDevices();
-		    loadBackupStatus();
+		    applyGuestModeUI();
+		    if (!isGuestMode) {
+		        loadUserProfile();
+		        loadReminderSettings();
+		        loadPushDevices();
+		        loadBackupStatus();
+		    }
 		}
 		update();
 	}
@@ -1750,8 +1994,15 @@ async function saveEditedLocation() {
 		? { latitude: editLocationPicked.lat, longitude: editLocationPicked.lng, location_name: manualName || editLocationPicked.name || null }
 		: { location_name: manualName || null };
 
-	const { error } = await supabaseClient.from('smokes').update(update).eq('ts', editingLocationTs);
-	if (error) { alert(t('modals.locationSaveError')); return; }
+	if (isGuestMode) {
+		const guestSmokes = getGuestSmokes();
+		const session = guestSmokes.find(s => s.ts === editingLocationTs);
+		if (session) Object.assign(session, update);
+		setGuestSmokes(guestSmokes);
+	} else {
+		const { error } = await supabaseClient.from('smokes').update(update).eq('ts', editingLocationTs);
+		if (error) { alert(t('modals.locationSaveError')); return; }
+	}
 
 	showMessage(t('modals.locationUpdated'));
 	closeEditLocationModal();
@@ -1974,8 +2225,18 @@ smokes.forEach(s => {
 	}
 
 	async function updateBestStreak(currentStreak) {
+		if (isGuestMode) {
+			let best = 0;
+			try { best = parseInt(localStorage.getItem('jt_guest_best_streak') || '0', 10) || 0; } catch (e) {}
+			if (currentStreak > best) {
+				best = currentStreak;
+				try { localStorage.setItem('jt_guest_best_streak', String(best)); } catch (e) {}
+			}
+			return best;
+		}
+
 		const { data } = await supabaseClient.from('user_stats').select('best_streak').eq('user_id', currentUser.id).maybeSingle();
-		
+
 		let best = data?.best_streak || 0;
 		if (currentStreak > best) {
 			await supabaseClient.from('user_stats').upsert({
@@ -2231,12 +2492,16 @@ if (ctxPie) {
 
 			if (confermaFinale === confirmWord) {
 				try {
-					const { error } = await supabaseClient
-						.from('smokes')
-						.delete()
-						.eq('user_id', currentUser.id);
+					if (isGuestMode) {
+						setGuestSmokes([]);
+					} else {
+						const { error } = await supabaseClient
+							.from('smokes')
+							.delete()
+							.eq('user_id', currentUser.id);
 
-					if (error) throw error;
+						if (error) throw error;
+					}
 
 					showMessage(t('settings.resetDone'));
 					await loadData();
@@ -2548,10 +2813,14 @@ async function checkAchievements() {
 		if (unlockedAchievements.includes(ach.key)) continue;
 		if (ach.check()) {
 			unlockedAchievements.push(ach.key);
-			await supabaseClient.from('achievements_unlocked').upsert({
-				user_id: currentUser.id,
-				achievement_key: ach.key
-			}, { onConflict: 'user_id,achievement_key' });
+			if (isGuestMode) {
+				try { localStorage.setItem('jt_guest_achievements', JSON.stringify(unlockedAchievements)); } catch (e) {}
+			} else {
+				await supabaseClient.from('achievements_unlocked').upsert({
+					user_id: currentUser.id,
+					achievement_key: ach.key
+				}, { onConflict: 'user_id,achievement_key' });
+			}
 			showMessage(t('achievements.unlocked', { title: achTitle(ach.key) }));
 		}
 	}
@@ -3444,6 +3713,14 @@ let pendingCloseStock = null; // scorta in attesa di chiusura (usato dai modal)
 let sessionsToFix = []; // sessioni del periodo da correggere
 
 async function loadPurchases() {
+    if (isGuestMode) {
+        purchases = getGuestPurchases().slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+        activeFumoStock = purchases.find(p => p.type === 'fumo' && !p.is_closed) || null;
+        activeErbaStock = purchases.find(p => p.type === 'erba' && !p.is_closed) || null;
+        renderStockPage();
+        renderMiniWidget();
+        return;
+    }
     const { data, error } = await supabaseClient
         .from('purchases')
         .select('*')
@@ -3810,16 +4087,22 @@ async function savePurchase() {
         if (!confirm(t('stock.confirmAddSeparatePurchase', { type: typeLabel }))) return;
     }
 
-    const { error } = await supabaseClient.from('purchases').insert({
-        user_id: currentUser.id,
-        type: currentBuyType,
-        grams,
-        price,
-        date,
-        is_closed: false
-    });
+    if (isGuestMode) {
+        const guestPurchases = getGuestPurchases();
+        guestPurchases.push({ id: genGuestId(), type: currentBuyType, grams, price, date, closed_at: null, is_closed: false });
+        setGuestPurchases(guestPurchases);
+    } else {
+        const { error } = await supabaseClient.from('purchases').insert({
+            user_id: currentUser.id,
+            type: currentBuyType,
+            grams,
+            price,
+            date,
+            is_closed: false
+        });
 
-    if (error) { alert(t('stock.saveError')); return; }
+        if (error) { alert(t('stock.saveError')); return; }
+    }
 
     closeBuyModal();
     showMessage(t('stock.purchaseRegistered'));
@@ -3828,6 +4111,12 @@ async function savePurchase() {
 
 async function deletePurchase(id) {
     if (!confirm(t('stock.confirmDeletePurchase'))) return;
+    if (isGuestMode) {
+        setGuestPurchases(getGuestPurchases().filter(p => p.id !== id));
+        showMessage(t('stock.purchaseDeleted'));
+        await loadPurchases();
+        return;
+    }
     const { error } = await supabaseClient.from('purchases').delete().eq('id', id);
     if (!error) { showMessage(t('stock.purchaseDeleted')); await loadPurchases(); }
 }
@@ -3883,6 +4172,8 @@ async function fixProportional() {
 
     const factor = stock.grams / consumed; // es. 0.85 se hai segnato troppo
 
+    const guestSmokes = isGuestMode ? getGuestSmokes() : null;
+
     for (const s of sessionsToFix) {
         const oldGram = type === 'fumo' ? (s.fumo_grams || 0) : (s.erba_grams || 0);
         const newGram = parseFloat((oldGram * factor).toFixed(2));
@@ -3892,8 +4183,15 @@ async function fixProportional() {
             ? { fumo_grams: newGram, grams: newTotal }
             : { erba_grams: newGram, grams: newTotal };
 
-        await supabaseClient.from('smokes').update(updateObj).eq('id', s.id);
+        if (isGuestMode) {
+            const rec = guestSmokes.find(g => g.id === s.id);
+            if (rec) Object.assign(rec, updateObj);
+        } else {
+            await supabaseClient.from('smokes').update(updateObj).eq('id', s.id);
+        }
     }
+
+    if (isGuestMode) setGuestSmokes(guestSmokes);
 
     document.getElementById('discrepancyModal').style.display = 'none';
     showMessage(t('stock.sessionsRecalculated'));
@@ -3936,6 +4234,7 @@ function fixManual() {
 
 async function saveManualFix() {
     const inputs = document.querySelectorAll('#manualFixList input[data-id]');
+    const guestSmokes = isGuestMode ? getGuestSmokes() : null;
 
     for (const input of inputs) {
         const id = input.dataset.id;
@@ -3949,8 +4248,15 @@ async function saveManualFix() {
             ? { fumo_grams: newGram, grams: newTotal }
             : { erba_grams: newGram, grams: newTotal };
 
-        await supabaseClient.from('smokes').update(updateObj).eq('id', id);
+        if (isGuestMode) {
+            const rec = guestSmokes.find(g => g.id === Number(id));
+            if (rec) Object.assign(rec, updateObj);
+        } else {
+            await supabaseClient.from('smokes').update(updateObj).eq('id', id);
+        }
     }
+
+    if (isGuestMode) setGuestSmokes(guestSmokes);
 
     closeManualFix();
     showMessage(t('stock.sessionsFixed'));
@@ -3968,13 +4274,21 @@ async function confirmCloseStock() {
     if (!pendingCloseStock) return;
 
     const { stock } = pendingCloseStock;
+    const closedAt = new Date().toISOString().split('T')[0];
 
-    const { error } = await supabaseClient
-        .from('purchases')
-        .update({ is_closed: true, closed_at: new Date().toISOString().split('T')[0] })
-        .eq('id', stock.id);
+    if (isGuestMode) {
+        const guestPurchases = getGuestPurchases();
+        const rec = guestPurchases.find(p => p.id === stock.id);
+        if (rec) Object.assign(rec, { is_closed: true, closed_at: closedAt });
+        setGuestPurchases(guestPurchases);
+    } else {
+        const { error } = await supabaseClient
+            .from('purchases')
+            .update({ is_closed: true, closed_at: closedAt })
+            .eq('id', stock.id);
 
-    if (error) { alert(t('stock.closeStockError')); return; }
+        if (error) { alert(t('stock.closeStockError')); return; }
+    }
 
     showMessage(t('stock.stockClosed'));
     pendingCloseStock = null;
