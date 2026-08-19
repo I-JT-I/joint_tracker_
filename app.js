@@ -2048,7 +2048,7 @@ if (ctxPie) {
 	charts.pie = new Chart(ctxPie, {
 		type: 'doughnut',
 		data: { 
-			labels: ['Fumo', 'Erba'], 
+			labels: [t('charts.labelSmoke'), t('charts.labelWeed')],
 			datasets: [{ 
 				data: [gramsFumo, gramsErba], 
 				backgroundColor: ['#795548', '#4CAF50'] 
@@ -2080,7 +2080,7 @@ if (ctxPie) {
 				data: {
 					labels: monthLabels,
 					datasets: [{
-						label: 'Spesa (€)',
+						label: t('charts.datasetSpending'),
 						data: spendingByMonth,
 						backgroundColor: '#9c27b0'
 					}]
@@ -2109,8 +2109,8 @@ if (ctxPie) {
 				data: { 
 					labels: last7.map(d => d.slice(8)), 
 					datasets: [{ 
-						label: 'Grammi', 
-						data: weightData, 
+						label: t('charts.datasetGrams'),
+						data: weightData,
 						borderColor: '#2e7d32', 
 						backgroundColor: 'rgba(46,125,50,0.1)', 
 						fill: true 
@@ -2131,10 +2131,10 @@ if (ctxPie) {
 			charts.dailyAll = new Chart(ctxDaily, {
 				type: 'line',
 				data: { 
-					labels: sortedDates.map(d => d.split("-").reverse().join("/")), 
-					datasets: [{ 
-						label: 'Joint', 
-						data: dailyCounts, 
+					labels: sortedDates.map(d => d.split("-").reverse().join("/")),
+					datasets: [{
+						label: t('charts.datasetJoints'),
+						data: dailyCounts,
 						borderColor: '#1b5e20', 
 						backgroundColor: 'rgba(27,94,32,0.1)', 
 						fill: true, 
@@ -2158,11 +2158,11 @@ if (ctxPie) {
 		if (ctxWeek) {
 			charts.week = new Chart(ctxWeek, {
 				type: 'bar',
-				data: { 
-					labels: Object.keys(weekDays), 
-					datasets: [{ 
-						label: 'Joint', 
-						data: Object.values(weekDays), 
+				data: {
+					labels: t('common.weekdays'),
+					datasets: [{
+						label: t('charts.datasetJoints'),
+						data: Object.values(weekDays),
 						backgroundColor: '#66bb6a' 
 					}]
 				},
@@ -2185,10 +2185,10 @@ if (ctxPie) {
 		if (ctxTime) {
 			charts.time = new Chart(ctxTime, {
 				type: 'polarArea',
-				data: { 
-					labels: Object.keys(hours), 
-					datasets: [{ 
-						data: Object.values(hours), 
+				data: {
+					labels: [t('charts.timeSlotNight'), t('charts.timeSlotMorning'), t('charts.timeSlotAfternoon'), t('charts.timeSlotEvening')],
+					datasets: [{
+						data: Object.values(hours),
 						backgroundColor: ['#2c3e50','#f1c40f','#e67e22','#2980b9'] 
 					}]
 				},
@@ -2672,7 +2672,7 @@ function renderCalendarHeatmap() {
 	start.setDate(start.getDate() - 364);
 	start.setDate(start.getDate() - start.getDay()); // allinea a domenica
 
-	const monthNames = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+	const monthNames = t('common.monthsShort');
 	const weeks = [];
 	const cursor = new Date(start);
 	while (cursor <= today) {

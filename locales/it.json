@@ -14,6 +14,7 @@
     "weed": "🍃 Erba",
     "smokeWeed": "🍫🍃 Fumo+Erba",
     "months": ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"],
+    "monthsShort": ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"],
     "weekdays": ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"]
   },
   "nav": {
@@ -203,7 +204,16 @@
     "timeSlots": "⏰ Fasce Orarie",
     "smokeWeedDiff": "🥦 Differenza Fumo/Erba",
     "monthlySpending": "💰 Spesa Mensile",
-    "spendingNote": "Il costo di ogni acquisto è spalmato sui mesi in cui è stato davvero consumato, non su quello in cui l'hai comprato."
+    "spendingNote": "Il costo di ogni acquisto è spalmato sui mesi in cui è stato davvero consumato, non su quello in cui l'hai comprato.",
+    "labelSmoke": "Fumo",
+    "labelWeed": "Erba",
+    "datasetSpending": "Spesa (€)",
+    "datasetGrams": "Grammi",
+    "datasetJoints": "Joint",
+    "timeSlotNight": "Notte",
+    "timeSlotMorning": "Mattina",
+    "timeSlotAfternoon": "Pomeriggio",
+    "timeSlotEvening": "Sera"
   },
   "places": {
     "sessionsMap": "🗺️ Mappa delle Sessioni",
