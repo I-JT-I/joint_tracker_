@@ -761,6 +761,9 @@ async function flushPendingSessions() {
 		setVisible('socialContent', !isGuestMode);
 		setVisible('socialLocked', isGuestMode);
 
+		setVisible('galleryCard', !isGuestMode);
+		setVisible('galleryLocked', isGuestMode);
+
 		const logoutBtn = document.getElementById('logoutBtn');
 		if (logoutBtn) logoutBtn.textContent = isGuestMode ? t('guest.exitToLogin') : t('settings.logout');
 	}
@@ -1438,7 +1441,7 @@ async function addPlaceFromMap() {
 	// Ricarica i dati/render dinamici di una pagina. Estratto da showPage() così può essere
 	// richiamato anche al cambio lingua, per aggiornare il testo generato via JS senza reload.
 	function refreshPageDynamicContent(p) {
-		if (p === 'gallery') loadGallery();
+		if (p === 'gallery' && !isGuestMode) loadGallery();
 
 		if (p === 'map') {
 			loadUserPlaces();

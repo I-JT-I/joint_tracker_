@@ -297,7 +297,11 @@
 
 <!-- PAGINA GALLERIA -->
 <div id="page-gallery" class="page">
-	<div class="card">
+	<div class="card" id="galleryLocked" style="display:none; text-align:center;">
+		<h3 data-i18n="gallery.title">📷 Galleria</h3>
+		<p style="color:var(--color-text-muted); font-size:13px;" data-i18n="guest.featureLocked">🔒 Iscriviti per poterla usare</p>
+	</div>
+	<div class="card" id="galleryCard">
 		<h3 data-i18n="gallery.title">📷 Galleria</h3>
 		<div id="galleryGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;"></div>
 	</div>
