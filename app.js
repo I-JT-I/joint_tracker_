@@ -85,20 +85,25 @@ function personalGrams(s) {
 	return (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0);
 }
 
+// title/desc si leggono da locales/*.json tramite achTitle()/achDesc(), non da qui,
+// così restano coerenti se la lingua cambia dopo il primo render.
 const ACHIEVEMENTS = [
-	{ key: 'first_session', icon: '🌱', title: 'Prima Volta', desc: 'Segna la tua prima sessione', check: () => smokes.length >= 1 },
-	{ key: 'sessions_10', icon: '🔥', title: 'Decina', desc: '10 sessioni totali', check: () => smokes.length >= 10 },
-	{ key: 'sessions_100', icon: '💯', title: 'Centurione', desc: '100 sessioni totali', check: () => smokes.length >= 100 },
-	{ key: 'sessions_500', icon: '🏆', title: 'Veterano', desc: '500 sessioni totali', check: () => smokes.length >= 500 },
-	{ key: 'streak_7', icon: '📅', title: 'Settimana Piena', desc: 'Streak di 7 giorni', check: () => calculateStreak() >= 7 },
-	{ key: 'streak_30', icon: '🗓️', title: 'Mese di Ferro', desc: 'Streak di 30 giorni', check: () => calculateStreak() >= 30 },
-	{ key: 'streak_100', icon: '💎', title: 'Inarrestabile', desc: 'Streak di 100 giorni', check: () => calculateStreak() >= 100 },
-	{ key: 'first_purchase', icon: '🛒', title: 'Rifornito', desc: 'Registra il tuo primo acquisto', check: () => typeof purchases !== 'undefined' && purchases.length >= 1 },
-	{ key: 'first_friend', icon: '🤝', title: 'Non Più Solo', desc: 'Aggiungi il tuo primo amico', check: () => friendsCountCache >= 1 },
-	{ key: 'first_shared', icon: '👥', title: 'Condivisione', desc: 'Fai la tua prima sessione condivisa', check: () => smokes.some(s => Array.isArray(s.shared_with) && s.shared_with.length > 0) },
-	{ key: 'explorer', icon: '🗺️', title: 'Esploratore', desc: 'Salva 5 posti diversi', check: () => userPlaces.length >= 5 },
-	{ key: 'globe_trotter', icon: '🌍', title: 'Giramondo', desc: 'Sessioni in 5 posti diversi', check: () => new Set(smokes.map(s => s.location_name).filter(Boolean)).size >= 5 },
+	{ key: 'first_session', icon: '🌱', check: () => smokes.length >= 1 },
+	{ key: 'sessions_10', icon: '🔥', check: () => smokes.length >= 10 },
+	{ key: 'sessions_100', icon: '💯', check: () => smokes.length >= 100 },
+	{ key: 'sessions_500', icon: '🏆', check: () => smokes.length >= 500 },
+	{ key: 'streak_7', icon: '📅', check: () => calculateStreak() >= 7 },
+	{ key: 'streak_30', icon: '🗓️', check: () => calculateStreak() >= 30 },
+	{ key: 'streak_100', icon: '💎', check: () => calculateStreak() >= 100 },
+	{ key: 'first_purchase', icon: '🛒', check: () => typeof purchases !== 'undefined' && purchases.length >= 1 },
+	{ key: 'first_friend', icon: '🤝', check: () => friendsCountCache >= 1 },
+	{ key: 'first_shared', icon: '👥', check: () => smokes.some(s => Array.isArray(s.shared_with) && s.shared_with.length > 0) },
+	{ key: 'explorer', icon: '🗺️', check: () => userPlaces.length >= 5 },
+	{ key: 'globe_trotter', icon: '🌍', check: () => new Set(smokes.map(s => s.location_name).filter(Boolean)).size >= 5 },
 ];
+
+function achTitle(key) { return t(`achievements.${key}.title`); }
+function achDesc(key) { return t(`achievements.${key}.desc`); }
 
 
 	// Gestione selezione Fumo/Erba
@@ -1207,6 +1212,7 @@ async function addPlaceFromMap() {
 	document.addEventListener('i18n:change', () => {
 		const p = getCurrentPageName();
 		if (p && p !== 'auth') refreshPageDynamicContent(p);
+		if (document.getElementById('tutorialModal')?.style.display === 'flex') renderTutorialStep();
 	});
 
 	// ========== MAPPA (CORRETTA DAL PRIMO CODICE) ==========
@@ -1276,7 +1282,7 @@ function updateMap() {
         });
 
         const marker = L.marker([place.lat, place.lng], { icon: markerEl })
-            .bindPopup(`<strong>📍 ${place.name}</strong><br>Sessioni: ${place.count}<br>Totale: ${place.grams.toFixed(1)}g`);
+            .bindPopup(`<strong>📍 ${place.name}</strong><br>${t('places.sessionsPopup', { count: place.count })}<br>${t('places.totalPopup', { grams: place.grams.toFixed(1) })}`);
 
         markerClusterGroup.addLayer(marker);
         bounds.extend([place.lat, place.lng]);
@@ -1297,7 +1303,7 @@ function updateMap() {
         });
 
         const marker = L.marker([s.latitude, s.longitude], { icon: markerEl })
-            .bindPopup(`<strong>${s.location_name || 'Posizione'}</strong><br>${s.date} ${s.time}<br>${parseFloat(personalGrams(s).toFixed(2))}g`);
+            .bindPopup(`<strong>${s.location_name || t('places.locationFallback')}</strong><br>${s.date} ${s.time}<br>${parseFloat(personalGrams(s).toFixed(2))}g`);
 
         markerClusterGroup.addLayer(marker);
         bounds.extend([s.latitude, s.longitude]);
@@ -1310,8 +1316,8 @@ function updateMap() {
     }
 
     document.getElementById('mapStats').innerHTML = `
-        <div class="stat-box"><big>${totalCount}</big><small>Sessioni</small></div>
-        <div class="stat-box"><big>${totalGrams.toFixed(1)}g</big><small>Totale</small></div>
+        <div class="stat-box"><big>${totalCount}</big><small>${t('places.statSessions')}</small></div>
+        <div class="stat-box"><big>${totalGrams.toFixed(1)}g</big><small>${t('places.statTotal')}</small></div>
     `;
 }
 
@@ -1335,7 +1341,7 @@ function updateMap() {
 		if (!greetingEl) return;
 
 		const hour = new Date().getHours();
-		const greeting = hour < 6 ? 'Nottataccia 🌙' : hour < 12 ? 'Buongiorno ☀️' : hour < 18 ? 'Buon pomeriggio 👋' : 'Buonasera 🌆';
+		const greeting = hour < 6 ? t('home.greetingNight') : hour < 12 ? t('home.greetingMorning') : hour < 18 ? t('home.greetingAfternoon') : t('home.greetingEvening');
 		greetingEl.textContent = greeting;
 
 		document.getElementById('homeStreak').textContent = calculateStreak();
@@ -1344,11 +1350,11 @@ function updateMap() {
 		const currentMonthKey = getMonthKey(now);
 		const monthSmokes = smokes.filter(s => getMonthKey(s.date) === currentMonthKey);
 		const monthGrams = monthSmokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
-		document.getElementById('homeMonthStat').textContent = `Questo mese: ${monthSmokes.length} sessioni · ${monthGrams.toFixed(1)}g`;
+		document.getElementById('homeMonthStat').textContent = tn('home.monthStat', monthSmokes.length, { grams: monthGrams.toFixed(1) });
 
 		const reminderLine = document.getElementById('homeReminderLine');
 		if (userReminderSettings && userReminderSettings.reminder_enabled && userReminderSettings.reminder_time) {
-			reminderLine.textContent = `⏰ Promemoria alle ${userReminderSettings.reminder_time.slice(0, 5)}`;
+			reminderLine.textContent = t('home.reminderAt', { time: userReminderSettings.reminder_time.slice(0, 5) });
 			reminderLine.style.display = 'inline';
 		} else {
 			reminderLine.style.display = 'none';
@@ -1359,7 +1365,7 @@ function updateMap() {
 			const lastKey = unlockedAchievements[unlockedAchievements.length - 1];
 			const lastAch = ACHIEVEMENTS.find(a => a.key === lastKey);
 			if (lastAch) {
-				teaserEl.textContent = `🏅 Ultimo traguardo: ${lastAch.icon} ${lastAch.title}`;
+				teaserEl.textContent = t('home.lastAchievement', { icon: lastAch.icon, title: achTitle(lastAch.key) });
 				teaserEl.style.display = 'block';
 			}
 		} else {
@@ -1368,42 +1374,16 @@ function updateMap() {
 	}
 
 // ========== TUTORIAL PRIMO ACCESSO ==========
+// title/text sono chiavi di traduzione, non testo diretto, così il tutorial resta
+// coerente se l'utente cambia lingua mentre è aperto (vedi listener i18n:change).
 const TUTORIAL_SLIDES = [
-	{
-		icon: '🌿',
-		title: 'Benvenuto su JointTracker!',
-		text: "Un'app per tenere traccia delle tue sessioni, delle scorte e di qualche statistica in più. Facciamo un giro veloce delle funzioni principali — meno di un minuto."
-	},
-	{
-		icon: '➕',
-		title: 'Aggiungi una sessione',
-		text: 'Dalla pagina "Aggiungi" scegli cosa fumi, quanto, data e ora (modificabili se te ne dimentichi sul momento). Puoi anche allegare posizione, foto, contesto e umore — tutto facoltativo.'
-	},
-	{
-		icon: '📦',
-		title: 'Scorte',
-		text: 'Registra i tuoi acquisti in "Scorte": l\'app calcola da sola quanto ti resta e stima quanto durerà, scalando le sessioni che segni. Quando la finisci, puoi correggere eventuali discrepanze prima di chiuderla.'
-	},
-	{
-		icon: '📊',
-		title: 'Storico e Grafici',
-		text: 'In Storico puoi cercare e filtrare le sessioni passate. In Grafici trovi la heatmap del calendario, l\'andamento nel tempo e la spesa mensile calcolata su quanto hai davvero consumato, non su quando hai comprato.'
-	},
-	{
-		icon: '🎯',
-		title: 'Obiettivi e Pause',
-		text: 'In Stats puoi impostare un obiettivo personale (es. massimo N sessioni a settimana), leggere qualche insight automatico e tenere traccia di eventuali pause di tolleranza.'
-	},
-	{
-		icon: '👥',
-		title: 'Social',
-		text: 'Aggiungi amici per confrontare le statistiche: dovranno accettare la tua richiesta prima che tu possa vedere le loro. Nelle Istantanee trovi le foto più recenti tue e loro.'
-	},
-	{
-		icon: '⚙️',
-		title: 'Impostazioni',
-		text: 'Da qui gestisci tema, promemoria, notifiche push, ed esporti i tuoi dati in JSON o CSV quando vuoi. Puoi rivedere questo tutorial in qualsiasi momento da qui.'
-	}
+	{ icon: '🌿', titleKey: 'tutorial.slide1Title', textKey: 'tutorial.slide1Text' },
+	{ icon: '➕', titleKey: 'tutorial.slide2Title', textKey: 'tutorial.slide2Text' },
+	{ icon: '📦', titleKey: 'tutorial.slide3Title', textKey: 'tutorial.slide3Text' },
+	{ icon: '📊', titleKey: 'tutorial.slide4Title', textKey: 'tutorial.slide4Text' },
+	{ icon: '🎯', titleKey: 'tutorial.slide5Title', textKey: 'tutorial.slide5Text' },
+	{ icon: '👥', titleKey: 'tutorial.slide6Title', textKey: 'tutorial.slide6Text' },
+	{ icon: '⚙️', titleKey: 'tutorial.slide7Title', textKey: 'tutorial.slide7Text' }
 ];
 
 let tutorialStep = 0;
@@ -1413,8 +1393,8 @@ function renderTutorialStep() {
 	document.getElementById('tutorialSlide').innerHTML = `
 		<div style="text-align:center; padding:10px 0;">
 			<div style="font-size:48px; margin-bottom:15px;">${slide.icon}</div>
-			<h3 style="margin-bottom:10px;">${slide.title}</h3>
-			<p style="color:var(--color-text-secondary); font-size:14px; line-height:1.6;">${slide.text}</p>
+			<h3 style="margin-bottom:10px;">${t(slide.titleKey)}</h3>
+			<p style="color:var(--color-text-secondary); font-size:14px; line-height:1.6;">${t(slide.textKey)}</p>
 		</div>
 	`;
 
@@ -1424,7 +1404,7 @@ function renderTutorialStep() {
 
 	document.getElementById('tutorialPrevBtn').style.display = tutorialStep === 0 ? 'none' : 'block';
 	document.getElementById('tutorialSkipBtn').style.display = tutorialStep === TUTORIAL_SLIDES.length - 1 ? 'none' : 'block';
-	document.getElementById('tutorialNextBtn').textContent = tutorialStep === TUTORIAL_SLIDES.length - 1 ? 'Inizia! 🚀' : 'Avanti →';
+	document.getElementById('tutorialNextBtn').textContent = tutorialStep === TUTORIAL_SLIDES.length - 1 ? t('tutorial.start') : t('modals.tutorialNext');
 }
 
 function openTutorial() {
@@ -2556,7 +2536,7 @@ async function checkAchievements() {
 				user_id: currentUser.id,
 				achievement_key: ach.key
 			}, { onConflict: 'user_id,achievement_key' });
-			showMessage(`🏅 Traguardo sbloccato: ${ach.title}!`);
+			showMessage(t('achievements.unlocked', { title: achTitle(ach.key) }));
 		}
 	}
 	renderAchievements();
@@ -2575,8 +2555,8 @@ function renderAchievements() {
 						opacity:${unlocked ? '1' : '0.5'};">
 				<span style="font-size:28px; filter:${unlocked ? 'none' : 'grayscale(100%)'};">${ach.icon}</span>
 				<div>
-					<div style="font-weight:700; font-size:14px; color:${unlocked ? 'var(--heading)' : 'var(--color-text-muted)'};">${ach.title}</div>
-					<div style="font-size:12px; color:var(--color-text-muted);">${ach.desc}</div>
+					<div style="font-weight:700; font-size:14px; color:${unlocked ? 'var(--heading)' : 'var(--color-text-muted)'};">${achTitle(ach.key)}</div>
+					<div style="font-size:12px; color:var(--color-text-muted);">${achDesc(ach.key)}</div>
 				</div>
 			</div>
 		`;
