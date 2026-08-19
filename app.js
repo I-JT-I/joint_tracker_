@@ -2770,17 +2770,17 @@ function renderGoalCard() {
 
 	if (!activeGoal) {
 		el.innerHTML = `
-			<p style="text-align:center; color:var(--color-text-muted); font-size:13px; margin-bottom:10px;">Nessun obiettivo impostato.</p>
+			<p style="text-align:center; color:var(--color-text-muted); font-size:13px; margin-bottom:10px;">${t('goals.noGoalSet')}</p>
 			<select id="goalMetric" style="margin-top:0;">
-				<option value="sessions">Numero sessioni</option>
-				<option value="grams">Grammi totali</option>
+				<option value="sessions">${t('goals.metricSessions')}</option>
+				<option value="grams">${t('goals.metricGrams')}</option>
 			</select>
 			<select id="goalPeriod" style="margin-top:10px;">
-				<option value="week">a settimana</option>
-				<option value="month">al mese</option>
+				<option value="week">${t('goals.periodWeek')}</option>
+				<option value="month">${t('goals.periodMonth')}</option>
 			</select>
-			<input type="number" id="goalTarget" min="0.1" step="0.1" placeholder="Valore massimo" style="margin-top:10px;">
-			<button class="main-btn" onclick="setGoal()" style="margin-top:10px;">🎯 Imposta obiettivo</button>
+			<input type="number" id="goalTarget" min="0.1" step="0.1" placeholder="${t('goals.targetPlaceholder')}" style="margin-top:10px;">
+			<button class="main-btn" onclick="setGoal()" style="margin-top:10px;">${t('goals.setGoal')}</button>
 		`;
 		return;
 	}
@@ -2789,10 +2789,10 @@ function renderGoalCard() {
 	let periodStart, periodLabel;
 	if (activeGoal.period === 'week') {
 		periodStart = getWeekStart(now);
-		periodLabel = 'questa settimana';
+		periodLabel = t('goals.periodThisWeek');
 	} else {
 		periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-		periodLabel = 'questo mese';
+		periodLabel = t('goals.periodThisMonth');
 	}
 	const periodStartStr = toDateStr(periodStart);
 
@@ -2807,7 +2807,7 @@ function renderGoalCard() {
 	const isOver = current > target;
 	const barColor = isOver ? '#f44336' : pct > 75 ? '#FF9800' : '#4CAF50';
 	const unit = isSessions ? '' : 'g';
-	const metricLabel = isSessions ? 'sessioni' : 'grammi';
+	const metricLabel = isSessions ? t('goals.metricLabelSessions') : t('goals.metricLabelGrams');
 	const decimals = isSessions ? 0 : 1;
 
 	el.innerHTML = `
@@ -2818,8 +2818,8 @@ function renderGoalCard() {
 		<div style="background:rgba(var(--overlay-rgb),0.12); border-radius:8px; height:10px; overflow:hidden;">
 			<div style="height:100%; width:${pct}%; background:${barColor}; border-radius:8px; transition: width 0.5s ease;"></div>
 		</div>
-		${isOver ? `<p style="font-size:12px; color:var(--danger); margin-top:8px; text-align:center;">⚠️ Obiettivo superato per ${periodLabel}</p>` : ''}
-		<button class="secondary-btn" onclick="removeGoal()" style="margin-top:12px;">Rimuovi obiettivo</button>
+		${isOver ? `<p style="font-size:12px; color:var(--danger); margin-top:8px; text-align:center;">${t('goals.goalExceeded', { period: periodLabel })}</p>` : ''}
+		<button class="secondary-btn" onclick="removeGoal()" style="margin-top:12px;">${t('goals.removeGoal')}</button>
 	`;
 }
 
@@ -2827,7 +2827,7 @@ async function setGoal() {
 	const metric = document.getElementById('goalMetric').value;
 	const period = document.getElementById('goalPeriod').value;
 	const target = parseFloat(document.getElementById('goalTarget').value);
-	if (!target || target <= 0) return alert('Inserisci un valore valido!');
+	if (!target || target <= 0) return alert(t('goals.enterValidValue'));
 
 	if (activeGoal) {
 		await supabaseClient.from('user_goals').update({ is_active: false }).eq('id', activeGoal.id);
@@ -2840,20 +2840,20 @@ async function setGoal() {
 		is_active: true
 	});
 
-	if (error) { alert("Errore nel salvataggio dell'obiettivo."); return; }
-	showMessage('🎯 Obiettivo impostato!');
+	if (error) { alert(t('goals.goalSaveError')); return; }
+	showMessage(t('goals.goalSet'));
 	await loadGoal();
 }
 
 async function removeGoal() {
 	if (!activeGoal) return;
-	if (!confirm("Rimuovere l'obiettivo attuale?")) return;
+	if (!confirm(t('goals.confirmRemoveGoal'))) return;
 
 	const { error } = await supabaseClient.from('user_goals').update({ is_active: false }).eq('id', activeGoal.id);
-	if (error) { alert('Errore nella rimozione.'); return; }
+	if (error) { alert(t('common.removeError')); return; }
 
 	activeGoal = null;
-	showMessage('🗑️ Obiettivo rimosso');
+	showMessage(t('goals.goalRemoved'));
 	renderGoalCard();
 }
 
@@ -2865,7 +2865,7 @@ function getMonthKey(date) {
 // ========== RIEPILOGO ANNUALE ("WRAPPED") ==========
 function openWrapped(year) {
 	const years = [...new Set(smokes.map(s => new Date(s.date).getFullYear()))].sort((a, b) => b - a);
-	if (years.length === 0) return alert('Non ci sono ancora dati per generare un riepilogo.');
+	if (years.length === 0) return alert(t('wrapped.noData'));
 	const targetYear = year || years[0];
 	renderWrapped(targetYear, years);
 	document.getElementById('wrappedModal').style.display = 'flex';
@@ -2877,7 +2877,7 @@ function closeWrapped() {
 
 function renderWrapped(year, years) {
 	const yearSmokes = smokes.filter(s => new Date(s.date).getFullYear() === year);
-	document.getElementById('wrappedTitle').textContent = `🎉 Il tuo ${year}`;
+	document.getElementById('wrappedTitle').textContent = t('wrapped.title', { year });
 
 	const selector = years.length > 1 ? `
 		<select onchange="openWrapped(parseInt(this.value))" style="margin-top:0; margin-bottom:15px;">
@@ -2886,7 +2886,7 @@ function renderWrapped(year, years) {
 	` : '';
 
 	if (yearSmokes.length === 0) {
-		document.getElementById('wrappedContent').innerHTML = `${selector}<p style="text-align:center; color:var(--color-text-muted);">Nessun dato per il ${year}.</p>`;
+		document.getElementById('wrappedContent').innerHTML = `${selector}<p style="text-align:center; color:var(--color-text-muted);">${t('wrapped.noDataForYear', { year })}</p>`;
 		return;
 	}
 
@@ -2894,7 +2894,7 @@ function renderWrapped(year, years) {
 	const totalSessions = yearSmokes.length;
 	const uniqueDays = new Set(yearSmokes.map(s => s.date)).size;
 
-	const dayNames = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+	const dayNames = t('common.weekdays');
 	const dayCounts = [0, 0, 0, 0, 0, 0, 0];
 	yearSmokes.forEach(s => dayCounts[new Date(s.date).getDay()]++);
 	const topDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
@@ -2903,7 +2903,7 @@ function renderWrapped(year, years) {
 	yearSmokes.forEach(s => { if (s.location_name) placeCounts[s.location_name] = (placeCounts[s.location_name] || 0) + 1; });
 	const topPlace = Object.entries(placeCounts).sort((a, b) => b[1] - a[1])[0];
 
-	const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+	const monthNames = t('common.months');
 	const monthCounts = Array(12).fill(0);
 	yearSmokes.forEach(s => monthCounts[new Date(s.date).getMonth()]++);
 	const topMonthIdx = monthCounts.indexOf(Math.max(...monthCounts));
@@ -2916,16 +2916,16 @@ function renderWrapped(year, years) {
 	document.getElementById('wrappedContent').innerHTML = `
 		${selector}
 		<div class="stat-grid" style="margin-bottom:15px;">
-			<div class="stat-box"><big>${totalSessions}</big><small>Sessioni</small></div>
-			<div class="stat-box"><big>${totalGrams.toFixed(1)}</big><small>Grammi</small></div>
-			<div class="stat-box"><big>${uniqueDays}</big><small>Giorni attivi</small></div>
-			<div class="stat-box"><big>${sharedCount}</big><small>Condivise</small></div>
+			<div class="stat-box"><big>${totalSessions}</big><small>${t('wrapped.statSessions')}</small></div>
+			<div class="stat-box"><big>${totalGrams.toFixed(1)}</big><small>${t('wrapped.statGrams')}</small></div>
+			<div class="stat-box"><big>${uniqueDays}</big><small>${t('wrapped.statActiveDays')}</small></div>
+			<div class="stat-box"><big>${sharedCount}</big><small>${t('wrapped.statShared')}</small></div>
 		</div>
 		<div style="font-size:13px; line-height:2;">
-			<div>📅 Giorno preferito: <strong>${dayNames[topDayIdx]}</strong></div>
-			<div>🌟 Mese più attivo: <strong>${monthNames[topMonthIdx]}</strong> (${monthCounts[topMonthIdx]} sessioni)</div>
-			${topPlace ? `<div>📍 Posto preferito: <strong>${topPlace[0]}</strong> (${topPlace[1]}x)</div>` : ''}
-			${totalSpent > 0 ? `<div>💰 Speso (registrato): <strong>€${totalSpent.toFixed(2)}</strong></div>` : ''}
+			<div>${t('wrapped.favoriteDay', { day: `<strong>${dayNames[topDayIdx]}</strong>` })}</div>
+			<div>${t('wrapped.mostActiveMonth', { month: `<strong>${monthNames[topMonthIdx]}</strong>`, count: monthCounts[topMonthIdx] })}</div>
+			${topPlace ? `<div>${t('wrapped.favoritePlace', { place: `<strong>${topPlace[0]}</strong>`, count: topPlace[1] })}</div>` : ''}
+			${totalSpent > 0 ? `<div>${t('wrapped.totalSpent', { amount: `<strong>${totalSpent.toFixed(2)}</strong>` })}</div>` : ''}
 		</div>
 	`;
 }
@@ -2936,12 +2936,12 @@ function renderInsights() {
 	if (!el) return;
 
 	if (smokes.length < 5) {
-		el.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Servono più dati per generare insight (almeno 5 sessioni).</p>';
+		el.innerHTML = `<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">${t('insights.needMoreData')}</p>`;
 		return;
 	}
 
 	const insights = [];
-	const dayNames = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+	const dayNames = t('common.weekdays');
 	const dayCounts = [0, 0, 0, 0, 0, 0, 0];
 	const hourSlots = { Notte: 0, Mattina: 0, Pomeriggio: 0, Sera: 0 };
 	const placeCounts = {};
@@ -2962,19 +2962,19 @@ function renderInsights() {
 	const topDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
 	if (dayCounts[topDayIdx] > 0) {
 		const pct = Math.round((dayCounts[topDayIdx] / smokes.length) * 100);
-		insights.push(`📅 <strong>${dayNames[topDayIdx]}</strong> è il tuo giorno più attivo (${pct}% delle sessioni).`);
+		insights.push(t('insights.topDay', { day: dayNames[topDayIdx], pct }));
 	}
 
 	const topSlot = Object.entries(hourSlots).sort((a, b) => b[1] - a[1])[0];
 	if (topSlot && topSlot[1] > 0) {
 		const pct = Math.round((topSlot[1] / smokes.length) * 100);
-		const slotLabel = { Notte: 'di notte 🌙', Mattina: 'di mattina ☀️', Pomeriggio: 'nel pomeriggio 🌤️', Sera: 'di sera 🌆' }[topSlot[0]];
-		insights.push(`⏰ Fumi soprattutto <strong>${slotLabel}</strong> (${pct}% delle sessioni).`);
+		const slotLabel = { Notte: t('insights.slotNight'), Mattina: t('insights.slotMorning'), Pomeriggio: t('insights.slotAfternoon'), Sera: t('insights.slotEvening') }[topSlot[0]];
+		insights.push(t('insights.topSlot', { slot: slotLabel, pct }));
 	}
 
 	const topPlace = Object.entries(placeCounts).sort((a, b) => b[1] - a[1])[0];
 	if (topPlace) {
-		insights.push(`📍 Il posto dove fumi più spesso è <strong>${topPlace[0]}</strong> (${topPlace[1]} sessioni).`);
+		insights.push(t('insights.topPlace', { place: topPlace[0], count: topPlace[1] }));
 	}
 
 	const now = new Date();
@@ -2987,14 +2987,14 @@ function renderInsights() {
 		const diffPct = Math.round(((currentCount - lastCount) / lastCount) * 100);
 		if (Math.abs(diffPct) >= 10) {
 			insights.push(diffPct > 0
-				? `📈 Questo mese hai fumato il <strong>${diffPct}% in più</strong> rispetto al mese scorso.`
-				: `📉 Questo mese hai fumato il <strong>${Math.abs(diffPct)}% in meno</strong> rispetto al mese scorso.`);
+				? t('insights.moreThisMonth', { pct: diffPct })
+				: t('insights.lessThisMonth', { pct: Math.abs(diffPct) }));
 		}
 	}
 
 	const totalGrams = smokes.reduce((sum, s) => sum + personalGrams(s), 0);
 	const avgPerSession = totalGrams / smokes.length;
-	insights.push(`⚖️ In media consumi <strong>${avgPerSession.toFixed(2)}g</strong> a sessione.`);
+	insights.push(t('insights.avgPerSession', { grams: avgPerSession.toFixed(2) }));
 
 	el.innerHTML = insights.map(i => `
 		<div style="padding:10px 12px; margin-bottom:8px; border-radius:10px; background:rgba(var(--overlay-rgb),0.05); font-size:13px; line-height:1.5;">${i}</div>
@@ -3002,7 +3002,10 @@ function renderInsights() {
 }
 
 // ========== CONTESTO & UMORE ==========
-const CONTEXT_TAG_LABELS = { relax: '😌 Relax', social: '👥 Social', creativo: '🎨 Creativo', sonno: '😴 Sonno' };
+// Le etichette vivono già in locales/*.json come label dei radio button nella pagina Aggiungi
+// (add.contextRelax ecc.) - qui le si riusa invece di duplicarle in un secondo oggetto.
+const CONTEXT_TAG_KEYS = { relax: 'add.contextRelax', social: 'add.contextSocial', creativo: 'add.contextCreative', sonno: 'add.contextSleep' };
+function contextTagLabel(tag) { return CONTEXT_TAG_KEYS[tag] ? t(CONTEXT_TAG_KEYS[tag]) : tag; }
 
 function renderContextStats() {
 	const el = document.getElementById('contextStatsList');
@@ -3010,7 +3013,7 @@ function renderContextStats() {
 
 	const tagged = smokes.filter(s => s.context_tag);
 	if (tagged.length === 0) {
-		el.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">Nessuna sessione taggata ancora. Scegli un contesto quando registri una sessione.</p>';
+		el.innerHTML = `<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">${t('context.noTaggedYet')}</p>`;
 		return;
 	}
 
@@ -3028,8 +3031,8 @@ function renderContextStats() {
 		const avgMood = data.moodCount > 0 ? (data.moodSum / data.moodCount).toFixed(1) : null;
 		return `
 			<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(var(--overlay-rgb),0.05); border-radius:10px; margin-bottom:6px;">
-				<span style="font-size:13px; font-weight:600;">${CONTEXT_TAG_LABELS[tag] || tag}</span>
-				<span style="font-size:12px; color:var(--color-text-muted);">${data.count} sessioni${avgMood ? ` · umore medio ${avgMood}/5` : ''}</span>
+				<span style="font-size:13px; font-weight:600;">${contextTagLabel(tag)}</span>
+				<span style="font-size:12px; color:var(--color-text-muted);">${t('context.sessionsLabel', { count: data.count })}${avgMood ? t('context.avgMoodSuffix', { avg: avgMood }) : ''}</span>
 			</div>
 		`;
 	}).join('');
@@ -3054,8 +3057,8 @@ function renderPeriodComparison() {
 	const lastGrams = lastSmokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
 
 	function renderDiff(current, last) {
-		if (last === 0 && current === 0) return `<span style="color:var(--color-text-muted); font-size:12px;">Nessun dato</span>`;
-		if (last === 0) return `<span style="color:var(--primary); font-size:12px; font-weight:600;">▲ Nuovo questo mese</span>`;
+		if (last === 0 && current === 0) return `<span style="color:var(--color-text-muted); font-size:12px;">${t('period.noData')}</span>`;
+		if (last === 0) return `<span style="color:var(--primary); font-size:12px; font-weight:600;">${t('period.newThisMonth')}</span>`;
 		const pct = ((current - last) / last) * 100;
 		const isSame = Math.abs(pct) < 0.5;
 		const isUp = pct > 0;
@@ -3078,9 +3081,9 @@ function renderPeriodComparison() {
 	}
 
 	el.innerHTML = `
-		${renderRow('Sessioni', currentCount, lastCount, '')}
-		${renderRow('Grammi totali', currentGrams, lastGrams, 'g')}
-		<p style="font-size:11px; color:var(--color-text-muted); margin-top:8px; text-align:center;">Mese scorso: ${lastCount} sessioni · ${lastGrams.toFixed(1)}g</p>
+		${renderRow(t('period.sessions'), currentCount, lastCount, '')}
+		${renderRow(t('period.totalGrams'), currentGrams, lastGrams, 'g')}
+		<p style="font-size:11px; color:var(--color-text-muted); margin-top:8px; text-align:center;">${t('period.lastMonthSummary', { count: lastCount, grams: lastGrams.toFixed(1) })}</p>
 	`;
 }
 
@@ -3411,7 +3414,7 @@ async function renderPushDevices(devices) {
 async function revokePushDevice(id) {
 	if (!confirm(t('settings.confirmRevokeDevice'))) return;
 	const { error } = await supabaseClient.from('push_subscriptions').delete().eq('id', id);
-	if (error) { alert(t('settings.removeDeviceError')); return; }
+	if (error) { alert(t('common.removeError')); return; }
 	showMessage(t('settings.deviceRemoved'));
 	loadPushDevices();
 }

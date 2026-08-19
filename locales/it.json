@@ -10,6 +10,7 @@
     "add": "Aggiungi",
     "loggedInAs": "Loggato come",
     "loading": "Caricamento...",
+    "removeError": "Errore nella rimozione.",
     "smoke": "🍫 Fumo",
     "weed": "🍃 Erba",
     "smokeWeed": "🍫🍃 Fumo+Erba",
@@ -335,6 +336,64 @@
     "pricePlaceholder": "es. 30",
     "purchaseDate": "Data acquisto"
   },
+  "goals": {
+    "noGoalSet": "Nessun obiettivo impostato.",
+    "metricSessions": "Numero sessioni",
+    "metricGrams": "Grammi totali",
+    "periodWeek": "a settimana",
+    "periodMonth": "al mese",
+    "targetPlaceholder": "Valore massimo",
+    "setGoal": "🎯 Imposta obiettivo",
+    "periodThisWeek": "questa settimana",
+    "periodThisMonth": "questo mese",
+    "metricLabelSessions": "sessioni",
+    "metricLabelGrams": "grammi",
+    "goalExceeded": "⚠️ Obiettivo superato per {period}",
+    "removeGoal": "Rimuovi obiettivo",
+    "enterValidValue": "Inserisci un valore valido!",
+    "goalSaveError": "Errore nel salvataggio dell'obiettivo.",
+    "goalSet": "🎯 Obiettivo impostato!",
+    "confirmRemoveGoal": "Rimuovere l'obiettivo attuale?",
+    "goalRemoved": "🗑️ Obiettivo rimosso"
+  },
+  "wrapped": {
+    "noData": "Non ci sono ancora dati per generare un riepilogo.",
+    "title": "🎉 Il tuo {year}",
+    "noDataForYear": "Nessun dato per il {year}.",
+    "statSessions": "Sessioni",
+    "statGrams": "Grammi",
+    "statActiveDays": "Giorni attivi",
+    "statShared": "Condivise",
+    "favoriteDay": "📅 Giorno preferito: {day}",
+    "mostActiveMonth": "🌟 Mese più attivo: {month} ({count} sessioni)",
+    "favoritePlace": "📍 Posto preferito: {place} ({count}x)",
+    "totalSpent": "💰 Speso (registrato): €{amount}"
+  },
+  "insights": {
+    "needMoreData": "Servono più dati per generare insight (almeno 5 sessioni).",
+    "topDay": "📅 <strong>{day}</strong> è il tuo giorno più attivo ({pct}% delle sessioni).",
+    "topSlot": "⏰ Fumi soprattutto <strong>{slot}</strong> ({pct}% delle sessioni).",
+    "slotNight": "di notte 🌙",
+    "slotMorning": "di mattina ☀️",
+    "slotAfternoon": "nel pomeriggio 🌤️",
+    "slotEvening": "di sera 🌆",
+    "topPlace": "📍 Il posto dove fumi più spesso è <strong>{place}</strong> ({count} sessioni).",
+    "moreThisMonth": "📈 Questo mese hai fumato il <strong>{pct}% in più</strong> rispetto al mese scorso.",
+    "lessThisMonth": "📉 Questo mese hai fumato il <strong>{pct}% in meno</strong> rispetto al mese scorso.",
+    "avgPerSession": "⚖️ In media consumi <strong>{grams}g</strong> a sessione."
+  },
+  "context": {
+    "noTaggedYet": "Nessuna sessione taggata ancora. Scegli un contesto quando registri una sessione.",
+    "sessionsLabel": "{count} sessioni",
+    "avgMoodSuffix": " · umore medio {avg}/5"
+  },
+  "period": {
+    "noData": "Nessun dato",
+    "newThisMonth": "▲ Nuovo questo mese",
+    "sessions": "Sessioni",
+    "totalGrams": "Grammi totali",
+    "lastMonthSummary": "Mese scorso: {count} sessioni · {grams}g"
+  },
   "modals": {
     "wrappedTitle": "🎉 Il tuo anno",
     "tutorialSkip": "Salta",
@@ -461,7 +520,6 @@
     "thisDeviceSuffix": "(questo)",
     "activatedOn": "Attivato il {date}",
     "confirmRevokeDevice": "Disattivare le notifiche push per questo dispositivo?",
-    "removeDeviceError": "Errore nella rimozione.",
     "deviceRemoved": "🗑️ Dispositivo rimosso",
     "logout": "🚪 Logout"
   }

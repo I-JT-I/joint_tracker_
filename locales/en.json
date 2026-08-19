@@ -10,6 +10,7 @@
     "add": "Add",
     "loggedInAs": "Logged in as",
     "loading": "Loading...",
+    "removeError": "Error removing.",
     "smoke": "🍫 Hash",
     "weed": "🍃 Weed",
     "smokeWeed": "🍫🍃 Hash+Weed",
@@ -335,6 +336,64 @@
     "pricePlaceholder": "e.g. 30",
     "purchaseDate": "Purchase date"
   },
+  "goals": {
+    "noGoalSet": "No goal set.",
+    "metricSessions": "Number of sessions",
+    "metricGrams": "Total grams",
+    "periodWeek": "per week",
+    "periodMonth": "per month",
+    "targetPlaceholder": "Max value",
+    "setGoal": "🎯 Set goal",
+    "periodThisWeek": "this week",
+    "periodThisMonth": "this month",
+    "metricLabelSessions": "sessions",
+    "metricLabelGrams": "grams",
+    "goalExceeded": "⚠️ Goal exceeded for {period}",
+    "removeGoal": "Remove goal",
+    "enterValidValue": "Enter a valid value!",
+    "goalSaveError": "Error saving the goal.",
+    "goalSet": "🎯 Goal set!",
+    "confirmRemoveGoal": "Remove the current goal?",
+    "goalRemoved": "🗑️ Goal removed"
+  },
+  "wrapped": {
+    "noData": "There's no data yet to generate a recap.",
+    "title": "🎉 Your {year}",
+    "noDataForYear": "No data for {year}.",
+    "statSessions": "Sessions",
+    "statGrams": "Grams",
+    "statActiveDays": "Active days",
+    "statShared": "Shared",
+    "favoriteDay": "📅 Favorite day: {day}",
+    "mostActiveMonth": "🌟 Most active month: {month} ({count} sessions)",
+    "favoritePlace": "📍 Favorite place: {place} ({count}x)",
+    "totalSpent": "💰 Spent (logged): €{amount}"
+  },
+  "insights": {
+    "needMoreData": "More data needed to generate insights (at least 5 sessions).",
+    "topDay": "📅 <strong>{day}</strong> is your most active day ({pct}% of sessions).",
+    "topSlot": "⏰ You mostly smoke <strong>{slot}</strong> ({pct}% of sessions).",
+    "slotNight": "at night 🌙",
+    "slotMorning": "in the morning ☀️",
+    "slotAfternoon": "in the afternoon 🌤️",
+    "slotEvening": "in the evening 🌆",
+    "topPlace": "📍 The place you smoke at most is <strong>{place}</strong> ({count} sessions).",
+    "moreThisMonth": "📈 This month you smoked <strong>{pct}% more</strong> than last month.",
+    "lessThisMonth": "📉 This month you smoked <strong>{pct}% less</strong> than last month.",
+    "avgPerSession": "⚖️ On average you consume <strong>{grams}g</strong> per session."
+  },
+  "context": {
+    "noTaggedYet": "No tagged sessions yet. Choose a context when logging a session.",
+    "sessionsLabel": "{count} sessions",
+    "avgMoodSuffix": " · avg mood {avg}/5"
+  },
+  "period": {
+    "noData": "No data",
+    "newThisMonth": "▲ New this month",
+    "sessions": "Sessions",
+    "totalGrams": "Total grams",
+    "lastMonthSummary": "Last month: {count} sessions · {grams}g"
+  },
   "modals": {
     "wrappedTitle": "🎉 Your year",
     "tutorialSkip": "Skip",
@@ -461,7 +520,6 @@
     "thisDeviceSuffix": "(this one)",
     "activatedOn": "Activated on {date}",
     "confirmRevokeDevice": "Turn off push notifications for this device?",
-    "removeDeviceError": "Error removing.",
     "deviceRemoved": "🗑️ Device removed",
     "logout": "🚪 Logout"
   }
