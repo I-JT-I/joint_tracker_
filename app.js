@@ -807,7 +807,7 @@ async function flushPendingSessions() {
 	getLocationAuto();
 }
 	async function deleteItem(ts) {
-		if(!confirm("Vuoi eliminare questo inserimento?")) return;
+		if(!confirm(t('history.confirmDeleteEntry'))) return;
 
 		const { error } = await supabaseClient.from('smokes').delete().eq('ts', ts);
 
@@ -825,11 +825,11 @@ async function addNewPlace() {
     const name = nameInput.value.trim();
     
     if (!name) {
-        return alert("Inserisci un nome per questo posto!");
+        return alert(t('places.enterPlaceName'));
     }
-    
+
     if (!currentLocation.lat || !currentLocation.lng) {
-        return alert("Devi prima prendere la posizione GPS!");
+        return alert(t('places.needGpsFirst'));
     }
 
     const { error } = await supabaseClient.from('places').insert({
@@ -841,10 +841,10 @@ async function addNewPlace() {
 
     if (error) {
         console.error('Errore salvataggio posto:', error);
-        alert('Errore nel salvataggio del posto.');
+        alert(t('places.saveError'));
     } else {
         nameInput.value = "";
-        showMessage("✅ Posto salvato correttamente!");
+        showMessage(t('places.saved'));
         await loadUserPlaces(); // Ricarica la lista per vederlo subito
     }
 }
@@ -854,7 +854,7 @@ async function addNewPlace() {
     const btn = document.getElementById('btnToggleAdvanced');
     const isVisible = panel.style.display !== 'none';
     panel.style.display = isVisible ? 'none' : 'block';
-    btn.textContent = isVisible ? '🗺️ Cerca sulla mappa' : '✖ Chiudi mappa';
+    btn.textContent = isVisible ? t('places.searchOnMap') : t('places.closeMap');
     if (!isVisible) {
         setTimeout(() => initAddPlaceMap(), 150);
     }
@@ -882,7 +882,7 @@ function renderUserPlaces() {
     if (!list) return;
 
     if (userPlaces.length === 0) {
-        list.innerHTML = '<p style="font-size: 12px; color: var(--color-text-muted); text-align: center;">Nessun posto salvato.</p>';
+        list.innerHTML = `<p style="font-size: 12px; color: var(--color-text-muted); text-align: center;">${t('places.noPlacesSaved')}</p>`;
         return;
     }
 
@@ -896,7 +896,7 @@ function renderUserPlaces() {
 
 // 4. Funzione per eliminare un posto
 async function deletePlace(id) {
-    if (!confirm("Vuoi davvero eliminare questo posto?")) return;
+    if (!confirm(t('places.confirmDeletePlace'))) return;
 
     const { error } = await supabaseClient
         .from('places')
@@ -911,14 +911,14 @@ async function deletePlace(id) {
 	// ========== GEOLOCALIZZAZIONE ==========
 	function getLocation() {
 		if (!navigator.geolocation) {
-			alert("La geolocalizzazione non è supportata dal tuo browser.");
+			alert(t('places.geolocationNotSupported'));
 			return;
 		}
 
 		const btn = event.target;
 		btn.disabled = true;
-		btn.textContent = "📍 Cercando...";
-		showMessage("📍 Cercando posizione...");
+		btn.textContent = t('places.locatingShort');
+		showMessage(t('add.searchingLocation'));
 
 		navigator.geolocation.getCurrentPosition(
 			async (position) => {
@@ -926,7 +926,7 @@ async function deletePlace(id) {
 				const lng = position.coords.longitude;
 
 				currentLocation = { lat, lng, name: null };
-				
+
 				const displayEl = document.getElementById('locationDisplay');
 				if (displayEl) {
 					displayEl.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
@@ -937,9 +937,9 @@ async function deletePlace(id) {
 						`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
 					);
 					const data = await response.json();
-					
+
 					if (data.address) {
-						const city = data.address.city || data.address.town || data.address.village || "Posizione sconosciuta";
+						const city = data.address.city || data.address.town || data.address.village || t('places.unknownLocation');
 						currentLocation.name = city;
 						if (displayEl) {
 							displayEl.value = city;
@@ -949,15 +949,15 @@ async function deletePlace(id) {
 					console.log("Reverse geocoding non disponibile");
 				}
 
-				showMessage("✅ Posizione salvata!");
+				showMessage(t('places.locationSaved'));
 				btn.disabled = false;
-				btn.textContent = "📍 Prendi";
+				btn.textContent = t('add.getLocation');
 			},
 			(error) => {
 				console.error("Errore geolocalizzazione:", error);
-				alert("Errore: " + error.message);
+				alert(t('places.locationError', { message: error.message }));
 				btn.disabled = false;
-				btn.textContent = "📍 Prendi";
+				btn.textContent = t('add.getLocation');
 			}
 		);
 	}
@@ -968,7 +968,7 @@ function getLocationAuto() {
 
 	// 🆕 MOSTRA CHE STA CERCANDO
 	const displayEl = document.getElementById('locationDisplay');
-	displayEl.value = "🔄 Cercando...";
+	displayEl.value = t('add.searchingLocation');
 	displayEl.style.color = "#FF9800";
 
 	navigator.geolocation.getCurrentPosition(
@@ -1000,9 +1000,9 @@ if (recognizedPlace) {
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
         );
         const data = await response.json();
-        
+
         if (data.address) {
-            const city = data.address.city || data.address.town || data.address.village || "Posizione";
+            const city = data.address.city || data.address.town || data.address.village || t('places.locationFallback');
             currentLocation.name = city;
             displayEl.value = city;
         }
@@ -1012,7 +1012,7 @@ if (recognizedPlace) {
 }
 		},
 		(error) => {
-			displayEl.value = "❌ Errore"; // Rosso se errore
+			displayEl.value = t('places.locatingError'); // Rosso se errore
 			displayEl.style.color = "#ff3b30";
 			console.log("Geolocalizzazione: " + error.message);
 		}
@@ -1032,10 +1032,10 @@ if (recognizedPlace) {
 	
 	async function fixOldSessions() {
     const statusEl = document.getElementById('fixStatus');
-    statusEl.textContent = "🔄 Controllo in corso...";
+    statusEl.textContent = t('places.checkingInProgress');
 
     if (userPlaces.length === 0) {
-        statusEl.textContent = "❌ Nessun posto salvato da usare come riferimento.";
+        statusEl.textContent = t('places.noPlacesForReference');
         return;
     }
 
@@ -1054,7 +1054,7 @@ if (recognizedPlace) {
     });
 
     if (toUpdate.length === 0) {
-        statusEl.textContent = "✅ Nessuna sessione da aggiornare.";
+        statusEl.textContent = t('places.noSessionsToUpdate');
         return;
     }
 
@@ -1068,8 +1068,8 @@ if (recognizedPlace) {
     }
 
     await loadData();
-    statusEl.textContent = `✅ Aggiornate ${updated} sessioni!`;
-    showMessage(`✅ ${updated} sessioni aggiornate!`);
+    statusEl.textContent = tn('places.sessionsUpdated', updated);
+    showMessage(tn('places.sessionsUpdated', updated));
 }
 
 	let addPlaceMapInstance = null;
@@ -1112,7 +1112,7 @@ function placePin(lat, lng) {
 
 async function searchAddress() {
     const query = document.getElementById('searchAddressInput').value.trim();
-    if (!query) return alert("Inserisci un indirizzo!");
+    if (!query) return alert(t('places.enterAddress'));
 
     try {
         const response = await fetch(
@@ -1121,7 +1121,7 @@ async function searchAddress() {
         const data = await response.json();
 
         if (!data || data.length === 0) {
-            return alert("Indirizzo non trovato. Prova a essere più preciso.");
+            return alert(t('places.addressNotFound'));
         }
 
         const lat = parseFloat(data[0].lat);
@@ -1132,14 +1132,14 @@ async function searchAddress() {
 
         document.getElementById('selectedPinInfo').textContent = `📌 ${data[0].display_name.split(',').slice(0,3).join(',')}`;
     } catch (err) {
-        alert("Errore nella ricerca. Riprova.");
+        alert(t('places.searchError'));
     }
 }
 
 async function addPlaceFromMap() {
     const name = document.getElementById('newPlaceName').value.trim();
-    if (!name) return alert("Inserisci prima un nome per questo posto!");
-    if (!selectedPinLocation.lat) return alert("Seleziona prima un punto sulla mappa!");
+    if (!name) return alert(t('places.enterPlaceNameFirst'));
+    if (!selectedPinLocation.lat) return alert(t('places.selectPointFirst'));
 
     const { error } = await supabaseClient.from('places').insert({
         name: name,
@@ -1149,7 +1149,7 @@ async function addPlaceFromMap() {
     });
 
     if (error) {
-        alert('Errore nel salvataggio del posto.');
+        alert(t('places.saveError'));
     } else {
         document.getElementById('newPlaceName').value = "";
         document.getElementById('searchAddressInput').value = "";
@@ -1157,7 +1157,7 @@ async function addPlaceFromMap() {
         document.getElementById('btnSaveFromMap').style.display = 'none';
         if (addPlaceMarker) addPlaceMapInstance.removeLayer(addPlaceMarker);
         selectedPinLocation = { lat: null, lng: null };
-        showMessage("✅ Posto salvato!");
+        showMessage(t('places.saved'));
         await loadUserPlaces();
     }
 }

@@ -140,7 +140,8 @@
     "allTypes": "All types",
     "dateFrom": "From",
     "dateTo": "To",
-    "removeFilters": "✕ Clear filters"
+    "removeFilters": "✕ Clear filters",
+    "confirmDeleteEntry": "Do you want to delete this entry?"
   },
   "gallery": {
     "title": "📷 Gallery"
@@ -198,7 +199,31 @@
     "updateOldSessions": "🔄 Update Old Sessions",
     "linkPastSessions": "Link past sessions to saved places based on GPS location.",
     "updateSessions": "🔄 Update Sessions",
-    "statsByPlace": "📊 Stats by Place"
+    "statsByPlace": "📊 Stats by Place",
+    "enterPlaceName": "Enter a name for this place!",
+    "needGpsFirst": "You need to get the GPS location first!",
+    "saveError": "Error saving the place.",
+    "saved": "✅ Place saved!",
+    "closeMap": "✖ Close map",
+    "noPlacesSaved": "No places saved.",
+    "confirmDeletePlace": "Do you really want to delete this place?",
+    "geolocationNotSupported": "Geolocation isn't supported by your browser.",
+    "locatingShort": "📍 Locating...",
+    "locatingError": "❌ Error",
+    "locationSaved": "✅ Location saved!",
+    "locationError": "Error: {message}",
+    "unknownLocation": "Unknown location",
+    "locationFallback": "Location",
+    "checkingInProgress": "🔄 Checking...",
+    "noPlacesForReference": "❌ No saved places to use as a reference.",
+    "noSessionsToUpdate": "✅ No sessions to update.",
+    "sessionsUpdated_one": "✅ {count} session updated!",
+    "sessionsUpdated_other": "✅ {count} sessions updated!",
+    "enterAddress": "Enter an address!",
+    "addressNotFound": "Address not found. Try being more precise.",
+    "searchError": "Search error. Try again.",
+    "enterPlaceNameFirst": "Enter a name for this place first!",
+    "selectPointFirst": "Select a point on the map first!"
   },
   "social": {
     "addFriend": "👥 Add a Friend",
