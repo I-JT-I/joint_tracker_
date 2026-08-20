@@ -380,11 +380,14 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 		}
 	}
 
+	let authMode = 'login'; // 'login' o 'signup': quale form ridisegnare al cambio lingua (vedi listener i18n:change)
+
 	function showLoginPage() {
+		authMode = 'login';
 		document.getElementById('page-auth').classList.add('active');
 		document.getElementById('header').style.display = 'none';
 		document.querySelectorAll('.page:not(#page-auth)').forEach(p => p.classList.remove('active'));
-		
+
 		const content = document.getElementById('authContent');
 		content.innerHTML = `
 			<form onsubmit="handleAuth(event, 'login')">
@@ -403,35 +406,50 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 		`;
 	}
 
+	function renderSignupForm() {
+		authMode = 'signup';
+		const content = document.getElementById('authContent');
+		content.innerHTML = `
+			<form onsubmit="handleAuth(event, 'signup')">
+				<label for="username">${t('auth.nickname')}</label>
+				<input type="text" id="reg-username" placeholder="${t('auth.chooseNickname')}" oninput="checkLiveUsername(this)" required>
+				<span id="username-status" style="font-size: 12px; font-weight: bold;"></span>
+
+				<label for="email">${t('auth.email')}</label>
+				<input type="email" id="email" placeholder="${t('auth.emailPlaceholder')}" required>
+
+				<label for="password">${t('auth.password')}</label>
+				<input type="password" id="password" placeholder="${t('auth.passwordPlaceholder')}" required>
+
+				<label for="confirm">${t('auth.confirmPassword')}</label>
+				<input type="password" id="confirm" placeholder="${t('auth.repeatPassword')}" required>
+
+				<button type="submit" class="main-btn">${t('auth.signup')}</button>
+			</form>
+
+			<p style="text-align: center; margin-top: 20px; color: var(--color-text-secondary);">
+				${t('auth.haveAccount')} <a onclick="toggleAuthMode(); return false;" style="cursor: pointer; color: var(--primary-light);">${t('auth.loginLink')}</a>
+			</p>
+		`;
+	}
+
 	function toggleAuthMode() {
 		const content = document.getElementById('authContent');
 		if (content.querySelector('[data-signup-link]')) {
-			content.innerHTML = `
-				<form onsubmit="handleAuth(event, 'signup')">
-					<label for="username">${t('auth.nickname')}</label>
-					<input type="text" id="reg-username" placeholder="${t('auth.chooseNickname')}" oninput="checkLiveUsername(this)" required>
-					<span id="username-status" style="font-size: 12px; font-weight: bold;"></span>
-
-					<label for="email">${t('auth.email')}</label>
-					<input type="email" id="email" placeholder="${t('auth.emailPlaceholder')}" required>
-
-					<label for="password">${t('auth.password')}</label>
-					<input type="password" id="password" placeholder="${t('auth.passwordPlaceholder')}" required>
-
-					<label for="confirm">${t('auth.confirmPassword')}</label>
-					<input type="password" id="confirm" placeholder="${t('auth.repeatPassword')}" required>
-
-					<button type="submit" class="main-btn">${t('auth.signup')}</button>
-				</form>
-
-				<p style="text-align: center; margin-top: 20px; color: var(--color-text-secondary);">
-					${t('auth.haveAccount')} <a onclick="toggleAuthMode(); return false;" style="cursor: pointer; color: var(--primary-light);">${t('auth.loginLink')}</a>
-				</p>
-			`;
+			renderSignupForm();
 		} else {
 			showLoginPage();
 		}
 	}
+
+	// Ridisegna il form di login/registrazione quando si cambia lingua dalle bandierine
+	// nella pagina di login (il form è generato con t() al render, non con data-i18n).
+	document.addEventListener('i18n:change', () => {
+		const authPage = document.getElementById('page-auth');
+		if (authPage && authPage.classList.contains('active')) {
+			authMode === 'signup' ? renderSignupForm() : showLoginPage();
+		}
+	});
 
 	async function checkLiveUsername(input) {
 		const username = input.value.trim();

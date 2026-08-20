@@ -82,12 +82,20 @@ function applyStaticTranslations() {
 	const metaDesc = document.querySelector('meta[name="description"]');
 	if (metaDesc) metaDesc.setAttribute('content', t('meta.description'));
 	syncLanguageRadio();
+	syncAuthLangButtons();
 }
 
 function syncLanguageRadio() {
 	document.querySelectorAll('#languageOptions input[name="languageChoice"]').forEach(r => {
 		r.checked = (r.value === currentLocale);
 		r.parentElement.classList.toggle('selected', r.checked);
+	});
+}
+
+// Evidenzia la bandierina della lingua attiva nella pagina di login (pre-accesso/ospite).
+function syncAuthLangButtons() {
+	document.querySelectorAll('#authLangSwitch .lang-flag-btn').forEach(b => {
+		b.classList.toggle('active', b.dataset.lang === currentLocale);
 	});
 }
 
