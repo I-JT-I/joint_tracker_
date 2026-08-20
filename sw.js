@@ -51,10 +51,16 @@ self.addEventListener('activate', function (event) {
   );
 });
 
-// Riconosce le richieste di immagini della galleria (bucket "session-photos", sia
-// signed URL semplici che con Image Transformations) tra tutte le chiamate a Supabase.
-function isGalleryPhotoRequest(url) {
-  return url.includes('supabase.co') && url.includes('/storage/v1/') && url.includes('/session-photos/');
+// Riconosce le richieste GET che scaricano l'immagine vera e propria (URL gia' firmata,
+// con ?token=...) tra tutte le chiamate a Supabase — sia signed URL semplici che con
+// Image Transformations. Il metodo GET + la presenza del token sono fondamentali: la
+// STESSA base URL (/storage/v1/object/sign/session-photos/...) e' usata anche dalla
+// chiamata POST che genera il token (createSignedUrl/createSignedUrls, senza ?token=
+// nella query). Intercettarla per errore rompeva la generazione del link firmato,
+// perche' cacheFirstPhoto la ri-emetteva sempre come GET senza body ne' header di auth.
+function isGalleryPhotoRequest(request) {
+  const url = request.url;
+  return request.method === 'GET' && url.includes('supabase.co') && url.includes('/storage/v1/') && url.includes('/session-photos/') && url.includes('token=');
 }
 
 // Le signed URL cambiano token ad ogni richiesta, ma i byte dell'immagine dietro un
@@ -92,7 +98,7 @@ async function cacheFirstPhoto(request) {
 self.addEventListener('fetch', function (event) {
   const url = event.request.url;
 
-  if (isGalleryPhotoRequest(url)) {
+  if (isGalleryPhotoRequest(event.request)) {
     event.respondWith(cacheFirstPhoto(event.request));
     return;
   }
