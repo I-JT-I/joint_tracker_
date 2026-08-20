@@ -101,6 +101,7 @@
   },
   "shared": {
     "noFriendsYet": "Non hai ancora amici. Aggiungili dalla pagina Social.",
+    "friendsListLoadError": "Errore nel caricamento amici, riprova.",
     "noUserFound": "Nessun utente trovato con questo nickname.",
     "alreadyAdded": "Già aggiunto alla sessione.",
     "whoBroughtIt": "Chi ha portato la roba, e quanto? Puoi modificare i grammi a mano.",

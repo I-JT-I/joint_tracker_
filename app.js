@@ -196,14 +196,23 @@ async function getMyFriendsList() {
         .eq('user_id', currentUser.id)
         .eq('status', 'accepted');
 
-    if (error || !friendships || friendships.length === 0) return [];
+    if (error) {
+        console.error('getMyFriendsList: errore nel caricare friendships', error);
+        throw error;
+    }
+    if (!friendships || friendships.length === 0) return [];
 
     const friendIds = friendships.map(f => f.friend_id);
 
-    const { data: profilesData } = await supabaseClient
+    const { data: profilesData, error: profilesError } = await supabaseClient
         .from('profiles_public')
         .select('id, username')
         .in('id', friendIds);
+
+    if (profilesError) {
+        console.error('getMyFriendsList: errore nel caricare profiles_public', profilesError);
+        throw profilesError;
+    }
 
     return profilesData || [];
 }
@@ -213,7 +222,13 @@ async function renderFriendsQuickList() {
     if (!el) return;
     el.innerHTML = `<p style="font-size:12px; color:var(--color-text-muted);">${t('common.loading')}</p>`;
 
-    const friends = await getMyFriendsList();
+    let friends;
+    try {
+        friends = await getMyFriendsList();
+    } catch (e) {
+        el.innerHTML = `<p style="font-size:12px; color:var(--warning-text, #c0392b);">${t('shared.friendsListLoadError') || 'Errore nel caricamento amici, riprova.'}</p>`;
+        return;
+    }
 
     if (friends.length === 0) {
         el.innerHTML = `<p style="font-size:12px; color:var(--color-text-muted);">${t('shared.noFriendsYet')}</p>`;

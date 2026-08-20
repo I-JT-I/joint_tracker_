@@ -1,6 +1,6 @@
 // sw.js — gestisce sia le notifiche push sia il caching per l'uso offline
 
-const CACHE_NAME = 'jointtracker-v9';
+const CACHE_NAME = 'jointtracker-v10';
 
 const PRECACHE_URLS = [
   '/',
@@ -19,7 +19,6 @@ const PRECACHE_URLS = [
 
 // ========== INSTALLAZIONE: precarica i file essenziali ==========
 self.addEventListener('install', function (event) {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(function (cache) {
       return Promise.all(
@@ -29,6 +28,8 @@ self.addEventListener('install', function (event) {
           });
         })
       );
+    }).then(function () {
+      return self.skipWaiting();
     })
   );
 });

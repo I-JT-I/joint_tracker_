@@ -101,6 +101,7 @@
   },
   "shared": {
     "noFriendsYet": "You don't have any friends yet. Add some from the Social page.",
+    "friendsListLoadError": "Couldn't load your friends list, try again.",
     "noUserFound": "No user found with that nickname.",
     "alreadyAdded": "Already added to the session.",
     "whoBroughtIt": "Who brought the stuff, and how much? You can edit the grams by hand.",
