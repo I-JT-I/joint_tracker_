@@ -66,14 +66,14 @@
 	:root[data-theme="dark"]{--primary-light:#57c15c;--heading:#6fcf72;--warning-text:#ffb74d;--bg:#0c120c;--surface-rgb:24,32,24;--overlay-rgb:255,255,255;--color-text:#eef2ee;--color-text-secondary:#b7c3b7;--color-text-muted:#8a978a;--shadow-lg:0 10px 40px rgba(0,0,0,0.55)}
 	*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 	body{margin:0;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--color-text);background-color:var(--bg);overflow-x:hidden}
-	.page{display:none}
+	.page{display:none;padding:15px;padding-bottom:calc(15px + env(safe-area-inset-bottom));max-width:600px;margin:0 auto}
 	.page.active{display:block}
 	.auth-container{max-width:400px;margin:50px auto;padding:20px}
 	.auth-box{background:rgba(var(--surface-rgb),0.97);border-radius:20px;padding:30px;box-shadow:var(--shadow-lg)}
 	.auth-box h2{text-align:center;margin-bottom:30px;font-size:28px;color:var(--color-text)}
 	.auth-lang-switch{display:flex;justify-content:center;gap:8px;margin-bottom:18px}
 	.lang-flag-btn{background:rgba(var(--overlay-rgb),0.06);border:2px solid transparent;border-radius:12px;padding:6px 10px;font-size:20px;line-height:1;cursor:pointer;opacity:0.55}
-	.lang-flag-btn.active{opacity:1;border-color:var(--primary-light)}
+	.lang-flag-btn.active{opacity:1;border-color:var(--primary-light);transform:scale(1.08)}
 	label{display:block;margin-top:15px;font-weight:600;font-size:13px;color:var(--color-text-secondary)}
 	input,select,textarea{width:100%;font-size:16px;padding:12px;margin-top:8px;border-radius:12px;border:1px solid rgba(var(--overlay-rgb),0.1);background:rgba(var(--surface-rgb),0.8);color:var(--color-text)}
 	button.main-btn{background:linear-gradient(135deg,var(--primary-light) 0%,var(--primary-dark) 100%);color:#fff;border:none;margin-top:20px;font-weight:600;cursor:pointer;padding:12px;border-radius:12px;width:100%}
@@ -104,7 +104,7 @@
 </head>
 <body>
 
-<div id="notif">✅</div>
+<div id="notif" style="display:none;">✅</div>
 
 <!-- BANNER PROMEMORIA -->
 <div id="reminderBanner" style="display:none; position:sticky; top:0; z-index:999; background:linear-gradient(135deg,#FF9800,#E65100); color:white; padding:12px 15px; text-align:center; font-size:13px; font-weight:600;">
@@ -570,7 +570,7 @@
 </div>
 
 <!-- MODAL STATISTICHE AMICO -->
-<div id="friendModal" class="modal">
+<div id="friendModal" class="modal" style="display:none;">
 	<div class="modal-content card">
 		<h3 id="modalFriendName" data-i18n="social.stats">Statistiche</h3>
 		<div class="stat-grid" style="margin-bottom: 20px;">
@@ -616,7 +616,7 @@
 </div>
 
 <!-- MODAL ACQUISTO -->
-<div id="buyModal" class="modal">
+<div id="buyModal" class="modal" style="display:none;">
   <div class="modal-content card">
     <h3 id="buyModalTitle" data-i18n="stock.registerPurchaseTitle">Registra acquisto</h3>
 
@@ -640,7 +640,7 @@
 </div>
 
 <!-- MODAL RIEPILOGO ANNUALE -->
-<div id="wrappedModal" class="modal">
+<div id="wrappedModal" class="modal" style="display:none;">
   <div class="modal-content card" style="max-height:85vh; overflow-y:auto;">
     <h3 id="wrappedTitle" data-i18n="modals.wrappedTitle">🎉 Il tuo anno</h3>
     <div id="wrappedContent"></div>
@@ -649,7 +649,7 @@
 </div>
 
 <!-- MODAL TUTORIAL -->
-<div id="tutorialModal" class="modal">
+<div id="tutorialModal" class="modal" style="display:none;">
   <div class="modal-content card" style="max-height:85vh; overflow-y:auto;">
     <div id="tutorialSlide"></div>
     <div style="display:flex; justify-content:center; gap:6px; margin:15px 0;" id="tutorialDots"></div>
@@ -662,7 +662,7 @@
 </div>
 
 <!-- MODAL VISUALIZZATORE FOTO -->
-<div id="photoViewerModal" class="modal">
+<div id="photoViewerModal" class="modal" style="display:none;">
   <div class="modal-content card" style="padding:12px;">
     <img id="photoViewerImg" style="width:100%; border-radius:12px; max-height:60vh; object-fit:contain; background:#000; display:block;">
     <div id="photoViewerInfo" style="margin-top:12px; font-size:14px;"></div>
@@ -674,7 +674,7 @@
 </div>
 
 <!-- MODAL MODIFICA POSIZIONE -->
-<div id="editLocationModal" class="modal">
+<div id="editLocationModal" class="modal" style="display:none;">
   <div class="modal-content card">
     <h3 data-i18n="modals.editLocation">📍 Modifica posizione</h3>
     <p style="font-size:12px; color:var(--color-text-muted); margin-top:-8px;" id="editLocationSessionInfo"></p>
@@ -694,7 +694,7 @@
 </div>
 
 <!-- MODAL DISCREPANZA -->
-<div id="discrepancyModal" class="modal">
+<div id="discrepancyModal" class="modal" style="display:none;">
   <div class="modal-content card">
     <h3 data-i18n="modals.discrepancyDetected">⚠️ Discrepanza rilevata</h3>
     <p id="discrepancyText" style="font-size:14px; line-height:1.6; color:var(--color-text-secondary);"></p>
@@ -708,7 +708,7 @@
 </div>
 
 <!-- MODAL CORREZIONE MANUALE -->
-<div id="manualFixModal" class="modal">
+<div id="manualFixModal" class="modal" style="display:none;">
   <div class="modal-content card" style="max-height:80vh; overflow-y:auto;">
     <h3 data-i18n="modals.fixSessionsTitle">✏️ Correggi sessioni</h3>
     <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:15px;" id="manualFixHint"></p>
