@@ -174,7 +174,7 @@
 <main>
 <!-- PAGINA HOME -->
 <div id="page-home" class="page">
-	<div class="card home-hero">
+	<div class="card home-hero is-loading" id="homeHeroCard">
 		<div id="homeGreeting" style="font-size:15px; color:var(--color-text-secondary); font-weight:600;" data-i18n="home.greeting">Ciao 👋</div>
 		<div class="streak-num"><span id="homeStreak">0</span>🔥</div>
 		<div style="font-size:13px; color:var(--color-text-muted);" data-i18n="home.streakLabel">giorni di streak</div>
@@ -186,7 +186,7 @@
 		<div id="homeAchievementTeaser" style="display:none; margin-top:12px; font-size:13px; color:var(--heading); font-weight:600;"></div>
 	</div>
 
-	<div class="card">
+	<div class="card is-loading" id="homeStockCard">
 		<h3 data-i18n="home.stockTitle">📦 Scorte</h3>
 		<div id="miniStockWidget" style="display:none;">
 		  <div style="display:flex; gap:10px;">

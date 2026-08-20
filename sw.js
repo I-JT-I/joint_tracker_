@@ -1,6 +1,10 @@
 // sw.js — gestisce sia le notifiche push sia il caching per l'uso offline
 
 const CACHE_NAME = 'jointtracker-v11';
+// Cache separata, a nome fisso (non legata all'hash di app.js), per le foto della
+// galleria: i byte di una foto non cambiano tra un deploy e l'altro, quindi non deve
+// essere svuotata ad ogni release come la cache dell'app shell (vedi ACTIVE_CACHES sotto).
+const PHOTO_CACHE_NAME = 'jointtracker-photos-v1';
 
 // Chart.js e Leaflet/MarkerCluster NON sono precaricati qui: sono ~174 KiB usati solo
 // nelle pagine Grafici/Mappa e vengono iniettati a runtime (vedi loadChartJs()/loadMapLibs()
@@ -36,22 +40,60 @@ self.addEventListener('install', function (event) {
 
 // ========== ATTIVAZIONE: rimuove le cache vecchie ==========
 self.addEventListener('activate', function (event) {
+  const ACTIVE_CACHES = [CACHE_NAME, PHOTO_CACHE_NAME];
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(
-        keys.filter(function (key) { return key !== CACHE_NAME; })
+        keys.filter(function (key) { return ACTIVE_CACHES.indexOf(key) === -1; })
             .map(function (key) { return caches.delete(key); })
       );
     }).then(function () { return self.clients.claim(); })
   );
 });
 
+// Riconosce le richieste di immagini della galleria (bucket "session-photos", sia
+// signed URL semplici che con Image Transformations) tra tutte le chiamate a Supabase.
+function isGalleryPhotoRequest(url) {
+  return url.includes('supabase.co') && url.includes('/storage/v1/') && url.includes('/session-photos/');
+}
+
+// Le signed URL cambiano token ad ogni richiesta, ma i byte dell'immagine dietro un
+// dato path+trasformazione no: usiamo come chiave di cache l'URL senza il token, così
+// le richieste successive fanno hit invece di riscaricare l'immagine ogni volta.
+function photoCacheKey(url) {
+  const u = new URL(url);
+  u.searchParams.delete('token');
+  return u.toString();
+}
+
+async function cacheFirstPhoto(request) {
+  const cacheKey = photoCacheKey(request.url);
+  const cache = await caches.open(PHOTO_CACHE_NAME);
+  const cached = await cache.match(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (response && response.status === 200) {
+      cache.put(cacheKey, response.clone());
+    }
+    return response;
+  } catch (err) {
+    return cached || Response.error();
+  }
+}
+
 // ========== FETCH: strategia diversa per API vs risorse statiche ==========
 self.addEventListener('fetch', function (event) {
   const url = event.request.url;
 
-  // Le chiamate a Supabase e ai servizi di geocoding devono SEMPRE andare in rete:
-  // i dati devono essere freschi, mai serviti dalla cache.
+  if (isGalleryPhotoRequest(url)) {
+    event.respondWith(cacheFirstPhoto(event.request));
+    return;
+  }
+
+  // Le chiamate a Supabase (dati/API) e ai servizi di geocoding devono SEMPRE andare
+  // in rete: i dati devono essere freschi, mai serviti dalla cache.
   if (url.includes('supabase.co') || url.includes('nominatim.openstreetmap.org')) {
     return; // lascia che il browser gestisca la richiesta normalmente
   }

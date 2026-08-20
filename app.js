@@ -375,8 +375,9 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 		if (session) {
 			const hadGuestData = isGuestModeStored() && hasGuestData();
 			isGuestMode = false;
-			await showApp();
-			await loadData();
+			// showApp() e loadData() non dipendono l'una dall'altra: girano in parallelo
+			// invece che in sequenza per dimezzare il tempo prima del primo render utile.
+			await Promise.all([showApp(), loadData()]);
 			if (hadGuestData) {
 				await migrateGuestDataToAccount(currentUser.id);
 			}
@@ -385,8 +386,7 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 			// la prima volta che l'utente ha premuto "Prova senza registrarti".
 			isGuestMode = true;
 			currentUser = null;
-			await showApp();
-			await loadData();
+			await Promise.all([showApp(), loadData()]);
 		} else {
 			showLoginPage();
 			if (window.va) {
@@ -611,8 +611,6 @@ if (mode === 'signup') {
 			defaultRadio.parentElement.classList.add('selected');
 		}
 
-		await loadPurchases();
-
 		if (isGuestMode) {
 			// Funzionalità multi-utente/lato server non disponibili in modalità ospite:
 			// niente luoghi salvati, promemoria, notifiche, obiettivi, pause tolleranza.
@@ -623,19 +621,26 @@ if (mode === 'signup') {
 			achievementsLoaded = true;
 			renderAchievements();
 			getLocationAuto();
+			await loadPurchases();
 			return;
 		}
 
 		// 🆕 AUTO GEOLOCALIZZAZIONE AL CARICAMENTO
-	await loadUserPlaces();
-	await loadReminderSettings();
-	await loadNotifications();
-	await loadAchievements();
-	await loadBreaks();
-	await loadGoal();
 	subscribeToNotifications();
 	getLocationAuto();
-	await checkOnboarding();
+
+	// Query indipendenti: eseguite in parallelo invece che una dopo l'altra,
+	// così la home aspetta il round-trip più lento invece della somma di tutti.
+	await Promise.all([
+		loadPurchases(),
+		loadUserPlaces(),
+		loadReminderSettings(),
+		loadNotifications(),
+		loadAchievements(),
+		loadBreaks(),
+		loadGoal(),
+		checkOnboarding()
+	]);
 	}
 
 	function showError(msg) {
@@ -1705,6 +1710,8 @@ function updateMap() {
 		const greetingEl = document.getElementById('homeGreeting');
 		if (!greetingEl) return;
 
+		document.getElementById('homeHeroCard')?.classList.remove('is-loading');
+
 		const hour = new Date().getHours();
 		const greeting = hour < 6 ? t('home.greetingNight') : hour < 12 ? t('home.greetingMorning') : hour < 18 ? t('home.greetingAfternoon') : t('home.greetingEvening');
 		greetingEl.textContent = greeting;
@@ -1813,7 +1820,40 @@ async function checkOnboarding() {
 // ========== FOTO SESSIONE ==========
 let selectedPhotoFile = null;
 
-function handlePhotoSelected(event) {
+// Ridimensiona lato client prima dell'upload (max 1600px sul lato lungo, JPEG q0.8):
+// le foto da smartphone sono spesso 3-8MB, questo taglia drasticamente storage/banda
+// senza differenza visibile nella galleria/viewer dell'app.
+function compressImage(file, maxDim, quality) {
+	return new Promise(resolve => {
+		if (!file.type.startsWith('image/') || file.type === 'image/gif') {
+			resolve(file); // GIF non tocca: la compressione via canvas perderebbe l'animazione
+			return;
+		}
+		const img = new Image();
+		const objectUrl = URL.createObjectURL(file);
+		img.onload = () => {
+			URL.revokeObjectURL(objectUrl);
+			let { width, height } = img;
+			const scale = Math.min(1, maxDim / Math.max(width, height));
+			width = Math.round(width * scale);
+			height = Math.round(height * scale);
+
+			const canvas = document.createElement('canvas');
+			canvas.width = width;
+			canvas.height = height;
+			canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+			canvas.toBlob(blob => {
+				if (!blob) { resolve(file); return; }
+				resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
+			}, 'image/jpeg', quality);
+		};
+		img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); }; // es. HEIC non decodificabile dal browser: carica l'originale
+		img.src = objectUrl;
+	});
+}
+
+async function handlePhotoSelected(event) {
 	const file = event.target.files[0];
 	if (!file) return;
 
@@ -1823,13 +1863,13 @@ function handlePhotoSelected(event) {
 		return;
 	}
 
-	selectedPhotoFile = file;
+	selectedPhotoFile = await compressImage(file, 1600, 0.8);
 	const reader = new FileReader();
 	reader.onload = e => {
 		document.getElementById('photoPreview').src = e.target.result;
 		document.getElementById('photoPreviewWrap').style.display = 'block';
 	};
-	reader.readAsDataURL(file);
+	reader.readAsDataURL(selectedPhotoFile);
 }
 
 function clearSelectedPhoto() {
@@ -1854,6 +1894,28 @@ async function uploadSessionPhoto(ts) {
 }
 
 // ========== GALLERIA FOTO ==========
+// Thumbnail via Supabase Image Transformations: 300x300 invece dell'originale a piena
+// risoluzione. Richiede piano Pro+ (progetto attuale: Free, verificato via MCP il
+// 2026-08-21) — su Free la richiesta fallirebbe sempre, aggiungendo un round-trip
+// fallito ad ogni foto prima del fallback. Tenuto spento finché non si passa a Pro:
+// basta girare questo flag a true (e abilitare il toggle in Storage > Settings).
+const SUPABASE_IMAGE_TRANSFORMS_ENABLED = false;
+const GALLERY_THUMB_TRANSFORM = { width: 300, height: 300, resize: 'cover', quality: 70 };
+const GALLERY_VIEWER_TRANSFORM = { width: 1600, quality: 80 };
+
+function transformOpts(transform) {
+	return SUPABASE_IMAGE_TRANSFORMS_ENABLED ? { transform } : {};
+}
+
+async function fallbackPlainPhoto(img) {
+	if (img.dataset.fallbackDone) return;
+	img.dataset.fallbackDone = '1';
+	const path = img.dataset.path;
+	if (!path) return;
+	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrl(path, 3600);
+	if (!error && data) img.src = data.signedUrl;
+}
+
 async function loadGallery() {
 	const el = document.getElementById('galleryGrid');
 	if (!el) return;
@@ -1867,7 +1929,7 @@ async function loadGallery() {
 	}
 
 	const paths = withPhotos.map(s => s.photo_path);
-	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrls(paths, 3600);
+	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrls(paths, 3600, transformOpts(GALLERY_THUMB_TRANSFORM));
 
 	if (error || !data) {
 		el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">${t('gallery.loadPhotosError')}</p>`;
@@ -1879,7 +1941,7 @@ async function loadGallery() {
 		if (!signed) return '';
 		return `
 			<div onclick="openPhotoViewer(${s.ts})" style="aspect-ratio:1; border-radius:10px; overflow:hidden; cursor:pointer; background:rgba(var(--overlay-rgb),0.08);">
-				<img src="${signed}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+				<img src="${signed}" data-path="${s.photo_path}" onerror="fallbackPlainPhoto(this)" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
 			</div>
 		`;
 	}).join('');
@@ -1897,14 +1959,18 @@ async function openPhotoViewer(ts) {
 	document.getElementById('photoViewerDeleteBtn').style.display = 'block';
 	document.getElementById('photoViewerModal').style.display = 'flex';
 
-	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrl(session.photo_path, 3600);
+	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrl(session.photo_path, 3600, transformOpts(GALLERY_VIEWER_TRANSFORM));
 
 	if (error || !data) {
 		document.getElementById('photoViewerInfo').innerHTML = `<p style="text-align:center; color:var(--danger);">${t('gallery.loadPhotoError')}</p>`;
 		return;
 	}
 
-	document.getElementById('photoViewerImg').src = data.signedUrl;
+	const viewerImg = document.getElementById('photoViewerImg');
+	viewerImg.dataset.path = session.photo_path;
+	viewerImg.dataset.fallbackDone = '';
+	viewerImg.onerror = () => fallbackPlainPhoto(viewerImg);
+	viewerImg.src = data.signedUrl;
 	document.getElementById('photoViewerInfo').innerHTML = `
 		<strong>${formatShortDate(session.date)} · ${session.time}</strong><br>
 		<span style="color:var(--color-text-muted); font-size:13px;">
@@ -1937,7 +2003,7 @@ async function loadSnapshots() {
 	}
 
 	const paths = snapshotItems.map(s => s.photo_path);
-	const { data: signedData, error: signedError } = await supabaseClient.storage.from('session-photos').createSignedUrls(paths, 3600);
+	const { data: signedData, error: signedError } = await supabaseClient.storage.from('session-photos').createSignedUrls(paths, 3600, transformOpts(GALLERY_THUMB_TRANSFORM));
 
 	if (signedError || !signedData) {
 		el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">${t('gallery.loadPhotosError')}</p>`;
@@ -1950,7 +2016,7 @@ async function loadSnapshots() {
 		const isMe = s.user_id === currentUser.id;
 		return `
 			<div onclick="openSnapshotViewer(${i})" style="position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; cursor:pointer; background:rgba(var(--overlay-rgb),0.08);">
-				<img src="${signed}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+				<img src="${signed}" data-path="${s.photo_path}" onerror="fallbackPlainPhoto(this)" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
 				<span style="position:absolute; bottom:4px; left:4px; right:4px; background:rgba(0,0,0,0.55); color:white; font-size:10px; padding:2px 6px; border-radius:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${isMe ? t('shared.you') : s.username}</span>
 			</div>
 		`;
@@ -1969,14 +2035,18 @@ async function openSnapshotViewer(index) {
 	document.getElementById('photoViewerDeleteBtn').style.display = isMe ? 'block' : 'none';
 	document.getElementById('photoViewerModal').style.display = 'flex';
 
-	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrl(s.photo_path, 3600);
+	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrl(s.photo_path, 3600, transformOpts(GALLERY_VIEWER_TRANSFORM));
 
 	if (error || !data) {
 		document.getElementById('photoViewerInfo').innerHTML = `<p style="text-align:center; color:var(--danger);">${t('gallery.loadPhotoError')}</p>`;
 		return;
 	}
 
-	document.getElementById('photoViewerImg').src = data.signedUrl;
+	const viewerImg = document.getElementById('photoViewerImg');
+	viewerImg.dataset.path = s.photo_path;
+	viewerImg.dataset.fallbackDone = '';
+	viewerImg.onerror = () => fallbackPlainPhoto(viewerImg);
+	viewerImg.src = data.signedUrl;
 	const grams = (s.my_fumo_grams || 0) + (s.my_erba_grams || 0);
 	document.getElementById('photoViewerInfo').innerHTML = `
 		<strong>${isMe ? t('shared.you') : s.username}</strong> · ${formatShortDate(s.date)} · ${s.time}<br>
@@ -4074,6 +4144,7 @@ function renderMiniWidget() {
     const widget = document.getElementById('miniStockWidget');
     if (!widget) return;
     if (!smokesLoaded) return; // consumato ancora sconosciuto: meglio non mostrare nulla che mostrare "piena" per errore
+    document.getElementById('homeStockCard')?.classList.remove('is-loading');
     const noStockMsg = document.getElementById('homeNoStock');
 
     const openFumo = getOpenPurchasesFIFO('fumo');

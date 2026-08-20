@@ -795,6 +795,17 @@ input[type="date"] {
 :root[data-theme="dark"] .theme-icon-light { display: none; }
 :root[data-theme="dark"] .theme-icon-dark { display: inline; }
 
+/* ========== HOME: skeleton di caricamento ==========
+   Applicata alle card home finché i dati non arrivano da Supabase, per non
+   lasciare la UI ferma su placeholder statici (vedi rimozione in app.js). */
+@keyframes skelPulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: .45; }
+}
+.card.is-loading {
+	animation: skelPulse 1.2s ease-in-out infinite;
+}
+
 /* ========== HOME: CARD RIEPILOGO ========== */
 .home-hero {
 	text-align: center;
