@@ -1,0 +1,11 @@
+-- profiles_public era stata creata (20260813133219_restrict_profiles_exposure.sql) con
+-- security_invoker = false (semantica security-definer) per esporre id/username/avatar_url
+-- a qualsiasi utente loggato, bypassando la RLS di profiles che permette a ciascuno di
+-- vedere solo il proprio profilo. In produzione risultava impostata a security_invoker = on
+-- (probabilmente un "fix" di sicurezza scambiato per un miglioramento, mai passato da una
+-- migration tracciata), che le fa ereditare la RLS del chiamante: da quel momento qualunque
+-- query su profiles_public per l'id di un altro utente restituisce silenziosamente zero
+-- righe (nessun errore), rompendo la lista rapida amici in sessione condivisa e la ricerca
+-- amico per nickname, pur lasciando intatte le RPC SECURITY DEFINER (leaderboard, statistiche
+-- amici) che non passano da questa vista.
+alter view public.profiles_public set (security_invoker = false);
