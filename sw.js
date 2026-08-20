@@ -1,20 +1,20 @@
 // sw.js — gestisce sia le notifiche push sia il caching per l'uso offline
 
-const CACHE_NAME = 'jointtracker-v10';
+const CACHE_NAME = 'jointtracker-v11';
 
+// Chart.js e Leaflet/MarkerCluster NON sono precaricati qui: sono ~174 KiB usati solo
+// nelle pagine Grafici/Mappa e vengono iniettati a runtime (vedi loadChartJs()/loadMapLibs()
+// in app.js) solo quando servono davvero. Il fetch handler sotto li mette comunque in
+// cache-first automaticamente alla prima richiesta reale, quindi restano disponibili offline.
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/style.css',
+  '/app.js',
+  '/i18n.js',
   '/manifest.json',
   '/icon-192.png',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-  'https://cdn.jsdelivr.net/npm/chart.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
-  'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css',
-  'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css',
-  'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 
 // ========== INSTALLAZIONE: precarica i file essenziali ==========

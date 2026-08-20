@@ -20,8 +20,8 @@
 
 	--color-text: #1c1c1e;
 	--color-text-secondary: #666666;
-	--color-text-muted: #999999;
-	--gray-dark: #8e8e93;
+	--color-text-muted: #6b6b6b; /* era #999999: ~2.7:1 su --bg, sotto la soglia AA 4.5:1 */
+	--gray-dark: #6b6b6b; /* era #8e8e93: ~2.95:1 su --bg, sotto la soglia AA 4.5:1 */
 
 	--shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.06);
 	--shadow-md: 0 4px 20px rgba(0, 0, 0, 0.12);

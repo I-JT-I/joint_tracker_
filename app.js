@@ -416,7 +416,7 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 			</form>
 
 			<p style="text-align: center; margin-top: 20px; color: var(--color-text-secondary);">
-				${t('auth.noAccount')} <a onclick="toggleAuthMode(); return false;" style="cursor: pointer; color: var(--primary-light);" data-signup-link>${t('auth.signupLink')}</a>
+				${t('auth.noAccount')} <button type="button" onclick="toggleAuthMode()" style="background:none; border:none; padding:0; margin:0; font:inherit; cursor:pointer; color:var(--primary-light); text-decoration:underline;" data-signup-link>${t('auth.signupLink')}</button>
 			</p>
 		`;
 	}
@@ -443,7 +443,7 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 			</form>
 
 			<p style="text-align: center; margin-top: 20px; color: var(--color-text-secondary);">
-				${t('auth.haveAccount')} <a onclick="toggleAuthMode(); return false;" style="cursor: pointer; color: var(--primary-light);">${t('auth.loginLink')}</a>
+				${t('auth.haveAccount')} <button type="button" onclick="toggleAuthMode()" style="background:none; border:none; padding:0; margin:0; font:inherit; cursor:pointer; color:var(--primary-light); text-decoration:underline;">${t('auth.loginLink')}</button>
 			</p>
 		`;
 	}
@@ -907,7 +907,7 @@ async function flushPendingSessions() {
 		if (isGuestMode) {
 			smokes = getGuestSmokes().slice().sort((a, b) => b.ts - a.ts);
 			smokesLoaded = true;
-			update();
+			update({ deferHeavy: true });
 			return;
 		}
 		const { data, error } = await supabaseClient
@@ -921,7 +921,7 @@ async function flushPendingSessions() {
 			if (cached) {
 				smokes = cached;
 				smokesLoaded = true;
-				update();
+				update({ deferHeavy: true });
 				showMessage(t('sync.offlineDataStale'));
 			}
 			return;
@@ -930,7 +930,7 @@ async function flushPendingSessions() {
 		smokes = data || [];
 		smokesLoaded = true;
 		cacheLocalData('smokes', smokes);
-		update();
+		update({ deferHeavy: true });
 	}
 
 	// ========== SALVATAGGIO DATI ==========
@@ -1156,7 +1156,7 @@ async function addNewPlace() {
     panel.style.display = isVisible ? 'none' : 'block';
     btn.textContent = isVisible ? t('places.searchOnMap') : t('places.closeMap');
     if (!isVisible) {
-        setTimeout(() => initAddPlaceMap(), 150);
+        loadMapLibs().then(() => setTimeout(() => initAddPlaceMap(), 150));
     }
 }
 
@@ -1482,14 +1482,17 @@ async function addPlaceFromMap() {
 
 		if (p === 'map') {
 			loadUserPlaces();
-			setTimeout(() => {
-				initMap();
-				updateMap();
-			}, 100);
+			loadMapLibs().then(() => {
+				setTimeout(() => {
+					initMap();
+					updateMap();
+				}, 100);
+			});
 		}
 
 		if (p === 'social' && !isGuestMode) { loadSocial(); loadSnapshots(); loadFriendRequests(); }
 		if (p === 'stock' || p === 'charts') loadPurchases();
+		if (p === 'charts') loadChartJs().then(renderCharts);
 		if (p === 'settings') {
 		    applyGuestModeUI();
 		    if (!isGuestMode) {
@@ -1512,6 +1515,52 @@ async function addPlaceFromMap() {
 		if (p && p !== 'auth') refreshPageDynamicContent(p);
 		if (document.getElementById('tutorialModal')?.style.display === 'flex') renderTutorialStep();
 	});
+
+	// ========== CARICAMENTO LAZY: Leaflet/MarkerCluster e Chart.js ==========
+	// Non sono in index.html: pesano ~174 KiB e servono solo nelle pagine Mappa/Grafici.
+	// Le funzioni sotto li iniettano a runtime la prima volta che servono davvero, e
+	// mantengono in cache la stessa Promise così le chiamate successive sono no-op.
+	function loadScriptOnce(src) {
+		return new Promise((resolve, reject) => {
+			const s = document.createElement('script');
+			s.src = src;
+			s.onload = resolve;
+			s.onerror = () => reject(new Error('Impossibile caricare ' + src));
+			document.head.appendChild(s);
+		});
+	}
+
+	function loadStyleOnce(href) {
+		return new Promise((resolve, reject) => {
+			const l = document.createElement('link');
+			l.rel = 'stylesheet';
+			l.href = href;
+			l.onload = resolve;
+			l.onerror = () => reject(new Error('Impossibile caricare ' + href));
+			document.head.appendChild(l);
+		});
+	}
+
+	let _mapLibsPromise = null;
+	function loadMapLibs() {
+		if (_mapLibsPromise) return _mapLibsPromise;
+		_mapLibsPromise = Promise.all([
+			loadStyleOnce('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'),
+			loadStyleOnce('https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css'),
+			loadStyleOnce('https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css')
+		])
+			.then(() => loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'))
+			.then(() => loadScriptOnce('https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js'));
+		return _mapLibsPromise;
+	}
+
+	let _chartJsPromise = null;
+	function loadChartJs() {
+		if (typeof Chart !== 'undefined') return Promise.resolve();
+		if (_chartJsPromise) return _chartJsPromise;
+		_chartJsPromise = loadScriptOnce('https://cdn.jsdelivr.net/npm/chart.js');
+		return _chartJsPromise;
+	}
 
 	// ========== MAPPA (CORRETTA DAL PRIMO CODICE) ==========
 	let markerClusterGroup = null; // Aggiungi questa variabile globale all'inizio
@@ -1620,20 +1669,35 @@ function updateMap() {
 }
 
 	// ========== AGGIORNAMENTO GENERALE ==========
-	function update() {
-		updateHistory();
-		updateStats();
-		renderCharts();
+	// opts.deferHeavy: true solo dal primo caricamento dati (vedi loadData()). Il rendering
+	// visibile subito in Home parte comunque sincrono; il resto (registro, grafici, insight...)
+	// non è ancora visibile a quel punto e viene rimandato a dopo il first paint con
+	// requestIdleCallback, così non allunga il tempo prima che l'utente veda qualcosa.
+	function update(opts) {
+		opts = opts || {};
+
 		checkReminderBanner();
-		renderPeriodComparison();
 		renderHomeSummary();
-		renderInsights();
-		renderContextStats();
-		renderGoalCard();
-		renderBreakCard();
 		renderMiniWidget();
-		renderStockPage();
-		if (achievementsLoaded) checkAchievements();
+
+		const renderRest = () => {
+			updateHistory();
+			updateStats();
+			renderCharts();
+			renderPeriodComparison();
+			renderInsights();
+			renderContextStats();
+			renderGoalCard();
+			renderBreakCard();
+			renderStockPage();
+			if (achievementsLoaded) checkAchievements();
+		};
+
+		if (opts.deferHeavy && 'requestIdleCallback' in window) {
+			requestIdleCallback(renderRest, { timeout: 1500 });
+		} else {
+			renderRest();
+		}
 	}
 
 	// ========== HOME: riepilogo ==========
@@ -2158,7 +2222,7 @@ function updateHistory() {
         <div>
             <span style="font-weight: bold; color: var(--primary);">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${parseFloat(personalGrams(s).toFixed(2))}g
             ${s.not_mine ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">${t('history.notMineBadge')}</span>` : ''}
-            <br><small style="color: var(--color-text-muted);">${s.location_name ? `📍 ${s.location_name}` : `📍 <em>${t('history.noLocation')}</em>`} <a onclick="openEditLocationModal(${s.ts})" style="color:var(--primary-light); cursor:pointer; text-decoration:underline;">${t('history.editLink')}</a>${s.photo_path ? ` · <a onclick="openPhotoViewer(${s.ts})" style="cursor:pointer;">📷</a>` : ''}</small>
+            <br><small style="color: var(--color-text-muted);">${s.location_name ? `📍 ${s.location_name}` : `📍 <em>${t('history.noLocation')}</em>`} <button type="button" onclick="openEditLocationModal(${s.ts})" style="background:none; border:none; padding:0; margin:0; font:inherit; color:var(--primary-light); cursor:pointer; text-decoration:underline;">${t('history.editLink')}</button>${s.photo_path ? ` · <button type="button" onclick="openPhotoViewer(${s.ts})" style="background:none; border:none; padding:0; margin:0; font:inherit; cursor:pointer;">📷</button>` : ''}</small>
         </div>
         <button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
     </div>
@@ -2352,10 +2416,14 @@ smokes.forEach(s => {
 }
 
 	function renderCharts() {
+		renderCalendarHeatmap();
+
+		// Chart.js viene caricato solo quando si apre la pagina Grafici (vedi loadChartJs()):
+		// finché non è pronto, ci si ferma qui e si ridisegna quando refreshPageDynamicContent lo richiama.
+		if (typeof Chart === 'undefined') return;
+
 		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
 		charts = {};
-
-		renderCalendarHeatmap();
 
 		let gramsFumo = smokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0), 0);
 let gramsErba = smokes.reduce((sum, s) => sum + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
@@ -3142,7 +3210,7 @@ function renderGoalCard() {
 			<span style="font-weight:700; color:${barColor};">${current.toFixed(decimals)}${unit} / ${target.toFixed(decimals)}${unit}</span>
 		</div>
 		<div style="background:rgba(var(--overlay-rgb),0.12); border-radius:8px; height:10px; overflow:hidden;">
-			<div style="height:100%; width:${pct}%; background:${barColor}; border-radius:8px; transition: width 0.5s ease;"></div>
+			<div style="height:100%; width:100%; background:${barColor}; border-radius:8px; transition: transform 0.5s ease; transform:scaleX(${pct / 100}); transform-origin:left;"></div>
 		</div>
 		${isOver ? `<p style="font-size:12px; color:var(--danger); margin-top:8px; text-align:center;">${t('goals.goalExceeded', { period: periodLabel })}</p>` : ''}
 		<button class="secondary-btn" onclick="removeGoal()" style="margin-top:12px;">${t('goals.removeGoal')}</button>
@@ -3985,7 +4053,7 @@ function renderStockCard(type, stock) {
                     <span style="font-size:18px; font-weight:800; color:${color};">${remaining.toFixed(2)}g</span>
                 </div>
                 <div style="background:rgba(var(--overlay-rgb),0.12); border-radius:8px; height:10px; overflow:hidden;">
-                    <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:8px; transition: width 0.5s ease;"></div>
+                    <div style="height:100%; width:100%; background:${barColor}; border-radius:8px; transition: transform 0.5s ease; transform:scaleX(${pct / 100}); transform-origin:left;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
                     <span style="font-size:11px; color:var(--color-text-muted);">${t('stock.percentRemaining', { pct: pct.toFixed(0) })}</span>
@@ -4026,10 +4094,10 @@ function renderMiniWidget() {
         const remaining = gramsRemainingForPurchase(oldest);
         const pct = Math.min(100, (remaining / parseFloat(oldest.grams)) * 100);
         document.getElementById('miniFumoGrams').textContent = remaining.toFixed(2) + 'g';
-        document.getElementById('miniFumoBar').style.width = pct + '%';
+        document.getElementById('miniFumoBar').style.transform = 'scaleX(' + (pct / 100) + ')';
     } else {
         document.getElementById('miniFumoGrams').textContent = '–';
-        document.getElementById('miniFumoBar').style.width = '0%';
+        document.getElementById('miniFumoBar').style.transform = 'scaleX(0)';
     }
 
     // ERBA — scala dal più vecchio
@@ -4038,10 +4106,10 @@ function renderMiniWidget() {
         const remaining = gramsRemainingForPurchase(oldest);
         const pct = Math.min(100, (remaining / parseFloat(oldest.grams)) * 100);
         document.getElementById('miniErbaGrams').textContent = remaining.toFixed(2) + 'g';
-        document.getElementById('miniErbaBar').style.width = pct + '%';
+        document.getElementById('miniErbaBar').style.transform = 'scaleX(' + (pct / 100) + ')';
     } else {
         document.getElementById('miniErbaGrams').textContent = '–';
-        document.getElementById('miniErbaBar').style.width = '0%';
+        document.getElementById('miniErbaBar').style.transform = 'scaleX(0)';
     }
 }
 
@@ -4075,7 +4143,7 @@ function renderPurchaseHistory() {
             consumedStr = t('stock.consumedRemainingLine', { consumed: consumed.toFixed(2), remaining: remaining.toFixed(2) });
             barHtml = `
                 <div style="background:rgba(var(--overlay-rgb),0.12); border-radius:6px; height:6px; overflow:hidden; margin-top:6px;">
-                    <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:6px; transition: width 0.5s ease;"></div>
+                    <div style="height:100%; width:100%; background:${barColor}; border-radius:6px; transition: transform 0.5s ease; transform:scaleX(${pct / 100}); transform-origin:left;"></div>
                 </div>
             `;
         } else if (p.closed_at) {
