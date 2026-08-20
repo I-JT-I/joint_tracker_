@@ -1954,7 +1954,7 @@ async function openPhotoViewer(ts) {
 	if (!session || !session.photo_path) return;
 
 	currentViewerTs = ts;
-	document.getElementById('photoViewerImg').src = '';
+	document.getElementById('photoViewerImg').removeAttribute('src'); // non src='': stringa vuota risolve all'URL della pagina e spara un error event spurio, che ora verrebbe intercettato dall'onerror di fallbackPlainPhoto
 	document.getElementById('photoViewerInfo').innerHTML = `<p style="text-align:center; color:var(--color-text-muted);">${t('common.loading')}</p>`;
 	document.getElementById('photoViewerDeleteBtn').style.display = 'block';
 	document.getElementById('photoViewerModal').style.display = 'flex';
@@ -2030,7 +2030,7 @@ async function openSnapshotViewer(index) {
 	const isMe = s.user_id === currentUser.id;
 	currentViewerTs = isMe ? s.ts : null;
 
-	document.getElementById('photoViewerImg').src = '';
+	document.getElementById('photoViewerImg').removeAttribute('src'); // non src='': stringa vuota risolve all'URL della pagina e spara un error event spurio, che ora verrebbe intercettato dall'onerror di fallbackPlainPhoto
 	document.getElementById('photoViewerInfo').innerHTML = `<p style="text-align:center; color:var(--color-text-muted);">${t('common.loading')}</p>`;
 	document.getElementById('photoViewerDeleteBtn').style.display = isMe ? 'block' : 'none';
 	document.getElementById('photoViewerModal').style.display = 'flex';

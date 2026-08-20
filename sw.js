@@ -73,8 +73,13 @@ async function cacheFirstPhoto(request) {
   if (cached) return cached;
 
   try {
-    const response = await fetch(request);
-    if (response && response.status === 200) {
+    // Un <img> cross-origin genera una request "no-cors": rifetchare quella stessa
+    // request darebbe una response opaca con status sempre 0 (mai 200, anche se va a
+    // buon fine), quindi non verrebbe mai messa in cache. Supabase Storage supporta
+    // CORS, quindi rifacciamo la fetch esplicitamente in modalita' 'cors' sul solo URL
+    // per ottenere una response leggibile/cacheabile invece di una opaca.
+    const response = await fetch(request.url, { mode: 'cors', credentials: 'omit' });
+    if (response.ok) {
       cache.put(cacheKey, response.clone());
     }
     return response;
