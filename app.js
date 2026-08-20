@@ -6,6 +6,7 @@
 	// ========== VARIABILI GLOBALI ==========
 	let currentUser = null;
 	let smokes = [];
+	let smokesLoaded = false; // false finché loadData() non ha popolato smokes: evita di mostrare la scorta come "piena" prima di conoscere il consumato
 	let currentLocation = { lat: null, lng: null, name: null };
 	let mapInstance = null;
 	let mapMarkers = [];
@@ -872,6 +873,7 @@ async function flushPendingSessions() {
 	async function loadData() {
 		if (isGuestMode) {
 			smokes = getGuestSmokes().slice().sort((a, b) => b.ts - a.ts);
+			smokesLoaded = true;
 			update();
 			return;
 		}
@@ -885,6 +887,7 @@ async function flushPendingSessions() {
 			const cached = getLocalCache('smokes');
 			if (cached) {
 				smokes = cached;
+				smokesLoaded = true;
 				update();
 				showMessage(t('sync.offlineDataStale'));
 			}
@@ -892,6 +895,7 @@ async function flushPendingSessions() {
 		}
 
 		smokes = data || [];
+		smokesLoaded = true;
 		cacheLocalData('smokes', smokes);
 		update();
 	}
@@ -1594,6 +1598,8 @@ function updateMap() {
 		renderContextStats();
 		renderGoalCard();
 		renderBreakCard();
+		renderMiniWidget();
+		renderStockPage();
 		if (achievementsLoaded) checkAchievements();
 	}
 
@@ -3889,6 +3895,7 @@ function renderStockPrediction(type) {
 
 // ========== RENDER PAGINA STOCK ==========
 function renderStockPage() {
+    if (!smokesLoaded) return; // consumato ancora sconosciuto: evita di mostrare la scorta come piena per errore
     renderStockCard('fumo');
     renderStockCard('erba');
     renderPurchaseHistory();
@@ -3965,6 +3972,7 @@ function renderStockCard(type, stock) {
 function renderMiniWidget() {
     const widget = document.getElementById('miniStockWidget');
     if (!widget) return;
+    if (!smokesLoaded) return; // consumato ancora sconosciuto: meglio non mostrare nulla che mostrare "piena" per errore
     const noStockMsg = document.getElementById('homeNoStock');
 
     const openFumo = getOpenPurchasesFIFO('fumo');
