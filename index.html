@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta name="google-site-verification" content="FjvZpRN13XyjFacmmelH4SajsY6uXV7nhszCzV2g5FA" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JointTracker – Cannabis Tracker & Tolerance Break App</title>
+<meta name="description" content="Traccia le tue sessioni, monitora le tolerance break e visualizza statistiche dettagliate sul consumo di cannabis. Track cannabis sessions, tolerance breaks and usage stats. App gratuita, funziona offline, dati privati.">
+<link rel="canonical" href="https://joint-tracker.vercel.app/">
+<meta name="theme-color" content="#2e7d32">
+
+<meta property="og:title" content="JointTracker – Cannabis Tracker & Tolerance Break App">
+<meta property="og:description" content="Traccia sessioni, tolerance break e statistiche sul consumo di cannabis. Gratis, privata, funziona offline.">
+<meta property="og:image" content="https://joint-tracker.vercel.app/og-image.png">
+<meta property="og:url" content="https://joint-tracker.vercel.app/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="it_IT">
+<meta property="og:locale:alternate" content="en_US">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="JointTracker – Cannabis Tracker & Tolerance Break App">
+<meta name="twitter:description" content="Traccia sessioni, tolerance break e statistiche sul consumo di cannabis. Gratis, privata, funziona offline.">
+<meta name="twitter:image" content="https://joint-tracker.vercel.app/og-image.png">
+
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preload" href="/marketing.css" as="style">
+<link rel="stylesheet" href="/marketing.css">
+
+<!-- Se l'app e' aperta da un'icona gia' installata sulla home screen (utenti che
+     l'avevano aggiunta prima che l'app si spostasse su /app), manda dritti alla
+     dashboard invece di mostrare la landing page marketing. -->
+<script>
+(function () {
+	try {
+		var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+		if (standalone) window.location.replace('/app');
+	} catch (e) {}
+})();
+</script>
+
+<script type="application/ld+json">
+{
+	"@context": "https://schema.org",
+	"@type": "WebApplication",
+	"name": "JointTracker",
+	"url": "https://joint-tracker.vercel.app/",
+	"description": "App gratuita per tracciare sessioni di consumo cannabis, gestire tolerance break e visualizzare statistiche dettagliate. Funziona offline, dati privati.",
+	"applicationCategory": "HealthApplication",
+	"operatingSystem": "Any (PWA)",
+	"offers": {
+		"@type": "Offer",
+		"price": "0",
+		"priceCurrency": "EUR"
+	},
+	"inLanguage": ["it", "en"],
+	"browserRequirements": "Richiede un browser moderno con supporto Service Worker"
+}
+</script>
+
+<!-- Vercel Web Analytics -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+
+<nav class="site-nav">
+	<div class="container">
+		<a href="/" class="brand">🌿 JointTracker</a>
+		<div class="nav-links">
+			<a href="/come-funziona">Come funziona</a>
+			<a href="/faq">FAQ</a>
+			<a href="/blog">Blog</a>
+			<a href="/app" class="nav-cta">Apri l'app</a>
+		</div>
+	</div>
+</nav>
+
+<main>
+	<section class="hero">
+		<h1>Traccia il tuo consumo di cannabis, senza giudizi</h1>
+		<p class="subtitle">JointTracker è un cannabis tracker gratuito e privato: registra le sessioni, monitora tolerance break e streak, tieni sotto controllo scorte e spese. Track cannabis sessions, tolerance breaks and usage stats — funziona anche offline.</p>
+		<div class="cta-row">
+			<a href="/app" class="btn btn-primary">🚀 Inizia gratis</a>
+			<a href="/come-funziona" class="btn btn-secondary">Come funziona</a>
+		</div>
+	</section>
+
+	<section id="funzioni">
+		<h2>Tutto quello che ti serve per tenere traccia</h2>
+		<div class="feature-grid">
+			<div class="card feature-card">
+				<h3>📜 Registro sessioni</h3>
+				<p>Segna cosa fumi, quanto e quando in pochi secondi, con contesto e umore opzionali.</p>
+			</div>
+			<div class="card feature-card">
+				<h3>💤 Tolerance break tracker</h3>
+				<p>Pianifica e monitora le tue pause, con statistiche su tolleranza e streak di astinenza.</p>
+			</div>
+			<div class="card feature-card">
+				<h3>📊 Statistiche e grafici</h3>
+				<p>Calendario dei consumi, medie giornaliere/mensili, fasce orarie e spesa nel tempo.</p>
+			</div>
+			<div class="card feature-card">
+				<h3>🗺️ Mappa dei luoghi</h3>
+				<p>Salva i tuoi posti abituali e visualizza dove e quanto consumi.</p>
+			</div>
+			<div class="card feature-card">
+				<h3>🛒 Gestione scorte</h3>
+				<p>Tieni traccia di acquisti, grammi rimanenti e prezzi.</p>
+			</div>
+			<div class="card feature-card">
+				<h3>🔒 Dati privati</h3>
+				<p>Puoi anche usarla in modalità ospite, senza registrarti, con dati salvati solo sul tuo dispositivo.</p>
+			</div>
+		</div>
+	</section>
+
+	<section id="perche">
+		<h2>Perché usare un cannabis tracker</h2>
+		<p>Tenere un diario di consumo aiuta a capire le proprie abitudini reali, non quelle percepite: quante sessioni al giorno, in quali momenti, con quale spesa mensile. JointTracker nasce per essere uno strumento onesto e senza giudizi, pensato sia per chi vuole solo monitorare, sia per chi sta pianificando una tolerance break o una riduzione del consumo.</p>
+		<p>È una <strong>Progressive Web App (PWA)</strong>: si installa sulla home screen come un'app nativa, ma non richiede store né aggiornamenti manuali, e funziona anche offline.</p>
+	</section>
+
+	<section id="cta-finale">
+		<div class="card" style="text-align:center;">
+			<h2 style="margin-top:0;">Pronto a iniziare?</h2>
+			<p>Gratis, senza pubblicità, e puoi provarla anche senza registrarti.</p>
+			<a href="/app" class="btn btn-primary">🚀 Prova JointTracker</a>
+		</div>
+	</section>
+</main>
+
+<footer class="site-footer">
+	<nav>
+		<a href="/come-funziona">Come funziona</a>
+		<a href="/faq">FAQ</a>
+		<a href="/blog">Blog</a>
+		<a href="/app">Apri l'app</a>
+	</nav>
+	<p>JointTracker — cannabis tracker gratuito e privato.</p>
+</footer>
+
+</body>
+</html>
