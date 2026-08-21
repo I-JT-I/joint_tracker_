@@ -13,7 +13,11 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
 $root = $PSScriptRoot
-$sourcePath = Join-Path $root 'icon-512.png'
+# Master full-bleed (logo a contatto coi bordi, nessun margine): tenuto separato dagli
+# output icon-*.png perche' questi ultimi ora sono TUTTI generati con margine di sicurezza
+# (vedi sotto) — se il source coincidesse con un output, ogni rerun dello script comprimerebbe
+# il logo un po' di piu' ad ogni esecuzione.
+$sourcePath = Join-Path $root 'icon-master.png'
 $splashDir = Join-Path $root 'splash'
 $bgColor = [System.Drawing.Color]::FromArgb(255, 0x0c, 0x12, 0x0c)  # background_color del manifest
 
@@ -31,19 +35,28 @@ function New-HQGraphics($bitmap) {
     return $g
 }
 
-# ---------- 1. Icone standard (full-bleed, sfondo trasparente) ----------
+# ---------- 1. Icone standard ("any", safe zone 80%, sfondo trasparente) ----------
+# Erano full-bleed (logo a contatto coi bordi): Android/Play Protect applicano comunque
+# una propria maschera adattiva anche alle icone "any" (non solo alle "maskable"), quindi
+# senza margine il fumo/banner venivano tagliati. Stesso margine delle maskable (80%),
+# ma sfondo trasparente invece che pieno, per restare corrette anche nei contesti che le
+# mostrano cosi' come sono (favicon, tab del browser).
 function New-PlainIcon([int]$size, [string]$outPath) {
     $bmp = New-Object System.Drawing.Bitmap $size, $size, ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $g = New-HQGraphics $bmp
     $g.Clear([System.Drawing.Color]::Transparent)
-    $g.DrawImage($source, 0, 0, $size, $size)
+    $inner = [int]([math]::Round($size * 0.8))
+    $offset = [int]([math]::Round(($size - $inner) / 2))
+    $g.DrawImage($source, $offset, $offset, $inner, $inner)
     $g.Dispose()
     $bmp.Save($outPath, [System.Drawing.Imaging.ImageFormat]::Png)
     $bmp.Dispose()
     Write-Host "OK  $outPath"
 }
 
+New-PlainIcon 192  (Join-Path $root 'icon-192.png')
 New-PlainIcon 384  (Join-Path $root 'icon-384.png')
+New-PlainIcon 512  (Join-Path $root 'icon-512.png')
 New-PlainIcon 1024 (Join-Path $root 'icon-1024.png')
 
 # ---------- 2. Icone maskable (safe zone 80%, sfondo pieno) ----------
