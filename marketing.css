@@ -150,6 +150,11 @@ a { color: var(--primary-light); }
 	border: 2px solid var(--primary-light);
 }
 
+button.btn {
+	font: inherit;
+	cursor: pointer;
+}
+
 /* SECTIONS */
 main section {
 	max-width: 900px;

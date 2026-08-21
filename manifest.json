@@ -3,7 +3,7 @@
   "short_name": "JointTracker",
   "description": "Traccia le tue sessioni, la scorta e le spese in modo semplice e privato.",
   "start_url": "/app",
-  "scope": "/app/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0c120c",

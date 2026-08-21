@@ -24,6 +24,8 @@
 
 <link rel="icon" type="image/png" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preload" href="/marketing.css" as="style">
 <link rel="stylesheet" href="/marketing.css">
 
@@ -58,6 +60,43 @@
 }
 </script>
 
+<!-- Installazione PWA reale dalla landing: cattura il prompt nativo del browser
+     e lo attiva dal nostro bottone (Chrome/Edge non lo mostrano da soli finché
+     non lo richiami tu). Su iPhone/Safari questo evento non esiste: resta
+     visibile solo l'istruzione testuale "Aggiungi a Home". -->
+<script>
+(function () {
+	var deferredPrompt = null;
+	window.addEventListener('beforeinstallprompt', function (e) {
+		e.preventDefault();
+		deferredPrompt = e;
+		var row = document.getElementById('installRow');
+		var hint = document.getElementById('installHint');
+		if (row) row.style.display = 'flex';
+		if (hint) hint.style.display = 'none';
+	});
+	window.addEventListener('appinstalled', function () {
+		deferredPrompt = null;
+		var row = document.getElementById('installRow');
+		if (row) row.style.display = 'none';
+	});
+	document.addEventListener('DOMContentLoaded', function () {
+		var btn = document.getElementById('installBtn');
+		if (btn) btn.addEventListener('click', async function () {
+			if (!deferredPrompt) return;
+			deferredPrompt.prompt();
+			await deferredPrompt.userChoice;
+			deferredPrompt = null;
+			var row = document.getElementById('installRow');
+			if (row) row.style.display = 'none';
+		});
+	});
+	if ('serviceWorker' in navigator) {
+		navigator.serviceWorker.register('/sw.js').catch(function () {});
+	}
+})();
+</script>
+
 <!-- Vercel Web Analytics -->
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
@@ -86,7 +125,10 @@
 			<a href="/app" class="btn btn-primary">🚀 Inizia gratis</a>
 			<a href="/come-funziona" class="btn btn-secondary">Come funziona</a>
 		</div>
-		<p style="font-size:13px; color:var(--color-text-muted); margin-top:16px;">Vuoi installarla come app sul telefono? Apri prima l'app, poi trovi "Installa app" nelle Impostazioni — vedi <a href="/faq#installazione">come fare</a>.</p>
+		<div class="cta-row" id="installRow" style="display:none; margin-top:12px;">
+			<button type="button" class="btn btn-secondary" id="installBtn">📲 Installa l'app</button>
+		</div>
+		<p id="installHint" style="font-size:13px; color:var(--color-text-muted); margin-top:16px;">Vuoi installarla come app sul telefono? Su iPhone/Safari: icona Condividi → "Aggiungi a Home" (vedi <a href="/faq#installazione">i dettagli</a>). Su Android/Chrome, se non vedi il pulsante qui sopra, aprila da <a href="/app">/app</a> e usa "Installa app" nelle Impostazioni.</p>
 	</section>
 
 	<section id="funzioni">
