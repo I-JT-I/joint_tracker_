@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
               endpoint: sub.endpoint,
               keys: { p256dh: sub.p256dh, auth: sub.auth },
             },
-            JSON.stringify({ title: "🌿 JointTracker", body, url: "/" })
+            JSON.stringify({ title: "🌿 JointTracker", body, url: "/app" })
           );
           sent++;
         } catch (err: unknown) {

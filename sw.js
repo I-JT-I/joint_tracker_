@@ -11,8 +11,8 @@ const PHOTO_CACHE_NAME = 'jointtracker-photos-v1';
 // in app.js) solo quando servono davvero. Il fetch handler sotto li mette comunque in
 // cache-first automaticamente alla prima richiesta reale, quindi restano disponibili offline.
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
+  '/app',
+  '/app/index.html',
   '/style.css',
   '/app.js',
   '/i18n.js',
@@ -143,7 +143,7 @@ self.addEventListener('push', function (event) {
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     vibrate: [100, 50, 100],
-    data: { url: data.url || '/' }
+    data: { url: data.url || '/app' }
   };
 
   event.waitUntil(self.registration.showNotification(data.title, options));
@@ -151,7 +151,7 @@ self.addEventListener('push', function (event) {
 
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
-  const url = event.notification.data && event.notification.data.url ? event.notification.data.url : '/';
+  const url = event.notification.data && event.notification.data.url ? event.notification.data.url : '/app';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {

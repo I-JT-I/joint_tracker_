@@ -21,7 +21,10 @@ const STATIC_ENTRIES = [
 	'manifest.json', 'robots.txt', 'sitemap.xml',
 	'icon-192.png', 'icon-384.png', 'icon-512.png', 'icon-1024.png',
 	'icon-maskable-192.png', 'icon-maskable-384.png', 'icon-maskable-512.png', 'icon-maskable-1024.png',
-	'locales', 'splash'
+	'locales', 'splash',
+	// Pagine marketing/SEO statiche: nessun riferimento ad app.js/style.css/i18n.js,
+	// quindi non passano dalla riscrittura hash qui sotto (a differenza di app/index.html).
+	'index.html', 'come-funziona.html', 'faq.html', 'blog', 'marketing.css', 'og-image.png'
 ];
 
 for (const entry of STATIC_ENTRIES) {
@@ -42,12 +45,16 @@ const appHashed = await buildHashed('app.js');
 const i18nHashed = await buildHashed('i18n.js');
 const styleHashed = await buildHashed('style.css');
 
-// index.html: riscrive i riferimenti (invariati nel sorgente) ai nomi con hash.
-let html = readFileSync('index.html', 'utf8');
-html = html.replaceAll('href="style.css"', `href="${styleHashed}"`);
-html = html.replaceAll('src="app.js"', `src="${appHashed}"`);
-html = html.replaceAll('src="i18n.js"', `src="${i18nHashed}"`);
-writeFileSync(`${OUT}/index.html`, html);
+// app/index.html (la SPA vera e propria, dietro /app): riscrive i riferimenti
+// assoluti (invariati nel sorgente) ai nomi con hash. La landing page e le altre
+// pagine marketing in STATIC_ENTRIES non referenziano questi file e vengono
+// copiate cosi' come sono.
+mkdirSync(`${OUT}/app`, { recursive: true });
+let appHtml = readFileSync('app/index.html', 'utf8');
+appHtml = appHtml.replaceAll('href="/style.css"', `href="/${styleHashed}"`);
+appHtml = appHtml.replaceAll('src="/app.js"', `src="/${appHashed}"`);
+appHtml = appHtml.replaceAll('src="/i18n.js"', `src="/${i18nHashed}"`);
+writeFileSync(`${OUT}/app/index.html`, appHtml);
 
 // sw.js: stesso discorso per la precache list, piu' un CACHE_NAME derivato
 // dall'hash di app.js cosi' cambia automaticamente a ogni deploy con codice

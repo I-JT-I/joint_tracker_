@@ -2,10 +2,11 @@
 <html lang="it">
 <head>
 	
-	<meta name="google-site-verification" content="FjvZpRN13XyjFacmmelH4SajsY6uXV7nhszCzV2g5FA" />
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-	<title>JointTracker – Cannabis Tracker & Tolerance Break App</title>
+	<title>JointTracker – Area personale</title>
+	<meta name="robots" content="noindex, nofollow">
+	<link rel="canonical" href="https://joint-tracker.vercel.app/app">
 
 	<!-- TEMA: imposta subito data-theme prima del paint, per evitare flash -->
 	<script>
@@ -26,16 +27,18 @@
 	<meta name="theme-color" content="#2e7d32">
 	<meta name="description" content="Traccia le tue sessioni, monitora le tolerance break e visualizza statistiche sul consumo di cannabis. Track your sessions, monitor tolerance breaks and view detailed cannabis usage stats. Free PWA, works offline.">
 
-	<meta property="og:title" content="JointTracker – Cannabis Tracker & Tolerance Break App">
-	<meta property="og:description" content="Traccia sessioni, tolerance break e statistiche sul consumo di cannabis. Track sessions, tolerance breaks and cannabis usage stats. Free PWA.">
-	<meta property="og:url" content="https://joint-tracker.vercel.app/">
+	<meta property="og:title" content="JointTracker – Area personale">
+	<meta property="og:description" content="Accedi alla tua area personale JointTracker per tracciare sessioni, tolerance break e statistiche sul consumo di cannabis.">
+	<meta property="og:image" content="https://joint-tracker.vercel.app/og-image.png">
+	<meta property="og:url" content="https://joint-tracker.vercel.app/app">
 	<meta property="og:type" content="website">
 	<meta property="og:locale" content="it_IT">
 	<meta property="og:locale:alternate" content="en_US">
 
-	<meta name="twitter:card" content="summary">
-	<meta name="twitter:title" content="JointTracker – Cannabis Tracker & Tolerance Break App">
-	<meta name="twitter:description" content="Traccia sessioni, tolerance break e statistiche sul consumo di cannabis. Free PWA, works offline.">
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title" content="JointTracker – Area personale">
+	<meta name="twitter:description" content="Accedi alla tua area personale JointTracker per tracciare sessioni, tolerance break e statistiche sul consumo di cannabis.">
+	<meta name="twitter:image" content="https://joint-tracker.vercel.app/og-image.png">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -81,12 +84,12 @@
 	.spinner{display:inline-block;width:20px;height:20px;border:3px solid rgba(var(--overlay-rgb),0.15);border-radius:50%;border-top-color:var(--primary-light);animation:spin 0.8s linear infinite}
 	@keyframes spin{to{transform:rotate(360deg)}}
 	</style>
-	<link rel="preload" href="style.css" as="style">
-	<link rel="stylesheet" href="style.css" media="print" onload="this.media='all'; this.onload=null;">
-	<noscript><link rel="stylesheet" href="style.css"></noscript>
+	<link rel="preload" href="/style.css" as="style">
+	<link rel="stylesheet" href="/style.css" media="print" onload="this.media='all'; this.onload=null;">
+	<noscript><link rel="stylesheet" href="/style.css"></noscript>
 
 	<!-- i18n -->
-	<script src="i18n.js" defer></script>
+	<script src="/i18n.js" defer></script>
 	<!-- Supabase -->
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
@@ -834,7 +837,7 @@
 </div>
 </main>
 
-<script src="app.js" defer></script>
+<script src="/app.js" defer></script>
 
 </body>
 </html>
