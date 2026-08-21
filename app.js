@@ -2210,8 +2210,11 @@ function isHistoryFilterActive() {
 }
 
 function applyHistoryFilters() {
+	const active = isHistoryFilterActive();
 	const resetBtn = document.getElementById('historyFilterReset');
-	if (resetBtn) resetBtn.style.display = isHistoryFilterActive() ? 'block' : 'none';
+	if (resetBtn) resetBtn.style.display = active ? 'block' : 'none';
+	const badge = document.getElementById('historyFilterBadge');
+	if (badge) badge.style.display = active ? 'block' : 'none';
 	updateHistory();
 }
 
@@ -2225,6 +2228,16 @@ function resetHistoryFilters() {
 	if (from) from.value = '';
 	if (to) to.value = '';
 	applyHistoryFilters();
+}
+
+function toggleHistoryFilterPanel(forceOpen) {
+	const panel = document.getElementById('historyFilterPanel');
+	const btn = document.getElementById('historyFilterToggle');
+	if (!panel || !btn) return;
+	const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !panel.classList.contains('open');
+	panel.classList.toggle('open', shouldOpen);
+	btn.classList.toggle('is-open', shouldOpen);
+	btn.setAttribute('aria-expanded', String(shouldOpen));
 }
 
 function updateHistory() {

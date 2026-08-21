@@ -171,6 +171,7 @@
   },
   "history": {
     "title": "📜 Registro Storico",
+    "filterButton": "🔎 Filtra",
     "searchByPlace": "🔍 Cerca per luogo...",
     "allTypes": "Tutti i tipi",
     "dateFrom": "Dal",

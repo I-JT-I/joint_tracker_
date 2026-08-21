@@ -331,19 +331,36 @@
 <!-- PAGINA STORIA -->
 <div id="page-history" class="page">
 	<div class="card">
-		<h3 data-i18n="history.title">📜 Registro Storico</h3>
-		<input type="text" id="historySearch" data-i18n-placeholder="history.searchByPlace" placeholder="🔍 Cerca per luogo..." oninput="applyHistoryFilters()" style="margin-top:0;">
-		<div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-			<select id="historyTypeFilter" onchange="applyHistoryFilters()" style="flex:1; min-width:110px; margin-top:0;">
-				<option value="all" data-i18n="history.allTypes">Tutti i tipi</option>
-				<option value="fumo" data-i18n="common.smoke">🍫 Fumo</option>
-				<option value="erba" data-i18n="common.weed">🍃 Erba</option>
-				<option value="fumo-erba" data-i18n="common.smokeWeed">🍫🍃 Fumo+Erba</option>
-			</select>
-			<input type="date" id="historyDateFrom" onchange="applyHistoryFilters()" data-i18n-title="history.dateFrom" title="Dal" style="flex:1; min-width:130px; margin-top:0;">
-			<input type="date" id="historyDateTo" onchange="applyHistoryFilters()" data-i18n-title="history.dateTo" title="Al" style="flex:1; min-width:130px; margin-top:0;">
+		<div class="history-header-row">
+			<h3 style="margin:0;" data-i18n="history.title">📜 Registro Storico</h3>
+			<button type="button" class="filter-toggle-btn" id="historyFilterToggle" onclick="toggleHistoryFilterPanel()" aria-expanded="false" aria-controls="historyFilterPanel">
+				<span data-i18n="history.filterButton">🔎 Filtra</span>
+				<span class="chevron">▾</span>
+				<span class="filter-badge-dot" id="historyFilterBadge" style="display:none;"></span>
+			</button>
 		</div>
-		<button type="button" class="secondary-btn" id="historyFilterReset" onclick="resetHistoryFilters()" style="display:none; margin-top:10px;" data-i18n="history.removeFilters">✕ Rimuovi filtri</button>
+		<div class="filter-accordion" id="historyFilterPanel">
+			<div class="filter-accordion-inner">
+				<input type="text" id="historySearch" data-i18n-placeholder="history.searchByPlace" placeholder="🔍 Cerca per luogo..." oninput="applyHistoryFilters()" style="margin-top:0;">
+				<select id="historyTypeFilter" onchange="applyHistoryFilters()" style="margin-top:10px;">
+					<option value="all" data-i18n="history.allTypes">Tutti i tipi</option>
+					<option value="fumo" data-i18n="common.smoke">🍫 Fumo</option>
+					<option value="erba" data-i18n="common.weed">🍃 Erba</option>
+					<option value="fumo-erba" data-i18n="common.smokeWeed">🍫🍃 Fumo+Erba</option>
+				</select>
+				<div class="history-date-row">
+					<div class="history-date-field">
+						<label for="historyDateFrom" data-i18n="history.dateFrom">Dal</label>
+						<input type="date" id="historyDateFrom" onchange="applyHistoryFilters()">
+					</div>
+					<div class="history-date-field">
+						<label for="historyDateTo" data-i18n="history.dateTo">Al</label>
+						<input type="date" id="historyDateTo" onchange="applyHistoryFilters()">
+					</div>
+				</div>
+				<button type="button" class="secondary-btn" id="historyFilterReset" onclick="resetHistoryFilters()" style="display:none;" data-i18n="history.removeFilters">✕ Rimuovi filtri</button>
+			</div>
+		</div>
 		<div id="historyList" style="margin-top:15px;"></div>
 	</div>
 </div>

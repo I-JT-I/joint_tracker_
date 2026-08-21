@@ -171,6 +171,7 @@
   },
   "history": {
     "title": "📜 History Log",
+    "filterButton": "🔎 Filter",
     "searchByPlace": "🔍 Search by place...",
     "allTypes": "All types",
     "dateFrom": "From",
