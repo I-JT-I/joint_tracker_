@@ -1,0 +1,76 @@
+# JointTracker — Contesto per Claude Code
+
+## Cos'è
+PWA per il tracking di sessioni cannabis con funzionalità social (sessioni condivise, classifiche amici, tolerance break). Frontend vanilla HTML/CSS/JS (no framework), backend Supabase, deploy su Vercel.
+
+## Stack
+- **Frontend**: HTML/CSS/JS vanilla, nessun bundler/framework
+- **Backend**: Supabase (Postgres, Auth, Edge Functions, Storage se usato)
+- **Hosting**: Vercel
+- **Analytics**: Vercel Web Analytics
+- **PWA**: Service worker per offline + push notifications
+
+## Convenzioni di codice
+- **Indentazione**: tab, non spazi (alcune sezioni più vecchie di `app.js` sono a 4 spazi per errore — se tocchi quelle righe uniformale a tab invece di aggiungere un terzo stile).
+- **Naming**: camelCase per variabili e funzioni JS (`applyTheme`, `loadData`, `sessionParticipants`). Funzioni con verbo+nome (`applyTheme`, `setTheme`, `toggleTheme`, `initTheme`). Classi CSS in kebab-case flat (`.filter-toggle-btn`, `.history-date-row`), non BEM.
+- **Organizzazione file**: niente cartella `src/`, file piatti nella root (`app.js`, `i18n.js`, `style.css`, `sw.js`). Un solo `style.css` per tutta la SPA (sotto `/app`), diviso in sezioni con banner di commento `/* ========== NOME SEZIONE ========== */` (stesso pattern usato in `app.js` con `// ========== NOME SEZIONE ==========`). Le pagine marketing statiche (`index.html`, `come-funziona.html`, `faq.html`, `blog/`) usano un CSS separato non hashato, `marketing.css`, per non passare dalla pipeline di hashing di esbuild di `style.css`/`app.js`/`i18n.js` (vedi `build.mjs`).
+- **Stato lato client**: nessuno state manager — stato globale in `let`/`const` a livello di modulo in cima ad `app.js` (`currentUser`, `smokes`, `charts`, `notifications`, ecc.), mutato direttamente dalle funzioni. Flag booleani tipo `smokesLoaded`/`achievementsLoaded` sono usati per evitare race condition tra caricamento dati async e prima render.
+- **Tema**: chiaro/scuro/auto via attributo `data-theme` su `<html>`, variabili CSS ridefinite in `:root[data-theme="dark"]`; preferenza salvata in `localStorage` (`jt_theme`).
+- **i18n**: stringhe in `locales/it.json` / `locales/en.json`, gestite da `i18n.js` (non hardcodare testo utente-visibile direttamente in `app.js`/HTML).
+- **Async**: `async`/`await` è lo standard (68 funzioni async in `app.js`); evita `.then()` a meno che tu non stia già dentro una catena esistente.
+- **Eventi DOM**: `addEventListener`, mai `onclick=` inline nell'HTML.
+- **HTML da dati utente**: passare sempre da `escapeHtml()` prima di iniettare testo libero di altri utenti (nomi posti, username, ecc.) via `innerHTML` — vedi il commento sopra la funzione in `app.js`.
+
+## Sicurezza — regole non negoziabili
+- Ogni nuova tabella Supabase DEVE avere RLS abilitato prima del merge
+- Le funzioni che bypassano RLS (SECURITY DEFINER) vanno documentate qui sotto con motivazione:
+  - `create_shared_session(...)` — inserisce righe in `smokes` (e notifiche) per gli ALTRI partecipanti della sessione condivisa, non solo per chi chiama; la RLS di `smokes` altrimenti permetterebbe solo insert sulle proprie righe.
+  - `get_friend_stats(target_user_id)`, `get_global_leaderboard()`, `get_friends_leaderboard(current_user_id)` — aggregano `smokes` di ALTRI utenti (amici o globale) per classifiche/statistiche; la RLS su `smokes` restringe normalmente la lettura alle proprie righe.
+  - `send_friend_request(target_username)` — cerca profili di altri utenti per username e inserisce una notifica sull'account del destinatario.
+  - `respond_friend_request(requester_id, accept)` — su accept scrive la riga di amicizia "di ritorno" (di proprietà del richiedente) e una notifica per lui; la RLS normalmente permette di scrivere solo le proprie righe.
+  - `remove_friend(target_id)` — cancella la riga di amicizia in ENTRAMBE le direzioni (l'accettazione ne crea due, una per parte); senza bypass RLS un utente potrebbe cancellare solo la propria riga, lasciando l'altro a vederti ancora come amico.
+  - `get_pending_friend_requests()` — legge `friendships` + `profiles.username` di chi ha mandato la richiesta (join cross-utente).
+  - `profiles_public` (view, non funzione, ma stessa semantica: `security_invoker = false`) — espone solo `id, username, avatar_url` di TUTTI i profili per ricerca amici/classifica, bypassando la RLS di `profiles` che limita ognuno al proprio profilo. **Attenzione**: in produzione questa view è già stata trovata silenziosamente flippata a `security_invoker = on` (probabile modifica manuale in Supabase Studio mai tracciata in una migration) rompendo la ricerca amici senza errori visibili — se il comportamento sembra inconsistente rispetto alle migration, verifica sempre la definizione live via MCP Supabase (`pg_get_viewdef`, `reloptions`) prima di fidarti dei file in `supabase/migrations/`.
+- Mai esporre chiavi service_role lato client
+- Edge Functions: validare sempre l'input, mai fidarsi di dati dal client
+
+## Aree sensibili (chiedere conferma prima di modificare)
+- Service worker (cache invalidation puo rompere l'app per utenti esistenti)
+- Schema RLS policies
+- Logica guest mode / migrazione da guest ad account registrato
+- Sistema achievements (se cambia la logica, gli achievement già sbloccati non devono sparire)
+
+## Comandi utili
+```
+# Build di produzione (minifica + cache-busting via hash, genera dist/)
+# — normalmente lo lancia Vercel da solo (buildCommand in vercel.json), utile in locale solo per debug della build
+npm run build
+
+# Sviluppo locale: nessun bundler/dev server necessario, i sorgenti (app.js, style.css, i18n.js)
+# vengono serviti cosi' come sono. Basta un qualsiasi static server sulla root, es.:
+npx serve .
+
+# Rigenerare le icone PWA (standard/maskable/splash) a partire da icon-512.png
+powershell -ExecutionPolicy Bypass -File generate-pwa-assets.ps1
+
+# Deploy: push su main del repo GitHub -> Vercel fa auto-deploy (build + dist/) da solo
+git push origin main
+
+# Migration Supabase: NON applicate in automatico da un push. Vanno lanciate a mano
+# nell'SQL editor di Supabase (o via CLI se autenticata) — Claude Code non ha accesso
+# di deploy al DB o alle Edge Functions da questo repo.
+supabase functions deploy <nome-funzione>   # es. send-reminders, weekly-backup, check-low-stock, list-backups
+```
+
+## Note su performance
+- Obiettivo: mantenere punteggio PageSpeed alto (lighthouse). Attenzione a:
+  - dimensione bundle JS (niente librerie pesanti se evitabile, dato che è vanilla)
+  - lazy loading immagini
+  - service worker caching strategy
+
+## Backlog / cose note da sistemare
+- **Backfill dati storici sessioni condivise non applicato**: `supabase/migrations/20260819160500_backfill_shared_session_stats.sql` contiene solo la query di PREVIEW attiva; la UPDATE che corregge `my_fumo_grams`/`my_erba_grams`/`type` sulle righe storiche di sessioni condivise (bug fixato per le nuove righe da `20260819160000_fix_shared_session_personal_stats.sql`) è commentata e va lanciata a mano nell'SQL editor dopo aver controllato la preview.
+- **Verificare se le migration "NOT applied automatically" sono state effettivamente eseguite in produzione**: `20260819160000_fix_shared_session_personal_stats.sql` e `20260819170000_fix_leaderboard_legacy_data_fallback.sql` sono marcate esplicitamente come da lanciare a mano nell'SQL editor Supabase, non da CLI/push automatico — controllare lo stato live (es. via MCP Supabase) prima di assumere che il fix sia in produzione, specie visto il caso già noto di `profiles_public` disallineata dalle migration.
+- **Image Transformations di Supabase Storage disattivate**: `SUPABASE_IMAGE_TRANSFORMS_ENABLED = false` in `app.js` (vicino a `GALLERY_THUMB_TRANSFORM`) perché il progetto è sul piano Free (le richieste fallirebbero sempre). Da riattivare (flag + toggle in Storage > Settings) se/quando si passa a Pro.
+- **Redeploy manuale della Edge Function `send-reminders`**: il codice sorgente in `supabase/functions/send-reminders/index.ts` punta già a `/app` (aggiornato per il restructure SEO del 2026-08-21), ma le Edge Functions non si deployano da un push su GitHub — va rilanciato manualmente `supabase functions deploy send-reminders` (o dalla dashboard) per far arrivare il fix in produzione; verificare che sia già stato fatto.
+- **Indentazione mista in `app.js`**: porzioni del file usano 4 spazi invece di tab (vedi "Convenzioni di codice"); da normalizzare col tempo, non c'è ancora un lint/format automatico nel repo che lo impedisca.
