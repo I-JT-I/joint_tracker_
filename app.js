@@ -3074,6 +3074,124 @@ function getAvgDailyGramsBeforeBreak(breakStartDate) {
 	return totalGrams / diffDays;
 }
 
+// ========== CONFRONTO PRIMA/DOPO PAUSA ==========
+
+// Finestra di confronto per una pausa conclusa: pari alla durata della pausa,
+// clampata tra 7 e 30 giorni. Stessa finestra usata sia per "prima" che per "dopo",
+// per rendere il confronto simmetrico.
+function getBreakComparisonWindowDays(startDate, endDate) {
+	const durationDays = Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)));
+	return Math.min(30, Math.max(7, durationDays));
+}
+
+function shiftDateStr(dateStr, deltaDays) {
+	const d = new Date(dateStr);
+	d.setDate(d.getDate() + deltaDays);
+	return toDateStr(d);
+}
+
+function getEarliestSmokeDate() {
+	if (smokes.length === 0) return null;
+	return smokes.reduce((min, s) => (s.date < min ? s.date : min), smokes[0].date);
+}
+
+// Media giornaliera (grammi e sessioni/"J") su un periodo fisso [startStr, endStr],
+// estremi inclusi, dividendo sempre per il numero totale di giorni del periodo — zero
+// incluso per i giorni senza sessioni registrate. Stesso metodo della card "Real Averages".
+function getPeriodAverage(startStr, endStr) {
+	const inRange = smokes.filter(s => !s.not_mine && s.date >= startStr && s.date <= endStr);
+	const totalGrams = inRange.reduce((s, x) => s + (x.my_fumo_grams ?? x.fumo_grams ?? 0) + (x.my_erba_grams ?? x.erba_grams ?? 0), 0);
+	const totalDays = Math.round((new Date(endStr) - new Date(startStr)) / (1000 * 60 * 60 * 24)) + 1;
+	return {
+		gramsPerDay: totalGrams / totalDays,
+		jointsPerDay: inRange.length / totalDays
+	};
+}
+
+function pctChange(before, after) {
+	if (before <= 0) return null;
+	return ((after - before) / before) * 100;
+}
+
+// Confronto prima/dopo per una tolerance break conclusa. Ritorna uno stato 'pending'
+// se la finestra "dopo" non è ancora trascorsa per intero, 'insufficient_before' se
+// non c'è abbastanza storico prima della pausa, altrimenti 'ready' con le medie.
+function getBreakComparison(brk) {
+	if (!brk.end_date) return null;
+
+	const windowDays = getBreakComparisonWindowDays(brk.start_date, brk.end_date);
+	const beforeEnd = shiftDateStr(brk.start_date, -1);
+	const beforeStart = shiftDateStr(brk.start_date, -windowDays);
+	const afterStart = shiftDateStr(brk.end_date, 1);
+	const afterEnd = shiftDateStr(brk.end_date, windowDays);
+
+	const todayStr = toDateStr(new Date());
+	if (todayStr <= afterEnd) {
+		const daysRemaining = Math.ceil((new Date(afterEnd) - new Date(todayStr)) / (1000 * 60 * 60 * 24)) + 1;
+		return { status: 'pending', daysRemaining };
+	}
+
+	const earliest = getEarliestSmokeDate();
+	if (!earliest || earliest > beforeStart) {
+		return { status: 'insufficient_before' };
+	}
+
+	const before = getPeriodAverage(beforeStart, beforeEnd);
+	const after = getPeriodAverage(afterStart, afterEnd);
+
+	return {
+		status: 'ready',
+		windowDays,
+		before,
+		after,
+		gramsChangePct: pctChange(before.gramsPerDay, after.gramsPerDay),
+		jointsChangePct: pctChange(before.jointsPerDay, after.jointsPerDay)
+	};
+}
+
+function renderBreakComparisonHtml(brk) {
+	const cmp = getBreakComparison(brk);
+	if (!cmp) return '';
+
+	if (cmp.status === 'pending') {
+		return `<div style="margin-top:6px; font-size:12px; color:var(--color-text-muted); text-align:center;">${tn('breaks.comparisonPending', cmp.daysRemaining, { days: cmp.daysRemaining })}</div>`;
+	}
+	if (cmp.status === 'insufficient_before') {
+		return `<div style="margin-top:6px; font-size:12px; color:var(--color-text-muted); text-align:center;">${t('breaks.comparisonInsufficientData')}</div>`;
+	}
+
+	function pctBadge(pct) {
+		if (pct === null) return '';
+		const isSame = Math.abs(pct) < 0.5;
+		const isUp = pct > 0;
+		const color = isSame ? 'var(--color-text-muted)' : (isUp ? '#FF9800' : '#2196F3');
+		const arrow = isSame ? '→' : (isUp ? '▲' : '▼');
+		return `<span style="color:${color}; font-weight:600;">${arrow} ${Math.abs(pct).toFixed(0)}%</span>`;
+	}
+
+	const { before, after, gramsChangePct, jointsChangePct } = cmp;
+
+	return `
+		<div style="margin-top:8px; padding:10px; border-radius:10px; background:rgba(var(--overlay-rgb),0.05); font-size:12px;">
+			<div style="display:flex; justify-content:space-between; color:var(--color-text-muted); margin-bottom:6px;">
+				<span>${t('breaks.comparisonBefore')}</span>
+				<span>${tn('breaks.comparisonWindowDays', cmp.windowDays, { days: cmp.windowDays })}</span>
+				<span>${t('breaks.comparisonAfter')}</span>
+			</div>
+			<div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; font-weight:700; font-size:14px;">
+				<span style="text-align:left;">${before.gramsPerDay.toFixed(2)}${t('breaks.comparisonGramsPerDay')}</span>
+				<span style="text-align:center; font-size:12px;">${pctBadge(gramsChangePct)}</span>
+				<span style="text-align:right;">${after.gramsPerDay.toFixed(2)}${t('breaks.comparisonGramsPerDay')}</span>
+			</div>
+			<div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; margin-top:4px; color:var(--color-text-secondary);">
+				<span style="text-align:left;">${before.jointsPerDay.toFixed(2)}${t('breaks.comparisonJointsPerDay')}</span>
+				<span style="text-align:center; font-size:12px;">${pctBadge(jointsChangePct)}</span>
+				<span style="text-align:right;">${after.jointsPerDay.toFixed(2)}${t('breaks.comparisonJointsPerDay')}</span>
+			</div>
+		</div>
+	`;
+}
+
 function renderBreakCard() {
 	const el = document.getElementById('breakCard');
 	if (!el) return;
@@ -3117,9 +3235,12 @@ function renderBreakHistory() {
 	el.innerHTML = `<hr style="margin:15px 0;"><p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">${t('breaks.previousBreaks')}</p>` +
 		past.map(b => {
 			const days = Math.ceil((new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24));
-			return `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:13px;">
-				<span>${formatShortDate(b.start_date)} → ${formatShortDate(b.end_date)}</span>
-				<span style="font-weight:600; color:var(--primary);">${days}g</span>
+			return `<div style="padding:8px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:13px;">
+				<div style="display:flex; justify-content:space-between;">
+					<span>${formatShortDate(b.start_date)} → ${formatShortDate(b.end_date)}</span>
+					<span style="font-weight:600; color:var(--primary);">${tn('breaks.durationDays', days, { days })}</span>
+				</div>
+				${renderBreakComparisonHtml(b)}
 			</div>`;
 		}).join('');
 }

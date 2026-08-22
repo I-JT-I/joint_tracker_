@@ -516,7 +516,18 @@
     "breakStarted": "💤 Break started, good luck!",
     "confirmEndBreak": "Do you want to end the current break?",
     "endBreakError": "Error ending the break.",
-    "breakEnded": "✅ Break ended, great job!"
+    "breakEnded": "✅ Break ended, great job!",
+    "durationDays_one": "{days} day",
+    "durationDays_other": "{days} days",
+    "comparisonBefore": "Before",
+    "comparisonAfter": "After",
+    "comparisonWindowDays_one": "{days}d window",
+    "comparisonWindowDays_other": "{days}d window",
+    "comparisonGramsPerDay": "g/day",
+    "comparisonJointsPerDay": "J/day",
+    "comparisonPending_one": "Check back in {days} day to see the break's effect",
+    "comparisonPending_other": "Check back in {days} days to see the break's effect",
+    "comparisonInsufficientData": "Not enough data before the break to calculate the comparison"
   },
   "settings": {
     "profile": "👤 Profile",

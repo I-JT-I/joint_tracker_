@@ -516,7 +516,18 @@
     "breakStarted": "💤 Pausa iniziata, in bocca al lupo!",
     "confirmEndBreak": "Vuoi terminare la pausa attuale?",
     "endBreakError": "Errore nella chiusura della pausa.",
-    "breakEnded": "✅ Pausa conclusa, ottimo lavoro!"
+    "breakEnded": "✅ Pausa conclusa, ottimo lavoro!",
+    "durationDays_one": "{days} giorno",
+    "durationDays_other": "{days} giorni",
+    "comparisonBefore": "Prima",
+    "comparisonAfter": "Dopo",
+    "comparisonWindowDays_one": "finestra {days}gg",
+    "comparisonWindowDays_other": "finestra {days}gg",
+    "comparisonGramsPerDay": "g/gg",
+    "comparisonJointsPerDay": "J/gg",
+    "comparisonPending_one": "Torna tra {days} giorno per vedere l'effetto della pausa",
+    "comparisonPending_other": "Torna tra {days} giorni per vedere l'effetto della pausa",
+    "comparisonInsufficientData": "Dati insufficienti prima della pausa per calcolare il confronto"
   },
   "settings": {
     "profile": "👤 Profilo",
