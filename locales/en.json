@@ -562,7 +562,8 @@
     "checkin2": "You're at {days} days smoke-free. Great work.",
     "checkin3": "{days} days on break. One day at a time.",
     "suggestionModerate": "🌿 Your usage has been fairly steady lately. If you're up for it, a break might be worth considering — no pressure, just an idea.",
-    "suggestionHeavy": "🌿 Your usage has been on the heavier side for a while. A break could help reset your tolerance, whenever feels right for you."
+    "suggestionHeavy": "🌿 Your usage has been on the heavier side for a while. A break could help reset your tolerance, whenever feels right for you.",
+    "discardedTooShort": "Break was too short to count, removed from your history."
   },
   "settings": {
     "profile": "👤 Profile",

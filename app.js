@@ -3274,6 +3274,16 @@ function getBreakThresholdDays(jointsPerDay) {
 	return 7;
 }
 
+// Soglia applicabile a una pausa che inizia il giorno "startDateStr": stesso calcolo del
+// rilevamento (media J/day sui 30gg precedenti), riusato anche per decidere a posteriori se
+// una pausa già chiusa era abbastanza lunga da contare davvero (vedi handleSessionLoggedForBreaks/
+// endBreak più sotto).
+function getBreakThresholdForBreakStart(startDateStr) {
+	const windowEnd = shiftDateStr(startDateStr, -1);
+	const windowStart = shiftDateStr(windowEnd, -29);
+	return getBreakThresholdDays(getPeriodAverage(windowStart, windowEnd).jointsPerDay);
+}
+
 // Confronta lo stato attuale (activeBreak/pendingBreak) con l'ultima sessione registrata e,
 // se il gap supera la soglia scalata, crea o conferma una pausa nel DB. Ritorna true se ha
 // scritto qualcosa (il chiamante deve ricaricare allBreaks). Unico punto che decide se un
@@ -3287,9 +3297,7 @@ async function runBreakDetection() {
 
 	const todayStr = toDateStr(new Date());
 	const gapDays = Math.floor((new Date(todayStr) - new Date(lastSession)) / (1000 * 60 * 60 * 24));
-	const windowEnd = lastSession;
-	const windowStart = shiftDateStr(windowEnd, -29);
-	const threshold = getBreakThresholdDays(getPeriodAverage(windowStart, windowEnd).jointsPerDay);
+	const threshold = getBreakThresholdForBreakStart(shiftDateStr(lastSession, 1));
 
 	if (gapDays < threshold) return false;
 
@@ -3318,12 +3326,17 @@ async function runBreakDetection() {
 // Chiude una pausa attiva o interrompe un tentativo pianificato non ancora confermato quando
 // l'utente registra una nuova sessione (spec §5 e seconda metà di §4). "date" è la data della
 // sessione appena salvata (l'utente può inserire sessioni retroattive, non è sempre oggi).
+//
+// Caso particolare: una sessione dimenticata e aggiunta in ritardo (con data retroattiva) può
+// "riempire" il buco che aveva fatto scattare il rilevamento automatico, lasciando una pausa
+// chiusa quasi subito dopo essere iniziata (es. 0 giorni) — un falso positivo dovuto solo al
+// ritardo con cui è stata segnata, non a una pausa vera. Se la durata finale risulta sotto la
+// stessa soglia che l'avrebbe fatta scattare (getBreakThresholdForBreakStart), la eliminiamo
+// invece di lasciarla come voce fantasma nello storico.
 async function handleSessionLoggedForBreaks(date) {
 	if (activeBreak) {
-		await supabaseClient
-			.from('tolerance_breaks')
-			.update({ is_active: false, end_date: date })
-			.eq('id', activeBreak.id);
+		const result = await closeOrDiscardBreak(activeBreak, date);
+		if (result.discarded && !result.error) showMessage(t('breaks.discardedTooShort'));
 	} else if (pendingBreak) {
 		await supabaseClient
 			.from('tolerance_breaks')
@@ -3333,6 +3346,22 @@ async function handleSessionLoggedForBreaks(date) {
 		return;
 	}
 	await loadBreaks();
+}
+
+// Chiude una pausa attiva sulla data "endDate": se la durata risultante è sotto la soglia
+// che l'avrebbe qualificata come pausa vera (falso positivo, tipicamente una sessione
+// dimenticata e aggiunta in ritardo — vedi sopra), la elimina invece di salvarla. Usata sia
+// dalla chiusura automatica su nuova sessione sia dal tasto manuale "Interrompi pausa".
+async function closeOrDiscardBreak(brk, endDate) {
+	const durationDays = Math.max(0, Math.ceil((new Date(endDate) - new Date(brk.start_date)) / (1000 * 60 * 60 * 24)));
+	const threshold = getBreakThresholdForBreakStart(brk.start_date);
+
+	if (durationDays < threshold) {
+		const { error } = await supabaseClient.from('tolerance_breaks').delete().eq('id', brk.id);
+		return { discarded: true, error };
+	}
+	const { error } = await supabaseClient.from('tolerance_breaks').update({ is_active: false, end_date: endDate }).eq('id', brk.id);
+	return { discarded: false, error };
 }
 
 function getAvgPricePerGram() {
@@ -4035,13 +4064,10 @@ async function endBreak() {
 	if (!confirm(t('breaks.confirmEndBreak'))) return;
 
 	const today = toDateStr(new Date());
-	const { error } = await supabaseClient
-		.from('tolerance_breaks')
-		.update({ is_active: false, end_date: today })
-		.eq('id', activeBreak.id);
+	const result = await closeOrDiscardBreak(activeBreak, today);
 
-	if (error) { alert(t('breaks.endBreakError')); return; }
-	showMessage(t('breaks.breakEnded'));
+	if (result.error) { alert(t('breaks.endBreakError')); return; }
+	showMessage(result.discarded ? t('breaks.discardedTooShort') : t('breaks.breakEnded'));
 	await loadBreaks();
 }
 

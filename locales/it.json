@@ -562,7 +562,8 @@
     "checkin2": "Sei a {days} giorni senza fumare. Ottimo lavoro.",
     "checkin3": "{days} giorni di pausa. Un giorno alla volta.",
     "suggestionModerate": "🌿 Ultimamente il tuo consumo è più costante del solito. Se ti va, potresti valutare una pausa — nessuna pressione, solo un'idea.",
-    "suggestionHeavy": "🌿 Da un po' il tuo consumo è piuttosto sostenuto. Una pausa potrebbe aiutarti a resettare la tolleranza, se e quando ti va."
+    "suggestionHeavy": "🌿 Da un po' il tuo consumo è piuttosto sostenuto. Una pausa potrebbe aiutarti a resettare la tolleranza, se e quando ti va.",
+    "discardedTooShort": "Pausa troppo breve per contare, rimossa dallo storico."
   },
   "settings": {
     "profile": "👤 Profilo",
