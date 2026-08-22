@@ -559,7 +559,9 @@
     "milestoneDisclaimer": "Basato su studi di popolazione (PET imaging su utilizzatori cronici); l'esperienza individuale può variare. Non è un consiglio medico.",
     "checkin1": "Giorno {days} di pausa — continua così 💪",
     "checkin2": "Sei a {days} giorni senza fumare. Ottimo lavoro.",
-    "checkin3": "{days} giorni di pausa. Un giorno alla volta."
+    "checkin3": "{days} giorni di pausa. Un giorno alla volta.",
+    "suggestionModerate": "🌿 Ultimamente il tuo consumo è più costante del solito. Se ti va, potresti valutare una pausa — nessuna pressione, solo un'idea.",
+    "suggestionHeavy": "🌿 Da un po' il tuo consumo è piuttosto sostenuto. Una pausa potrebbe aiutarti a resettare la tolleranza, se e quando ti va."
   },
   "settings": {
     "profile": "👤 Profilo",

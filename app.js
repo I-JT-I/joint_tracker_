@@ -1854,8 +1854,58 @@ async function checkBreakNotifications(brk) {
 	}
 }
 
-async function insertBreakNotification(message) {
-	await supabaseClient.rpc('insert_own_notification', { p_type: 'tolerance_break_milestone', p_message: message });
+async function insertBreakNotification(message, type = 'tolerance_break_milestone') {
+	await supabaseClient.rpc('insert_own_notification', { p_type: type, p_message: message });
+}
+
+// ========== TOLERANCE BREAK: suggerimento proattivo di pausa ==========
+// A differenza del rilevamento (spec §1, reagisce a un gap già avvenuto), questo osserva
+// il consumo CORRENTE: se resta sostenuto a livello moderato/pesante (stessa classificazione
+// di classifyPreBreakLevel/getPeriodAverage, nessuna duplicazione) per BREAK_SUGGESTION_MIN_DAYS
+// giorni consecutivi, manda un unico avviso in-app gentile (mai push, per restare leggero) e
+// lo ripete al massimo ogni BREAK_SUGGESTION_REPEAT_DAYS giorni se l'utente non agisce. Lo stato
+// "elevated_since"/"last_break_suggestion_at" vive su user_stats (un solo avviso alla volta,
+// niente notifiche se una pausa è già attiva o pianificata — vedi il chiamante in loadBreaks()).
+const BREAK_SUGGESTION_MIN_DAYS = 14;
+const BREAK_SUGGESTION_REPEAT_DAYS = 21;
+
+async function checkBreakSuggestion() {
+	const today = toDateStr(new Date());
+	const windowStart = shiftDateStr(today, -29);
+	const level = classifyPreBreakLevel(getPeriodAverage(windowStart, today).jointsPerDay);
+
+	const { data: stats } = await supabaseClient
+		.from('user_stats')
+		.select('elevated_since, last_break_suggestion_at')
+		.eq('user_id', currentUser.id)
+		.maybeSingle();
+
+	if (level === 'light') {
+		if (stats && stats.elevated_since) {
+			await supabaseClient.from('user_stats')
+				.upsert({ user_id: currentUser.id, elevated_since: null }, { onConflict: 'user_id' });
+		}
+		return;
+	}
+
+	if (!stats || !stats.elevated_since) {
+		await supabaseClient.from('user_stats')
+			.upsert({ user_id: currentUser.id, elevated_since: today }, { onConflict: 'user_id' });
+		return; // primo giorno rilevato sopra soglia: aspettiamo che diventi "sostenuto"
+	}
+
+	const daysSustained = Math.floor((new Date(today) - new Date(stats.elevated_since)) / (1000 * 60 * 60 * 24));
+	if (daysSustained < BREAK_SUGGESTION_MIN_DAYS) return;
+
+	const daysSinceLastSuggestion = stats.last_break_suggestion_at
+		? Math.floor((new Date() - new Date(stats.last_break_suggestion_at)) / (1000 * 60 * 60 * 24))
+		: Infinity;
+	if (daysSinceLastSuggestion < BREAK_SUGGESTION_REPEAT_DAYS) return;
+
+	const key = level === 'heavy' ? 'breaks.suggestionHeavy' : 'breaks.suggestionModerate';
+	await insertBreakNotification(t(key), 'break_suggestion');
+	await supabaseClient.from('user_stats')
+		.upsert({ user_id: currentUser.id, last_break_suggestion_at: new Date().toISOString() }, { onConflict: 'user_id' });
 }
 
 // ========== TUTORIAL PRIMO ACCESSO ==========
@@ -3175,7 +3225,11 @@ async function loadBreaks(skipDetection) {
 
 	renderBreakCard();
 	renderHomeBreakState();
-	if (activeBreak) await checkBreakNotifications(activeBreak);
+	if (activeBreak) {
+		await checkBreakNotifications(activeBreak);
+	} else if (!pendingBreak) {
+		await checkBreakSuggestion();
+	}
 }
 
 // ========== TOLERANCE BREAK: soglia scalata e retrodatazione (single source of truth) ==========
