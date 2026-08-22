@@ -1481,7 +1481,7 @@ async function addPlaceFromMap() {
 		document.getElementById("page-" + p).classList.add("active");
 
 		document.querySelectorAll(".menu-content button").forEach(btn => btn.classList.remove("active-tab"));
-		const pageToIndex = { 'home': 0, 'add': 1, 'history': 2, 'gallery': 3, 'stats': 4, 'charts': 5, 'map': 6, 'social': 7, 'stock': 8, 'settings': 9 };
+		const pageToIndex = { 'home': 0, 'add': 1, 'history': 2, 'gallery': 3, 'stats': 4, 'goals': 5, 'charts': 6, 'map': 7, 'social': 8, 'stock': 9, 'settings': 10 };
 		const activeBtn = document.querySelectorAll(".menu-content button")[pageToIndex[p]];
 		if(activeBtn) activeBtn.classList.add("active-tab");
 
