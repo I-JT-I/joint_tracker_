@@ -924,3 +924,44 @@ input[type="date"] {
 	justify-content: center;
 	flex-wrap: wrap;
 }
+
+/* Card home mostrata al posto di .home-hero durante una tolerance break attiva: accento
+   viola (stessa famiglia di colore già usata per "denaro risparmiato" nella card pause)
+   invece del verde brand standard, per rendere lo stato "in pausa" riconoscibile a colpo
+   d'occhio rispetto alla home normale. */
+.home-hero--break {
+	background: linear-gradient(160deg, rgba(156, 39, 176, 0.12) 0%, rgba(156, 39, 176, 0.03) 100%);
+	border: 1px solid rgba(156, 39, 176, 0.2);
+}
+
+.home-hero--break .streak-num {
+	color: #9c27b0;
+}
+
+.break-progress-track {
+	margin-top: 14px;
+	height: 8px;
+	border-radius: 6px;
+	background: rgba(156, 39, 176, 0.12);
+	overflow: hidden;
+}
+
+.break-progress-fill {
+	height: 100%;
+	border-radius: 6px;
+	background: linear-gradient(90deg, #9c27b0, #ce93d8);
+	transition: width 0.5s ease;
+}
+
+/* Pulsante "hai fumato? segna qui": stessa azione del CTA primario "Nuova sessione" ma
+   de-enfatizzato (mai nascosto — l'utente deve poter sempre loggare, spec §8) perché
+   durante una pausa non deve avere lo stesso peso visivo di una call-to-action normale. */
+.home-break-log-btn.secondary-btn {
+	background: rgba(156, 39, 176, 0.12);
+	color: #9c27b0;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 8px;
+	margin-top: 16px;
+	box-shadow: none;
+}

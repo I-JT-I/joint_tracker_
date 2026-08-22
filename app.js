@@ -19,6 +19,7 @@
 	let notifications = [];
 	let sharedPeriod = 'month';
     let activeBreak = null;
+    let pendingBreak = null; // pausa "pianificata" non ancora confermata (vedi ========== TOLERANCE BREAK ==========)
     let allBreaks = [];
 	const VAPID_PUBLIC_KEY = 'BE2yG7kWhMrni1qk-uilMqHc7uGL92CZE6UaLt-sbTTHsDr4lDP6qiqnSJsxachx5kUJ7C-0dO46UeSjxOUwiG0';
 	let userReminderSettings = { reminder_enabled: true, reminder_time: '20:00:00' };
@@ -1104,6 +1105,13 @@ async function flushPendingSessions() {
 	
 	await loadData();
 	getLocationAuto();
+
+	// Dopo loadData(): "smokes" è fresco, così runBreakDetection() (chiamata da loadBreaks()
+	// dentro handleSessionLoggedForBreaks) calcola il gap sull'ultima sessione vera, non su
+	// dati stantii che potrebbero far ricreare erroneamente una pausa appena chiusa.
+	if (!isGuestMode) {
+		await handleSessionLoggedForBreaks(date);
+	}
 }
 	async function deleteItem(ts) {
 		if(!confirm(t('history.confirmDeleteEntry'))) return;
@@ -1744,6 +1752,111 @@ function updateMap() {
 			teaserEl.style.display = 'none';
 		}
 	}
+
+// ========== HOME: stato pausa attiva ==========
+// Unico punto che decide se mostrare la card home dedicata alla pausa (spec §8): legge
+// activeBreak, la stessa variabile mantenuta da loadBreaks()/runBreakDetection() per
+// rilevamento, notifiche e card statistiche — nessuna logica duplicata.
+const BREAK_MILESTONES = [2, 7, 14, 28];
+
+function renderHomeBreakState() {
+	const normalCard = document.getElementById('homeHeroCard');
+	const breakCardEl = document.getElementById('homeBreakHero');
+	if (!normalCard || !breakCardEl) return;
+
+	if (!activeBreak) {
+		breakCardEl.style.display = 'none';
+		normalCard.style.display = '';
+		return;
+	}
+
+	normalCard.style.display = 'none';
+	breakCardEl.style.display = '';
+
+	const start = new Date(activeBreak.start_date);
+	const today = new Date();
+	const days = Math.max(0, Math.floor((today - start) / (1000 * 60 * 60 * 24)));
+
+	document.getElementById('homeBreakDays').textContent = days;
+
+	const nextMilestone = BREAK_MILESTONES.find(m => m > days);
+	const prevMilestone = [...BREAK_MILESTONES].reverse().find(m => m <= days);
+
+	const progressLabel = document.getElementById('homeBreakProgressLabel');
+	const progressBar = document.getElementById('homeBreakProgressBar');
+	if (nextMilestone) {
+		const prevAnchor = prevMilestone || 0;
+		const pct = Math.min(100, Math.round(((days - prevAnchor) / (nextMilestone - prevAnchor)) * 100));
+		progressBar.style.width = pct + '%';
+		progressLabel.textContent = tn('breaks.homeNextMilestone', nextMilestone - days, { days: nextMilestone - days, milestone: nextMilestone });
+	} else {
+		progressBar.style.width = '100%';
+		progressLabel.textContent = t('breaks.homeMilestonesComplete');
+	}
+
+	document.getElementById('homeBreakMicroText').textContent = prevMilestone ? t(`breaks.milestone${prevMilestone}Short`) : t('breaks.homeJustStarted');
+
+	const recordEl = document.getElementById('homeBreakRecord');
+	const pastDurations = allBreaks
+		.filter(b => b.id !== activeBreak.id && !b.attempted && b.end_date)
+		.map(b => Math.ceil((new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24)));
+	const record = pastDurations.length ? Math.max(...pastDurations) : null;
+
+	if (record !== null) {
+		recordEl.style.display = 'block';
+		recordEl.textContent = days > record
+			? t('breaks.homeNewRecord', { days: record })
+			: t('breaks.homeRecordGap', { days: record - days });
+	} else {
+		recordEl.style.display = 'none';
+	}
+}
+
+// ========== TOLERANCE BREAK: notifiche milestone scientifici + check-in (spec §7/§9) ==========
+// Testi basati su Hirvonen et al. 2012 (Molecular Psychiatry) e D'Souza et al. 2016
+// (Biological Psychiatry: CNNI) sul recupero dei recettori CB1 — nota informativa di
+// popolazione, non un consiglio medico personalizzato: disclaimer sempre incluso nel
+// messaggio dei milestone scientifici. Il check-in generico usa un copy diverso, in
+// rotazione, e non compare mai lo stesso giorno di un milestone (priorità al messaggio
+// scientifico). Le notifiche passano dalla RPC insert_own_notification (SECURITY DEFINER,
+// vedi CLAUDE.md) perché la RLS di "notifications" non concede INSERT diretto agli utenti.
+const BREAK_CHECKIN_KEYS = ['breaks.checkin1', 'breaks.checkin2', 'breaks.checkin3'];
+
+async function checkBreakNotifications(brk) {
+	if (!brk) return;
+
+	const days = Math.max(0, Math.floor((new Date() - new Date(brk.start_date)) / (1000 * 60 * 60 * 24)));
+	const notified = brk.notified_milestones || [];
+	// Tutti i milestone raggiunti e non ancora notificati, non solo il primo: se l'utente
+	// non apre l'app per un po' e "salta" più traguardi, li recupera tutti in un colpo solo
+	// invece di riceverli uno per volta nei prossimi accessi.
+	const dueMilestones = BREAK_MILESTONES.filter(m => days >= m && !notified.includes(m));
+
+	if (dueMilestones.length > 0) {
+		for (const milestone of dueMilestones) {
+			await insertBreakNotification(t(`breaks.milestone${milestone}`) + ' ' + t('breaks.milestoneDisclaimer'));
+		}
+		const updatedNotified = [...notified, ...dueMilestones];
+		await supabaseClient.from('tolerance_breaks')
+			.update({ notified_milestones: updatedNotified })
+			.eq('id', brk.id);
+		brk.notified_milestones = updatedNotified;
+		return; // priorità ai messaggi scientifici: niente check-in lo stesso giorno
+	}
+
+	if (days > 0 && days % 3 === 0 && !BREAK_MILESTONES.includes(days) && brk.last_checkin_notified_day !== days) {
+		const key = BREAK_CHECKIN_KEYS[(days / 3) % BREAK_CHECKIN_KEYS.length];
+		await insertBreakNotification(t(key, { days }));
+		await supabaseClient.from('tolerance_breaks')
+			.update({ last_checkin_notified_day: days })
+			.eq('id', brk.id);
+		brk.last_checkin_notified_day = days;
+	}
+}
+
+async function insertBreakNotification(message) {
+	await supabaseClient.rpc('insert_own_notification', { p_type: 'tolerance_break_milestone', p_message: message });
+}
 
 // ========== TUTORIAL PRIMO ACCESSO ==========
 // title/text sono chiavi di traduzione, non testo diretto, così il tutorial resta
@@ -3041,7 +3154,9 @@ function renderAchievements() {
 	}).join('');
 }
 
-async function loadBreaks() {
+async function loadBreaks(skipDetection) {
+	if (isGuestMode) return; // tolerance break non disponibile in modalità ospite
+
 	const { data, error } = await supabaseClient
 		.from('tolerance_breaks')
 		.select('*')
@@ -3051,7 +3166,119 @@ async function loadBreaks() {
 
 	allBreaks = data || [];
 	activeBreak = allBreaks.find(b => b.is_active) || null;
+	pendingBreak = allBreaks.find(b => b.origin === 'planned' && !b.confirmed_at && !b.attempted) || null;
+
+	if (!skipDetection) {
+		const changed = await runBreakDetection();
+		if (changed) { await loadBreaks(true); return; }
+	}
+
 	renderBreakCard();
+	renderHomeBreakState();
+	if (activeBreak) await checkBreakNotifications(activeBreak);
+}
+
+// ========== TOLERANCE BREAK: soglia scalata e retrodatazione (single source of truth) ==========
+
+// Ultima sessione registrata (qualunque data), o null. Si basa solo sulle sessioni
+// registrate in "smokes", non sugli acquisti in Scorte: comprare non implica consumare.
+function getLastSessionDate() {
+	if (smokes.length === 0) return null;
+	return smokes.reduce((max, s) => (s.date > max ? s.date : max), smokes[0].date);
+}
+
+// Regola unica di retrodatazione (spec §2), usata sia dal rilevamento automatico che dalla
+// conferma di una pausa pianificata: la pausa è iniziata il giorno dopo l'ultima sessione
+// REALE, non quando l'utente/sistema se ne accorge.
+function computeRetroactiveStartDate(fallbackDateStr) {
+	const last = getLastSessionDate();
+	return last ? shiftDateStr(last, 1) : fallbackDateStr;
+}
+
+// Livello di consumo pre-pausa (spec §1, tabella soglie).
+function classifyPreBreakLevel(jointsPerDay) {
+	if (jointsPerDay < 1) return 'light';
+	if (jointsPerDay <= 3) return 'moderate';
+	return 'heavy';
+}
+
+// Soglia minima di giorni senza sessioni per classificare un gap come tolerance break,
+// scalata sul consumo medio pre-pausa (media J/day sui 30gg precedenti l'ultima sessione,
+// stesso metodo di getPeriodAverage()/"Real Averages" — riuso, nessuna duplicazione).
+// Range da letteratura: Hirvonen et al. 2012, Molecular Psychiatry (recupero recettori CB1
+// avviato entro 48h, significativo entro 7gg, quasi completo entro ~28gg in fumatori
+// cronici quotidiani); D'Souza et al. 2016, Biological Psychiatry: CNNI (conferma il
+// pattern di recupero rapido nei primi giorni). Letteratura di settore indica tempi di
+// recupero percepito più lunghi (3-4 settimane) per utilizzatori pesanti quotidiani
+// rispetto ai moderati (1-2 settimane). Nota informativa, non un consiglio medico.
+function getBreakThresholdDays(jointsPerDay) {
+	const level = classifyPreBreakLevel(jointsPerDay);
+	if (level === 'light') return 3;
+	if (level === 'moderate') return jointsPerDay <= 2 ? 4 : 5;
+	if (jointsPerDay <= 5) return 5;
+	if (jointsPerDay <= 7) return 6;
+	return 7;
+}
+
+// Confronta lo stato attuale (activeBreak/pendingBreak) con l'ultima sessione registrata e,
+// se il gap supera la soglia scalata, crea o conferma una pausa nel DB. Ritorna true se ha
+// scritto qualcosa (il chiamante deve ricaricare allBreaks). Unico punto che decide se un
+// gap è una vera tolerance break, sia per il rilevamento automatico (spec §1) sia per la
+// conferma di una pausa pianificata (spec §4) — stessa regola in entrambi i flussi.
+async function runBreakDetection() {
+	if (activeBreak) return false; // già una pausa attiva, niente da rilevare
+
+	const lastSession = getLastSessionDate();
+	if (!lastSession) return false;
+
+	const todayStr = toDateStr(new Date());
+	const gapDays = Math.floor((new Date(todayStr) - new Date(lastSession)) / (1000 * 60 * 60 * 24));
+	const windowEnd = lastSession;
+	const windowStart = shiftDateStr(windowEnd, -29);
+	const threshold = getBreakThresholdDays(getPeriodAverage(windowStart, windowEnd).jointsPerDay);
+
+	if (gapDays < threshold) return false;
+
+	if (pendingBreak) {
+		const { error } = await supabaseClient
+			.from('tolerance_breaks')
+			.update({
+				is_active: true,
+				confirmed_at: new Date().toISOString(),
+				start_date: computeRetroactiveStartDate(pendingBreak.planned_start_date || todayStr)
+			})
+			.eq('id', pendingBreak.id);
+		return !error;
+	}
+
+	const { error } = await supabaseClient.from('tolerance_breaks').insert({
+		user_id: currentUser.id,
+		start_date: computeRetroactiveStartDate(todayStr),
+		origin: 'auto',
+		is_active: true,
+		confirmed_at: new Date().toISOString()
+	});
+	return !error;
+}
+
+// Chiude una pausa attiva o interrompe un tentativo pianificato non ancora confermato quando
+// l'utente registra una nuova sessione (spec §5 e seconda metà di §4). "date" è la data della
+// sessione appena salvata (l'utente può inserire sessioni retroattive, non è sempre oggi).
+async function handleSessionLoggedForBreaks(date) {
+	if (activeBreak) {
+		await supabaseClient
+			.from('tolerance_breaks')
+			.update({ is_active: false, end_date: date })
+			.eq('id', activeBreak.id);
+	} else if (pendingBreak) {
+		await supabaseClient
+			.from('tolerance_breaks')
+			.update({ attempted: true, end_date: date })
+			.eq('id', pendingBreak.id);
+	} else {
+		return;
+	}
+	await loadBreaks();
 }
 
 function getAvgPricePerGram() {
@@ -3117,7 +3344,7 @@ function pctChange(before, after) {
 // se la finestra "dopo" non è ancora trascorsa per intero, 'insufficient_before' se
 // non c'è abbastanza storico prima della pausa, altrimenti 'ready' con le medie.
 function getBreakComparison(brk) {
-	if (!brk.end_date) return null;
+	if (brk.attempted || !brk.end_date) return null;
 
 	const windowDays = getBreakComparisonWindowDays(brk.start_date, brk.end_date);
 	const beforeEnd = shiftDateStr(brk.start_date, -1);
@@ -3215,6 +3442,14 @@ function renderBreakCard() {
 				<button class="secondary-btn" onclick="endBreak()" style="margin-top:15px;">${t('breaks.endBreak')}</button>
 			</div>
 		`;
+	} else if (pendingBreak) {
+		el.innerHTML = `
+			<div style="text-align:center; padding:10px;">
+				<div style="font-size:28px;">💤</div>
+				<p style="font-size:13px; color:var(--color-text-secondary); margin:8px 0 4px;">${t('breaks.pendingExplain')}</p>
+				<button class="secondary-btn" onclick="cancelPendingBreak()" style="margin-top:10px;">${t('breaks.cancelPending')}</button>
+			</div>
+		`;
 	} else {
 		el.innerHTML = `
 			<p style="text-align:center; color:var(--color-text-muted); font-size:13px; margin-bottom:10px;">${t('breaks.noActiveBreak')}</p>
@@ -3229,20 +3464,46 @@ function renderBreakHistory() {
 	const el = document.getElementById('breakHistory');
 	if (!el) return;
 
-	const past = allBreaks.filter(b => !b.is_active);
+	const past = allBreaks.filter(b => !b.is_active && b.id !== (pendingBreak && pendingBreak.id));
 	if (past.length === 0) { el.innerHTML = ''; return; }
 
 	el.innerHTML = `<hr style="margin:15px 0;"><p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">${t('breaks.previousBreaks')}</p>` +
 		past.map(b => {
+			if (b.attempted) {
+				return `<div style="padding:8px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:13px; color:var(--color-text-muted);">
+					<div style="display:flex; justify-content:space-between;">
+						<span>${t('breaks.attemptedLabel')}</span>
+						<span>${formatShortDate(b.planned_start_date || b.start_date)} → ${formatShortDate(b.end_date)}</span>
+					</div>
+				</div>`;
+			}
 			const days = Math.ceil((new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24));
 			return `<div style="padding:8px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:13px;">
-				<div style="display:flex; justify-content:space-between;">
-					<span>${formatShortDate(b.start_date)} → ${formatShortDate(b.end_date)}</span>
+				<div style="display:flex; justify-content:space-between; align-items:center;">
+					<span>${formatShortDate(b.start_date)} <a href="javascript:void(0)" onclick="editBreakStartDate(${b.id})" title="${t('breaks.editStartDate')}" style="opacity:0.55; text-decoration:none;">✏️</a> → ${formatShortDate(b.end_date)}</span>
 					<span style="font-weight:600; color:var(--primary);">${tn('breaks.durationDays', days, { days })}</span>
 				</div>
 				${renderBreakComparisonHtml(b)}
 			</div>`;
 		}).join('');
+}
+
+async function editBreakStartDate(breakId) {
+	const brk = allBreaks.find(b => b.id === breakId);
+	if (!brk) return;
+
+	const input = prompt(t('breaks.editStartDatePrompt'), brk.start_date);
+	if (!input) return;
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) { alert(t('breaks.editStartDateInvalid')); return; }
+
+	const { error } = await supabaseClient
+		.from('tolerance_breaks')
+		.update({ start_date: input, manually_edited: true })
+		.eq('id', breakId);
+
+	if (error) { alert(t('breaks.editStartDateError')); return; }
+	showMessage(t('breaks.editStartDateSaved'));
+	await loadBreaks();
 }
 
 // Formatta una data locale come YYYY-MM-DD usando i componenti locali (getFullYear/getMonth/getDate),
@@ -3685,12 +3946,19 @@ function renderPeriodComparison() {
 	`;
 }
 
+// Il tasto "Inizia una pausa": psicologicamente identico a prima (l'utente ha la sensazione
+// di iniziare subito), ma sotto il cofano crea una pausa "pianificata" (spec §4) che si
+// conferma da sola con data retrodatata solo se il gap senza sessioni supera la soglia
+// scalata (vedi runBreakDetection). Se logghi una sessione prima che scatti, resta nello
+// storico come tentativo non completato invece di sparire.
 async function startBreak() {
-	const today = new Date().toISOString().split('T')[0];
+	const today = toDateStr(new Date());
 	const { error } = await supabaseClient.from('tolerance_breaks').insert({
 		user_id: currentUser.id,
 		start_date: today,
-		is_active: true
+		planned_start_date: today,
+		origin: 'planned',
+		is_active: false
 	});
 
 	if (error) { alert(t('breaks.startBreakError')); return; }
@@ -3698,11 +3966,21 @@ async function startBreak() {
 	await loadBreaks();
 }
 
+async function cancelPendingBreak() {
+	if (!pendingBreak) return;
+	if (!confirm(t('breaks.confirmCancelPending'))) return;
+
+	const { error } = await supabaseClient.from('tolerance_breaks').delete().eq('id', pendingBreak.id);
+	if (error) { alert(t('breaks.cancelPendingError')); return; }
+	showMessage(t('breaks.pendingCancelled'));
+	await loadBreaks();
+}
+
 async function endBreak() {
 	if (!activeBreak) return;
 	if (!confirm(t('breaks.confirmEndBreak'))) return;
 
-	const today = new Date().toISOString().split('T')[0];
+	const today = toDateStr(new Date());
 	const { error } = await supabaseClient
 		.from('tolerance_breaks')
 		.update({ is_active: false, end_date: today })

@@ -2,6 +2,10 @@
 // Gira ogni 15 minuti (schedulata via cron). Per ogni utente con reminder_enabled=true
 // controlla se è il momento di avvisarlo, se non ha ancora segnato nulla oggi, e gli
 // manda una notifica push (menzionando lo streak se rischia di perderlo).
+// Sospeso automaticamente per gli utenti con una tolerance break attiva (is_active=true
+// in tolerance_breaks): non ha senso sollecitare a fumare chi sta facendo una pausa.
+// Le notifiche push di milestone/check-in della pausa non sono ancora implementate qui
+// (solo in-app per ora, vedi app.js checkBreakNotifications).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
@@ -100,6 +104,16 @@ Deno.serve(async (req) => {
         .limit(1);
 
       if (todaySmokes && todaySmokes.length > 0) continue; // già segnato, nessun promemoria
+
+      // pausa attiva: niente reminder a chi sta facendo una tolerance break
+      const { data: activeBreaks } = await supabase
+        .from("tolerance_breaks")
+        .select("id")
+        .eq("user_id", profile.id)
+        .eq("is_active", true)
+        .limit(1);
+
+      if (activeBreaks && activeBreaks.length > 0) continue;
 
       // recupera date per calcolo streak
       const { data: allDates } = await supabase

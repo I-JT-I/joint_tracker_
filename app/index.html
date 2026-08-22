@@ -189,6 +189,19 @@
 		<div id="homeAchievementTeaser" style="display:none; margin-top:12px; font-size:13px; color:var(--heading); font-weight:600;"></div>
 	</div>
 
+	<!-- Card sostitutiva mostrata al posto di homeHeroCard durante una tolerance break attiva
+	     (auto-rilevata o pianificata-confermata) — vedi renderHomeBreakState() in app.js. -->
+	<div class="card home-hero home-hero--break" id="homeBreakHero" style="display:none;">
+		<div style="font-size:15px; color:var(--color-text-secondary); font-weight:600;" data-i18n="breaks.homeGreeting">💤 Pausa in corso</div>
+		<div class="streak-num"><span id="homeBreakDays">0</span></div>
+		<div style="font-size:13px; color:var(--color-text-muted);" data-i18n="breaks.homeDaysLabel">giorno di pausa</div>
+		<div class="break-progress-track"><div class="break-progress-fill" id="homeBreakProgressBar" style="width:0%;"></div></div>
+		<div id="homeBreakProgressLabel" style="font-size:12px; color:var(--color-text-muted); margin-top:4px;"></div>
+		<div id="homeBreakMicroText" style="font-size:13px; color:var(--heading); font-weight:600; margin-top:10px;"></div>
+		<div id="homeBreakRecord" style="display:none; font-size:12px; color:var(--color-text-muted); margin-top:6px;"></div>
+		<button class="secondary-btn home-break-log-btn" onclick="showPage('add')" data-i18n="breaks.homeLogSession">hai fumato? segna qui</button>
+	</div>
+
 	<div class="card is-loading" id="homeStockCard">
 		<h3 data-i18n="home.stockTitle">📦 Scorte</h3>
 		<div id="miniStockWidget" style="display:none;">
