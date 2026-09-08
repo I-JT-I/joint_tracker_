@@ -5405,13 +5405,21 @@ function updateNotifBadge() {
 	}
 }
 
-async function toggleNotifications() {
+async function toggleNotifications(ev) {
+	// Evita che il click che apre il pannello risalga fino al listener
+	// "chiudi se clicchi fuori" (che scatterebbe subito, es. dalla riga
+	// "Notifiche" nella pagina Altro — non è #notifBtn quindi non è esclusa).
+	if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+
 	const panel = document.getElementById('notifPanel');
 
 	const isOpening = !panel.classList.contains('active');
 	panel.classList.toggle('active');
 
 	if (isOpening) {
+		// In modalità ospite loadNotifications() non gira mai: senza questo il
+		// pannello si aprirebbe vuoto invece di mostrare "Nessuna notifica".
+		renderNotifications();
 		await markAllNotificationsRead();
 	}
 }

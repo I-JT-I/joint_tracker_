@@ -150,7 +150,7 @@
 		<button class="menu-btn theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" data-i18n-title="nav.changeTheme" title="Cambia tema">
 			<span class="theme-icon-light">🌙</span><span class="theme-icon-dark">☀️</span>
 		</button>
-		<button class="menu-btn" id="notifBtn" onclick="toggleNotifications()" style="position:relative;">
+		<button class="menu-btn" id="notifBtn" onclick="toggleNotifications(event)" style="position:relative;">
 			🔔
 			<span id="notifBadge" style="display:none; position:absolute; top:2px; right:2px; background:var(--danger); color:white; font-size:10px; font-weight:bold; border-radius:50%; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;"></span>
 		</button>
@@ -278,7 +278,7 @@
 			<span class="more-name" data-i18n="more.settings">Impostazioni</span>
 			<span class="more-chevron"><svg viewBox="0 0 24 24"><path d="M9 5.4 10.8 3.6 19.2 12l-8.4 8.4L9 18.6 15.6 12z"></path></svg></span>
 		</button>
-		<button type="button" class="more-list-row" onclick="toggleNotifications()">
+		<button type="button" class="more-list-row" onclick="toggleNotifications(event)">
 			<span class="more-ico"><svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 0 0-6 6v4l-2 3h16l-2-3V8a6 6 0 0 0-6-6zM9 18a3 3 0 0 0 6 0z"></path></svg></span>
 			<span class="more-name" data-i18n="more.notifications">Notifiche</span>
 			<span class="more-count-pill" id="moreNotifCount" style="display:none;">0</span>
