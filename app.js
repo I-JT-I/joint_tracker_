@@ -1529,6 +1529,10 @@ async function addPlaceFromMap() {
 		});
 		const fab = document.getElementById('fabLog');
 		if (fab) fab.classList.toggle('is-active', p === 'add');
+		// Sul frame "nuovo inserimento" (handoff 2b) la barra tab + FAB spariscono
+		// e lasciano il posto alla barra sticky "SALVA SESSIONE" (.save-bar).
+		document.getElementById('bottomNav')?.classList.toggle('nav-hidden-for-add', p === 'add');
+		if (fab) fab.classList.toggle('nav-hidden-for-add', p === 'add');
 	}
 
 	function showPage(p) {

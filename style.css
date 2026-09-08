@@ -1773,3 +1773,37 @@ button.avatar-remove-btn { margin-top: 0; width: auto; padding: 6px 14px; font-s
    gli elementi già animati e va lasciata invariata.
    ========================================================================== */
 .jt-counted { /* marker, nessuno stile */ }
+
+/* ==========================================================================
+   REDESIGN 2026 — PAGINA AGGIUNGI: barra "SALVA SESSIONE" sticky
+   Sul frame "nuovo inserimento" (handoff 2b) la barra tab inferiore lascia
+   il posto a una barra d'azione sticky. #bottomNav / #fabLog vengono nascosti
+   da setActiveBottomTab() quando la pagina attiva è 'add'.
+   ========================================================================== */
+#bottomNav.nav-hidden-for-add,
+#fabLog.nav-hidden-for-add { display: none; }
+
+#page-add.page { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
+
+.save-bar {
+	display: none;
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 1000;
+	padding: 16px 22px calc(24px + env(safe-area-inset-bottom));
+	background: linear-gradient(180deg, transparent, var(--bg) 45%);
+	/* la fascia superiore trasparente lascia passare i tap ai campi sotto */
+	pointer-events: none;
+}
+#page-add.active .save-bar { display: block; }
+
+.save-bar > .main-btn {
+	margin: 0 auto;
+	max-width: 600px;
+	padding: 18px;
+	font-size: 16px;
+	letter-spacing: 0.02em;
+	pointer-events: auto;
+}
