@@ -1820,3 +1820,136 @@ button.avatar-remove-btn { margin-top: 0; width: auto; padding: 6px 14px; font-s
 	letter-spacing: 0.02em;
 	pointer-events: auto;
 }
+
+/* ==========================================================================
+   REDESIGN 2026 — OBIETTIVI: hero pausa tolleranza (handoff 2f)
+   #breakCard è ora la card stessa: .goals-break-hero quando la pausa è
+   attiva, .card normale negli altri stati. Anello 170px, progresso verso
+   il prossimo traguardo scientifico (stesso modello della Home).
+   ========================================================================== */
+.goals-break-hero {
+	background: var(--break-bg);
+	border-color: var(--break-border);
+	border-radius: 28px;
+	padding: 24px;
+}
+
+.goals-break-kicker {
+	margin: 0;
+	text-align: center;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--break-ink);
+}
+
+.goals-break-ring {
+	position: relative;
+	width: 170px;
+	height: 170px;
+	margin: 16px auto 4px;
+}
+.goals-break-ring svg {
+	width: 100%;
+	height: 100%;
+	transform: rotate(-90deg);
+}
+.goals-break-ring-track {
+	fill: none;
+	stroke: var(--break-track);
+	stroke-width: 11;
+}
+.goals-break-ring-fill {
+	fill: none;
+	stroke: var(--break-ring);
+	stroke-width: 11;
+	stroke-linecap: round;
+	transition: stroke-dashoffset calc(1.4s * var(--motion) + 0.001s) cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.goals-break-ring-label {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	text-align: center;
+	line-height: 1;
+}
+.goals-break-ring-label b {
+	font-size: 54px;
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	color: var(--break-ink);
+}
+.goals-break-ring-label small {
+	display: block;
+	margin-top: 6px;
+	font-size: 11px;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.goals-break-micro {
+	margin: 6px 0 0;
+	text-align: center;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text);
+	line-height: 1.4;
+}
+
+.goals-break-tiles {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+	margin-top: 18px;
+}
+.goals-break-tile {
+	min-width: 0;
+	background: rgba(156, 39, 176, 0.1);
+	border-radius: var(--r-row);
+	padding: 12px 10px;
+	text-align: center;
+}
+.goals-break-tile b {
+	display: block;
+	font-size: 17px;
+	font-weight: 800;
+	color: var(--color-text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.goals-break-tile small {
+	display: block;
+	margin-top: 3px;
+	font-size: 11px;
+	color: var(--sec);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.goals-break-slip.secondary-btn {
+	background: rgba(156, 39, 176, 0.14);
+	color: var(--break-ink);
+	font-weight: 700;
+	font-size: 13px;
+	padding: 13px;
+	margin-top: 16px;
+	box-shadow: none;
+}
+.goals-break-end {
+	display: block;
+	width: 100%;
+	margin-top: 10px;
+	padding: 6px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font: inherit;
+	font-size: 12.5px;
+	color: var(--muted);
+	text-decoration: underline;
+}

@@ -4729,6 +4729,9 @@ function renderBreakCard() {
 	if (!el) return;
 
 	if (activeBreak) {
+		// Redesign 2026 (handoff 2f): hero pausa con anello 170px. Il progresso
+		// dell'anello segue lo stesso modello a traguardi scientifici della Home.
+		el.className = 'card goals-break-hero';
 		const start = new Date(activeBreak.start_date);
 		const today = new Date();
 		const days = Math.max(0, Math.floor((today - start) / (1000 * 60 * 60 * 24)));
@@ -4738,17 +4741,42 @@ function renderBreakCard() {
 		const savedGrams = avgDaily * days;
 		const savedMoney = pricePerGram ? (savedGrams * pricePerGram) : null;
 
+		const nextMilestone = BREAK_MILESTONES.find(m => m > days);
+		const prevMilestone = [...BREAK_MILESTONES].reverse().find(m => m <= days);
+		const anchor = prevMilestone || 0;
+		const pct = nextMilestone
+			? Math.min(100, Math.round(((days - anchor) / (nextMilestone - anchor)) * 100))
+			: 100;
+		const micro = prevMilestone ? t(`breaks.milestone${prevMilestone}Short`) : t('breaks.homeJustStarted');
+		const toGo = nextMilestone ? (nextMilestone - days) : null;
+
 		el.innerHTML = `
-			<div style="text-align:center; padding:10px;">
-				<div style="font-size:36px; font-weight:800; color:var(--primary);">${days}</div>
-				<div style="font-size:13px; color:var(--color-text-secondary); margin-bottom:15px;">${t('breaks.daysWithoutSmoking')}</div>
-				${savedMoney !== null ? `<div style="font-size:15px; font-weight:700; color:#9c27b0;">${t('breaks.moneySaved', { amount: savedMoney.toFixed(2) })}</div>` : ''}
-				<div style="font-size:12px; color:var(--color-text-muted); margin-top:4px;">${t('breaks.gramsNotConsumed', { grams: savedGrams.toFixed(1) })}</div>
-				<button class="secondary-btn" onclick="endBreak()" style="margin-top:15px;">${t('breaks.endBreak')}</button>
+			<p class="goals-break-kicker">${t('breaks.goalsKicker')}</p>
+			<div class="goals-break-ring">
+				<svg viewBox="0 0 170 170" aria-hidden="true">
+					<circle class="goals-break-ring-track" cx="85" cy="85" r="52"></circle>
+					<circle class="goals-break-ring-fill" id="goalsBreakRing" cx="85" cy="85" r="52" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></circle>
+				</svg>
+				<div class="goals-break-ring-label">
+					<b>${days}</b>
+					<small>${t('breaks.homeDaysShort')}</small>
+				</div>
 			</div>
+			<p class="goals-break-micro">${micro}</p>
+			<div class="goals-break-tiles">
+				<div class="goals-break-tile"><b>${savedMoney !== null ? '€' + savedMoney.toFixed(0) : '–'}</b><small>${t('breaks.tileSaved')}</small></div>
+				<div class="goals-break-tile"><b>${savedGrams.toFixed(1)}g</b><small>${t('breaks.tileGrams')}</small></div>
+				<div class="goals-break-tile"><b>${toGo !== null ? toGo : '✓'}</b><small>${t('breaks.tileToGo')}</small></div>
+			</div>
+			<button class="secondary-btn goals-break-slip" onclick="showPage('add')">${t('breaks.homeLogSession')}</button>
+			<button type="button" class="goals-break-end" onclick="endBreak()">${t('breaks.endBreak')}</button>
 		`;
+		const ring = document.getElementById('goalsBreakRing');
+		if (ring) requestAnimationFrame(() => { ring.style.strokeDashoffset = String(100 - pct); });
 	} else if (pendingBreak) {
+		el.className = 'card';
 		el.innerHTML = `
+			<h3>${t('stats.breakTolerance')}</h3>
 			<div style="text-align:center; padding:10px;">
 				<div style="font-size:28px;">💤</div>
 				<p style="font-size:13px; color:var(--color-text-secondary); margin:8px 0 4px;">${t('breaks.pendingExplain')}</p>
@@ -4756,7 +4784,9 @@ function renderBreakCard() {
 			</div>
 		`;
 	} else {
+		el.className = 'card';
 		el.innerHTML = `
+			<h3>${t('stats.breakTolerance')}</h3>
 			<p style="text-align:center; color:var(--color-text-muted); font-size:13px; margin-bottom:10px;">${t('breaks.noActiveBreak')}</p>
 			<button class="main-btn" onclick="startBreak()" style="margin-top:0;">${t('breaks.startBreak')}</button>
 		`;
@@ -4770,9 +4800,10 @@ function renderBreakHistory() {
 	if (!el) return;
 
 	const past = allBreaks.filter(b => !b.is_active && b.id !== (pendingBreak && pendingBreak.id));
-	if (past.length === 0) { el.innerHTML = ''; return; }
+	if (past.length === 0) { el.className = ''; el.innerHTML = ''; return; }
 
-	el.innerHTML = `<hr style="margin:15px 0;"><p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">${t('breaks.previousBreaks')}</p>` +
+	el.className = 'card';
+	el.innerHTML = `<p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">${t('breaks.previousBreaks')}</p>` +
 		past.map(b => {
 			if (b.attempted) {
 				return `<div style="padding:8px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:13px; color:var(--color-text-muted);">
