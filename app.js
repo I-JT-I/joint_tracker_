@@ -5838,31 +5838,6 @@ function getTotalRemaining(type) {
 	return getOpenPurchasesFIFO(type).reduce((sum, p) => sum + gramsRemainingForPurchase(p), 0);
 }
 
-function renderStockPrediction(type) {
-	const remaining = getTotalRemaining(type);
-	if (remaining <= 0) return '';
-
-	const dailyRate = computeDailyRate(type);
-	if (dailyRate <= 0) {
-		return `<p style="font-size:12px; color:var(--color-text-muted); margin-top:10px; text-align:center;">${t('stock.consumptionTooLowToEstimate')}</p>`;
-	}
-
-	const daysLeft = Math.round(remaining / dailyRate);
-	const exhaustDate = new Date();
-	exhaustDate.setDate(exhaustDate.getDate() + daysLeft);
-	const dateStr = exhaustDate.toLocaleDateString(localeCode(), { day: 'numeric', month: 'short' });
-
-	const urgencyColor = daysLeft > 7 ? '#4CAF50' : daysLeft > 3 ? '#FF9800' : '#f44336';
-
-	return `
-		<div style="background:rgba(var(--overlay-rgb),0.05); border-radius:10px; padding:10px; margin-top:10px; text-align:center;">
-			<span style="font-size:13px; color:${urgencyColor}; font-weight:600;">
-				${tn('stock.durationEstimate', daysLeft, { days: daysLeft, date: dateStr })}
-			</span>
-		</div>
-	`;
-}
-
 // ========== RENDER PAGINA STOCK ==========
 function renderStockPage() {
     if (!smokesLoaded) return; // consumato ancora sconosciuto: evita di mostrare la scorta come piena per errore
@@ -5881,17 +5856,59 @@ function renderStockCard(type, stock) {
     const closeBtn = document.getElementById(`btnClose${type.charAt(0).toUpperCase()+type.slice(1)}`);
 
     const openPurchases = getOpenPurchasesFIFO(type);
+    const card = displayEl.closest('.stock-substance');
 
     if (openPurchases.length === 0) {
         displayEl.innerHTML = `<p style="text-align:center; color:var(--color-text-muted); font-size:13px;">${t('stock.noActiveStock')}</p>`;
         if (closeBtn) closeBtn.style.display = 'none';
+        if (card) card.classList.remove('stock-substance--filled');
         return;
     }
 
     // Nascondi il vecchio tasto globale (ora è inline per acquisto)
     if (closeBtn) closeBtn.style.display = 'none';
+    if (card) card.classList.add('stock-substance--filled');
 
-    let html = '';
+    // ---- Redesign 2026 (handoff 2i): hero "Rimanenti" 72px + metriche ----
+    const totalRemaining = openPurchases.reduce((s, p) => s + gramsRemainingForPurchase(p), 0);
+    const totalOpenGrams = openPurchases.reduce((s, p) => s + parseFloat(p.grams), 0);
+    const heroPct = totalOpenGrams > 0 ? Math.min(100, Math.max(0, (totalRemaining / totalOpenGrams) * 100)) : 0;
+
+    const typeSessions = smokes.filter(s => !s.not_mine && (type === 'fumo' ? (s.fumo_grams || 0) : (s.erba_grams || 0)) > 0);
+    const avgPerSession = typeSessions.length
+        ? typeSessions.reduce((a, s) => a + (type === 'fumo' ? s.fumo_grams : s.erba_grams), 0) / typeSessions.length
+        : 0;
+    const sessionsLeft = avgPerSession > 0 ? Math.round(totalRemaining / avgPerSession) : null;
+
+    const dailyRate = computeDailyRate(type);
+    let runsOutStr = null;
+    if (dailyRate > 0) {
+        const daysLeft = Math.round(totalRemaining / dailyRate);
+        const d = new Date();
+        d.setDate(d.getDate() + daysLeft);
+        runsOutStr = d.toLocaleDateString(localeCode(), { day: 'numeric', month: 'short' });
+    }
+
+    const pricedOfType = purchases.filter(p => p.type === type && p.price && p.grams);
+    const avgPrice = pricedOfType.length
+        ? pricedOfType.reduce((a, p) => a + parseFloat(p.price) / parseFloat(p.grams), 0) / pricedOfType.length
+        : null;
+
+    let html = `
+        <div class="stock-hero">
+            <div class="stock-hero-head">
+                <span class="stock-hero-kicker">${emoji} ${t('stock.remainingLabel')}</span>
+                ${sessionsLeft !== null ? `<span class="stock-hero-sessions">${t('stock.heroSessionsLeft', { n: sessionsLeft })}</span>` : ''}
+            </div>
+            <div class="stock-hero-value">${totalRemaining.toFixed(1)}<span>g</span></div>
+            <div class="stock-hero-bar"><div class="stock-hero-bar-fill" style="width:${heroPct}%;"></div></div>
+            ${runsOutStr ? `<div class="stock-hero-caption">${t('stock.heroRunsOut', { date: runsOutStr })}</div>` : ''}
+        </div>
+        <div class="stock-metrics">
+            <div class="stock-metric"><b>${avgPrice !== null ? '€' + avgPrice.toFixed(1) : '–'}</b><small>${t('stock.metricAvgPrice')}</small></div>
+            <div class="stock-metric"><b>${dailyRate > 0 ? dailyRate.toFixed(2) + 'g' : '–'}</b><small>${t('stock.metricPace')}</small></div>
+        </div>
+        <div class="stock-fifo">`;
 
     openPurchases.forEach((p, idx) => {
         const isOldest = idx === 0;
@@ -5932,8 +5949,16 @@ function renderStockCard(type, stock) {
         `;
     });
 
-    html += renderStockPrediction(type);
+    html += `</div>`;
     displayEl.innerHTML = html;
+
+    // barra hero: anima da 0 alla larghezza target al mount
+    const heroFill = displayEl.querySelector('.stock-hero-bar-fill');
+    if (heroFill) {
+        const target = heroFill.style.width;
+        heroFill.style.width = '0';
+        requestAnimationFrame(() => { heroFill.style.width = target; });
+    }
 }
 
 

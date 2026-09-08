@@ -750,22 +750,22 @@
   </div>
 
   <!-- SCORTA ATTIVA FUMO -->
-  <div class="card">
+  <div class="card stock-substance" id="stockFumoCard">
     <h3 data-i18n="stock.smokeStock">🍫 Scorta Fumo</h3>
     <div id="stockFumoDisplay">
       <p style="text-align:center; color:var(--color-text-muted); font-size:13px;" data-i18n="stock.noActiveStock">Nessuna scorta attiva</p>
     </div>
-    <button class="action-btn" onclick="openBuyModal('fumo')" style="width:100%; margin-top:10px;" data-i18n="stock.registerPurchase">+ Registra acquisto</button>
+    <button class="action-btn stock-add-btn" onclick="openBuyModal('fumo')" style="width:100%; margin-top:10px;" data-i18n="stock.registerPurchase">+ Registra acquisto</button>
     <button id="btnCloseFumo" onclick="closeStock('fumo')" style="display:none; background:none; border:none; color:var(--danger); width:100%; margin-top:8px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;" data-i18n="stock.outOfSmokeStock">⚠️ Ho finito la scorta di fumo</button>
   </div>
 
   <!-- SCORTA ATTIVA ERBA -->
-  <div class="card">
+  <div class="card stock-substance" id="stockErbaCard">
     <h3 data-i18n="stock.weedStock">🍃 Scorta Erba</h3>
     <div id="stockErbaDisplay">
       <p style="text-align:center; color:var(--color-text-muted); font-size:13px;" data-i18n="stock.noActiveStock">Nessuna scorta attiva</p>
     </div>
-    <button class="action-btn" onclick="openBuyModal('erba')" style="width:100%; margin-top:10px;" data-i18n="stock.registerPurchase">+ Registra acquisto</button>
+    <button class="action-btn stock-add-btn" onclick="openBuyModal('erba')" style="width:100%; margin-top:10px;" data-i18n="stock.registerPurchase">+ Registra acquisto</button>
     <button id="btnCloseErba" onclick="closeStock('erba')" style="display:none; background:none; border:none; color:var(--danger); width:100%; margin-top:8px; font-size:13px; font-weight:bold; cursor:pointer; text-decoration:underline;" data-i18n="stock.outOfWeedStock">⚠️ Ho finito la scorta di erba</button>
   </div>
 

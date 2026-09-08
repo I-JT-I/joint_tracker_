@@ -1953,3 +1953,102 @@ button.avatar-remove-btn { margin-top: 0; width: auto; padding: 6px 14px; font-s
 	color: var(--muted);
 	text-decoration: underline;
 }
+
+/* ==========================================================================
+   REDESIGN 2026 — SCORTE: hero "Rimanenti" 72px per sostanza (handoff 2i)
+   Una card per sostanza (#stockFumoCard / #stockErbaCard); quando c'è una
+   scorta aperta la card prende .stock-substance--filled (wash a gradiente)
+   e il display mostra hero totale + metriche + dettaglio FIFO per acquisto.
+   ========================================================================== */
+.stock-substance { border-radius: 28px; }
+
+.stock-substance--filled {
+	background:
+		linear-gradient(160deg, rgba(76, 175, 80, 0.14), transparent 62%),
+		var(--surface);
+}
+#stockFumoCard.stock-substance--filled {
+	background:
+		linear-gradient(160deg, rgba(139, 69, 19, 0.18), transparent 62%),
+		var(--surface);
+}
+
+.stock-hero { margin-bottom: 14px; }
+.stock-hero-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+.stock-hero-kicker {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+.stock-hero-sessions { font-size: 12.5px; color: var(--muted); }
+.stock-hero-value {
+	margin: 6px 0 12px;
+	font-size: 72px;
+	font-weight: 800;
+	letter-spacing: -0.04em;
+	line-height: 0.95;
+	color: var(--color-text);
+}
+.stock-hero-value span {
+	margin-left: 4px;
+	font-size: 26px;
+	font-weight: 700;
+	letter-spacing: 0;
+	color: var(--sec);
+}
+.stock-hero-bar {
+	height: 12px;
+	border-radius: 8px;
+	background: rgba(var(--overlay-rgb), 0.1);
+	overflow: hidden;
+}
+.stock-hero-bar-fill {
+	height: 100%;
+	border-radius: 8px;
+	background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+	transition: width calc(1.4s * var(--motion) + 0.001s) cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+#stockFumoCard .stock-hero-bar-fill { background: linear-gradient(90deg, #a9744e, #795548); }
+.stock-hero-caption { margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+
+.stock-metrics {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+	margin-bottom: 14px;
+}
+.stock-metric {
+	background: var(--chip);
+	border-radius: var(--r-card);
+	padding: 14px;
+	text-align: center;
+}
+.stock-metric b {
+	display: block;
+	font-size: 20px;
+	font-weight: 800;
+	color: var(--color-text);
+}
+.stock-metric small {
+	display: block;
+	margin-top: 3px;
+	font-size: 11.5px;
+	color: var(--muted);
+}
+
+.stock-fifo { display: flex; flex-direction: column; gap: 12px; }
+
+.action-btn.stock-add-btn {
+	background: transparent;
+	border: 1.5px dashed var(--border-c);
+	color: var(--color-text);
+	box-shadow: none;
+}
