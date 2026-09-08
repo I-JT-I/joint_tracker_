@@ -63,6 +63,13 @@ function applyTheme(pref) {
 		radio.checked = true;
 		radio.parentElement.classList.add('selected');
 	}
+
+	// I grafici usano colori legati al tema (griglia/tick): se sei sulla pagina
+	// Grafici, ridisegnali col nuovo tema (altrimenti si aggiornano al reingresso).
+	if (typeof Chart !== 'undefined' && typeof renderCharts === 'function' &&
+		document.getElementById('page-charts')?.classList.contains('active')) {
+		try { renderCharts(); } catch (e) {}
+	}
 }
 
 function setTheme(pref) {
@@ -3800,12 +3807,59 @@ periodSmokes.forEach(s => {
     el.innerHTML = html;
 }
 
+	// Redesign 2026 §2e "Charts": Chart.js resta, si ri-tematizza soltanto —
+	// griglia tenue, tick 11px --muted, niente "chart junk", accento verde.
+	// Chiamata a ogni renderCharts() così segue il tema corrente.
+	function applyChartDefaults() {
+		if (typeof Chart === 'undefined') return;
+		const cs = getComputedStyle(document.documentElement);
+		const muted = cs.getPropertyValue('--color-text-muted').trim() || '#8a978a';
+		const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+		const grid = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+		Chart.defaults.color = muted;
+		Chart.defaults.font.size = 11;
+		Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+		Chart.defaults.borderColor = grid;
+
+		Chart.defaults.scale.grid.color = grid;
+		Chart.defaults.scale.grid.drawTicks = false;
+		Chart.defaults.scale.border.display = false;
+		Chart.defaults.scale.ticks.padding = 8;
+		Chart.defaults.scale.ticks.maxRotation = 0;
+
+		Chart.defaults.plugins.legend.display = false;
+		Chart.defaults.plugins.legend.labels.boxWidth = 12;
+		Chart.defaults.plugins.legend.labels.boxHeight = 12;
+		Chart.defaults.plugins.legend.labels.usePointStyle = true;
+
+		Chart.defaults.plugins.tooltip.backgroundColor = dark ? '#161d16' : '#ffffff';
+		Chart.defaults.plugins.tooltip.titleColor = dark ? '#eef2ee' : '#1c1c1e';
+		Chart.defaults.plugins.tooltip.bodyColor = muted;
+		Chart.defaults.plugins.tooltip.borderColor = grid;
+		Chart.defaults.plugins.tooltip.borderWidth = 1;
+		Chart.defaults.plugins.tooltip.padding = 10;
+		Chart.defaults.plugins.tooltip.cornerRadius = 10;
+		Chart.defaults.plugins.tooltip.displayColors = false;
+
+		Chart.defaults.elements.line.borderWidth = 3;
+		Chart.defaults.elements.line.borderCapStyle = 'round';
+		Chart.defaults.elements.line.borderJoinStyle = 'round';
+		Chart.defaults.elements.line.tension = 0.35;
+		Chart.defaults.elements.point.radius = 0;
+		Chart.defaults.elements.point.hoverRadius = 5;
+		Chart.defaults.elements.bar.borderRadius = 5;
+		Chart.defaults.elements.bar.borderSkipped = false;
+	}
+
 	function renderCharts() {
 		renderCalendarHeatmap();
 
 		// Chart.js viene caricato solo quando si apre la pagina Grafici (vedi loadChartJs()):
 		// finché non è pronto, ci si ferma qui e si ridisegna quando refreshPageDynamicContent lo richiama.
 		if (typeof Chart === 'undefined') return;
+
+		applyChartDefaults();
 
 		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
 		charts = {};
@@ -3818,14 +3872,19 @@ const ctxPie = document.getElementById("cPie");
 if (ctxPie) {
 	charts.pie = new Chart(ctxPie, {
 		type: 'doughnut',
-		data: { 
+		data: {
 			labels: [t('charts.labelSmoke'), t('charts.labelWeed')],
-			datasets: [{ 
-				data: [gramsFumo, gramsErba], 
-				backgroundColor: ['#795548', '#4CAF50'] 
+			datasets: [{
+				data: [gramsFumo, gramsErba],
+				backgroundColor: ['#a9744e', '#4caf50'],
+				borderWidth: 0
 			}]
 		},
-				options: { maintainAspectRatio: false }
+				options: {
+					maintainAspectRatio: false,
+					cutout: '62%',
+					plugins: { legend: { display: true, position: 'bottom' } }
+				}
 			});
 		}
 
@@ -3853,7 +3912,7 @@ if (ctxPie) {
 					datasets: [{
 						label: t('charts.datasetSpending'),
 						data: spendingByMonth,
-						backgroundColor: '#9c27b0'
+						backgroundColor: '#f0a02a'
 					}]
 				},
 				options: {
@@ -3879,12 +3938,12 @@ if (ctxPie) {
 				type: 'line',
 				data: { 
 					labels: last7.map(d => d.slice(8)), 
-					datasets: [{ 
+					datasets: [{
 						label: t('charts.datasetGrams'),
 						data: weightData,
-						borderColor: '#2e7d32', 
-						backgroundColor: 'rgba(46,125,50,0.1)', 
-						fill: true 
+						borderColor: '#4caf50',
+						backgroundColor: 'rgba(76,175,80,0.12)',
+						fill: true
 					}]
 				},
 				options: { maintainAspectRatio: false }
@@ -3906,10 +3965,9 @@ if (ctxPie) {
 					datasets: [{
 						label: t('charts.datasetJoints'),
 						data: dailyCounts,
-						borderColor: '#1b5e20', 
-						backgroundColor: 'rgba(27,94,32,0.1)', 
-						fill: true, 
-						tension: 0.3 
+						borderColor: '#4caf50',
+						backgroundColor: 'rgba(76,175,80,0.12)',
+						fill: true
 					}]
 				},
 				options: { maintainAspectRatio: false }
@@ -3934,7 +3992,7 @@ if (ctxPie) {
 					datasets: [{
 						label: t('charts.datasetJoints'),
 						data: Object.values(weekDays),
-						backgroundColor: '#66bb6a' 
+						backgroundColor: '#4caf50'
 					}]
 				},
 				options: { maintainAspectRatio: false }
@@ -3960,10 +4018,15 @@ if (ctxPie) {
 					labels: [t('charts.timeSlotNight'), t('charts.timeSlotMorning'), t('charts.timeSlotAfternoon'), t('charts.timeSlotEvening')],
 					datasets: [{
 						data: Object.values(hours),
-						backgroundColor: ['#2c3e50','#f1c40f','#e67e22','#2980b9'] 
+						backgroundColor: ['rgba(76,175,80,0.35)', 'rgba(76,175,80,0.55)', 'rgba(76,175,80,0.78)', '#4caf50'],
+						borderWidth: 0
 					}]
 				},
-				options: { maintainAspectRatio: false }
+				options: {
+					maintainAspectRatio: false,
+					plugins: { legend: { display: true, position: 'bottom' } },
+					scales: { r: { ticks: { display: false } } }
+				}
 			});
 		}
 	}
