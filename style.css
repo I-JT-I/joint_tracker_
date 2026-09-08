@@ -1182,35 +1182,48 @@ input[type="date"] {
 	.home-flame-pulse { animation: none; opacity: 0; }
 }
 
+/* Grid a 3 colonne rigidamente uguali (minmax(0,1fr)): robusto anche con
+   font-scaling di sistema attivo o etichette lunghe — il contenuto non può
+   allargare una tessera a scapito delle altre. Testo su una riga, ellissi. */
 .home-tiles {
-	display: flex;
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 8px;
 	margin-top: 16px;
 }
 .home-tile {
-	flex: 1;
+	min-width: 0;
 	background: var(--chip);
 	border-radius: var(--r-row);
-	padding: 12px 14px;
-	min-width: 0;
+	padding: 12px 10px;
+	text-align: left;
 }
 .home-tile b {
 	display: block;
-	font-size: 22px;
+	font-size: 19px;
 	font-weight: 700;
 	color: var(--color-text);
 	letter-spacing: -0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .home-tile small {
 	display: block;
-	margin-top: 2px;
-	font-size: 10.5px;
-	letter-spacing: 0.04em;
+	margin-top: 3px;
+	font-size: 10px;
+	letter-spacing: 0.02em;
 	text-transform: uppercase;
 	color: var(--muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .home-tile-delta.is-up { color: var(--alert-amber); }
 .home-tile-delta.is-down { color: #2196f3; }
+.home-tile-delta.is-up::before { content: "\25B2\00A0"; font-size: 0.7em; }
+.home-tile-delta.is-down::before { content: "\25BC\00A0"; font-size: 0.7em; }
+.home-tile-delta.is-flat::before { content: "\2192\00A0"; font-size: 0.8em; color: var(--muted); }
 
 .home-quick-row {
 	display: flex;

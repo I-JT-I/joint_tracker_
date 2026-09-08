@@ -1949,15 +1949,16 @@ function updateMap() {
 			if (weekEl) weekEl.textContent = weekGrams.toFixed(1) + ' g';
 		}
 		if (vsEl) {
-			vsEl.classList.remove('is-up', 'is-down');
+			// La freccia è resa via CSS ::before su .is-up/.is-down/.is-flat,
+			// così il testo del valore resta breve e non va mai a capo.
+			vsEl.classList.remove('is-up', 'is-down', 'is-flat');
 			if (lastMonthCount === 0) {
 				vsEl.textContent = monthSmokes.length > 0 ? t('home.deltaNew') : '–';
 			} else {
 				const pct = ((monthSmokes.length - lastMonthCount) / lastMonthCount) * 100;
 				const up = pct > 0.5, down = pct < -0.5;
-				vsEl.textContent = (up ? '▲ ' : down ? '▼ ' : '→ ') + Math.abs(pct).toFixed(0) + '%';
-				if (up) vsEl.classList.add('is-up');
-				if (down) vsEl.classList.add('is-down');
+				vsEl.textContent = Math.abs(pct).toFixed(0) + '%';
+				vsEl.classList.add(up ? 'is-up' : down ? 'is-down' : 'is-flat');
 			}
 		}
 
