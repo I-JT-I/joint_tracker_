@@ -317,6 +317,7 @@
     "useCurrentLocation": "📍 Usa posizione attuale",
     "searchOnMap": "🗺️ Cerca sulla mappa",
     "searchAddress": "🔍 Cerca un indirizzo",
+    "searchOnMapPlaceholder": "Cerca un luogo sulla mappa...",
     "addressPlaceholder": "Via Roma 1, Torino...",
     "search": "Cerca",
     "orClickOnMap": "🗺️ Oppure clicca sulla mappa",

@@ -317,6 +317,7 @@
     "useCurrentLocation": "📍 Use current location",
     "searchOnMap": "🗺️ Search on map",
     "searchAddress": "🔍 Search an address",
+    "searchOnMapPlaceholder": "Search a place on the map...",
     "addressPlaceholder": "123 Main St, City...",
     "search": "Search",
     "orClickOnMap": "🗺️ Or click on the map",

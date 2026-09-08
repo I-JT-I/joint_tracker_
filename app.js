@@ -1239,9 +1239,10 @@ function renderUserPlaces() {
     }
 
     list.innerHTML = userPlaces.map(p => `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(var(--overlay-rgb),0.05); border-radius: 8px; margin-bottom: 5px;">
-            <span style="font-size: 14px; font-weight: 500;">${p.name}</span>
-            <button onclick="deletePlace(${p.id})" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 16px;">🗑️</button>
+        <div class="place-row">
+            <span class="place-ico">📍</span>
+            <span class="place-name">${escapeHtml(p.name)}</span>
+            <button class="place-del" onclick="deletePlace(${p.id})" aria-label="${t('places.confirmDeletePlace')}">🗑️</button>
         </div>
     `).join('');
 }
@@ -1770,10 +1771,28 @@ async function addPlaceFromMap() {
 	// ========== MAPPA (CORRETTA DAL PRIMO CODICE) ==========
 	let markerClusterGroup = null; // Aggiungi questa variabile globale all'inizio
 
+// Salto rapido a un indirizzo sulla mappa principale (barra di ricerca
+// flottante, redesign 2026 handoff 2k). Non tocca il flusso "aggiungi posto".
+async function mapAddressJump() {
+    const input = document.getElementById('mapJumpInput');
+    if (!input) return;
+    const q = input.value.trim();
+    if (!q) return;
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
+        const data = await res.json();
+        if (!data || data.length === 0) return alert(t('places.addressNotFound'));
+        if (mapInstance) mapInstance.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 15);
+    } catch (e) {
+        alert(t('places.searchError'));
+    }
+}
+
 function initMap() {
     if (mapInstance) mapInstance.remove();
-    mapInstance = L.map('mapContainer').setView([45.46, 9.19], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+    mapInstance = L.map('mapContainer', { zoomControl: false }).setView([45.46, 9.19], 10);
+    L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
     }).addTo(mapInstance);
 
