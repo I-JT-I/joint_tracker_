@@ -146,7 +146,7 @@
 <!-- PAGINA PRINCIPALE (quando loggato) -->
 <header id="header" style="display:none; position:sticky;">
 	<h1 data-i18n="auth.title">🌿 JointTracker</h1>
-	<div style="display:flex; align-items:center; gap:6px;">
+	<div style="display:flex; align-items:center; gap:8px;">
 		<button class="menu-btn theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" data-i18n-title="nav.changeTheme" title="Cambia tema">
 			<span class="theme-icon-light">🌙</span><span class="theme-icon-dark">☀️</span>
 		</button>
@@ -154,21 +154,7 @@
 			🔔
 			<span id="notifBadge" style="display:none; position:absolute; top:2px; right:2px; background:var(--danger); color:white; font-size:10px; font-weight:bold; border-radius:50%; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;"></span>
 		</button>
-		<button class="menu-btn" id="hamburgerBtn" onclick="toggleMenu()">☰</button>
 	</div>
-	<div class="menu-content" id="menu">
-    <button onclick="showPage('home')"><span style="font-size:18px;">🏠</span><span data-i18n="nav.home">Home</span></button>
-    <button onclick="showPage('add')"><span style="font-size:18px;">➕</span><span data-i18n="nav.add">Aggiungi</span></button>
-    <button onclick="showPage('history')"><span style="font-size:18px;">📜</span><span data-i18n="nav.history">Registro</span></button>
-    <button onclick="showPage('gallery')"><span style="font-size:18px;">📷</span><span data-i18n="nav.gallery">Galleria</span></button>
-    <button onclick="showPage('stats')"><span style="font-size:18px;">📊</span><span data-i18n="nav.stats">Stats</span></button>
-    <button onclick="showPage('goals')"><span style="font-size:18px;">🎯</span><span data-i18n="nav.goals">Obiettivi</span></button>
-    <button onclick="showPage('charts')"><span style="font-size:18px;">📈</span><span data-i18n="nav.charts">Grafici</span></button>
-    <button onclick="showPage('map')"><span style="font-size:18px;">🗺️</span><span data-i18n="nav.places">Luoghi</span></button>
-    <button onclick="showPage('social')"><span style="font-size:18px;">🏆</span><span data-i18n="nav.social">Social</span></button>
-    <button onclick="showPage('stock')"><span style="font-size:18px;">🛒</span><span data-i18n="nav.stock">Scorte</span></button>
-    <button onclick="showPage('settings')"><span style="font-size:18px;">⚙️</span><span data-i18n="nav.settings">Impostazioni</span></button>
-</div>
 	<div class="menu-content" id="notifPanel" style="min-width:280px; max-width:320px;">
 		<div style="padding:12px 15px; font-weight:700; color:var(--heading); border-bottom:1px solid rgba(var(--overlay-rgb),0.08);" data-i18n="nav.notifications">🔔 Notifiche</div>
 		<div id="notifList"></div>
@@ -227,13 +213,69 @@
 	</div>
 </div>
 
+<!-- PAGINA ALTRO (sostituisce il dropdown hamburger) -->
+<div id="page-more" class="page">
+	<div class="more-title-row">
+		<h2 data-i18n="more.title">Altro</h2>
+		<div class="more-user-pill" id="moreUserPill">
+			<span id="moreUserAvatar"></span>
+			<span id="moreUserName">–</span>
+		</div>
+	</div>
+
+	<div class="more-grid">
+		<button type="button" class="more-card" onclick="showPage('goals')">
+			<span class="more-ico"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4.6a5.4 5.4 0 1 1 0 10.8 5.4 5.4 0 0 1 0-10.8zm0 3.2a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4z"></path></svg></span>
+			<span><span class="more-name" data-i18n="nav.goals">Obiettivi</span><span class="more-sub" id="moreGoalsSub" data-i18n="more.goalsSubtitle">Obiettivi e pause tolleranza</span></span>
+		</button>
+		<button type="button" class="more-card" onclick="showPage('charts')">
+			<span class="more-ico"><svg viewBox="0 0 24 24"><path d="M3 17.6 9.4 11l3.6 3.4L19 8.2h-3.4V5.6H23v7.4h-2.6V9.9l-7.3 7.4L9.5 14 4.8 19z"></path></svg></span>
+			<span><span class="more-name" data-i18n="nav.charts">Grafici</span><span class="more-sub" id="moreChartsSub" data-i18n="more.chartsSubtitle">Grafici dettagliati</span></span>
+		</button>
+		<button type="button" class="more-card" onclick="showPage('gallery')">
+			<span class="more-ico"><svg viewBox="0 0 24 24"><path d="M9 3h6l1.2 2.2H20A2 2 0 0 1 22 7.2V19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7.2a2 2 0 0 1 2-2h3.8zM12 8.4a4.8 4.8 0 1 0 0 9.6 4.8 4.8 0 0 0 0-9.6z"></path></svg></span>
+			<span><span class="more-name" data-i18n="nav.gallery">Galleria</span><span class="more-sub" id="moreGallerySub" data-i18n="more.gallerySubtitle">Le tue istantanee</span></span>
+		</button>
+		<button type="button" class="more-card" onclick="showPage('map')">
+			<span class="more-ico"><svg viewBox="0 0 24 24"><path d="M12 2a7.2 7.2 0 0 0-7.2 7.2C4.8 14.6 12 22 12 22s7.2-7.4 7.2-12.8A7.2 7.2 0 0 0 12 2zm0 4.6a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2z"></path></svg></span>
+			<span><span class="more-name" data-i18n="nav.places">Luoghi</span><span class="more-sub" id="morePlacesSub" data-i18n="more.placesSubtitle">Mappa delle sessioni</span></span>
+		</button>
+		<button type="button" class="more-card" onclick="showPage('social')">
+			<span class="more-ico"><svg viewBox="0 0 24 24"><path d="M5 3h14v4a7 7 0 0 1-6 6.9V18h4v3H7v-3h4v-4.1A7 7 0 0 1 5 7z"></path></svg></span>
+			<span><span class="more-name" data-i18n="nav.social">Social</span><span class="more-sub" id="moreSocialSub" data-i18n="more.socialSubtitle">Classifiche e amici</span></span>
+		</button>
+		<button type="button" class="more-card" onclick="showPage('stock')">
+			<span class="more-ico"><svg viewBox="0 0 24 24"><path d="M4 4h3l2.2 9.6h9.4L21 7H8.6L8.2 5H4zM10 17.5a2 2 0 1 1 4 0 2 2 0 0 1-4 0zM16.5 17.5a2 2 0 1 1 4 0 2 2 0 0 1-4 0z"></path></svg></span>
+			<span><span class="more-name" data-i18n="nav.stock">Scorte</span><span class="more-sub" id="moreStockSub" data-i18n="more.stockSubtitle">Scorte e acquisti</span></span>
+		</button>
+	</div>
+
+	<div class="more-list">
+		<button type="button" class="more-list-row" onclick="showPage('settings')">
+			<span class="more-ico"><svg viewBox="0 0 24 24"><path d="M10.2 2h3.6l.5 2.5 2.2 1L18.9 4.3l2.5 3-1.9 1.7v2.9l1.9 1.7-2.5 3-2.4-1.2-2.2 1-.5 2.6h-3.6l-.5-2.6-2.2-1L5.1 20l-2.5-3 1.9-1.7v-2.9L2.6 10.7l2.5-3L7.5 8.9l2.2-1zM12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z"></path></svg></span>
+			<span class="more-name" data-i18n="more.settings">Impostazioni</span>
+			<span class="more-chevron"><svg viewBox="0 0 24 24"><path d="M9 5.4 10.8 3.6 19.2 12l-8.4 8.4L9 18.6 15.6 12z"></path></svg></span>
+		</button>
+		<button type="button" class="more-list-row" onclick="toggleNotifications()">
+			<span class="more-ico"><svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 0 0-6 6v4l-2 3h16l-2-3V8a6 6 0 0 0-6-6zM9 18a3 3 0 0 0 6 0z"></path></svg></span>
+			<span class="more-name" data-i18n="more.notifications">Notifiche</span>
+			<span class="more-count-pill" id="moreNotifCount" style="display:none;">0</span>
+			<span class="more-chevron" id="moreNotifChevron"><svg viewBox="0 0 24 24"><path d="M9 5.4 10.8 3.6 19.2 12l-8.4 8.4L9 18.6 15.6 12z"></path></svg></span>
+		</button>
+	</div>
+</div>
+
 <!-- PAGINA AGGIUNGI -->
 <div id="page-add" class="page">
+	<div class="page-sub-header page-sub-header--stacked">
+		<button type="button" class="page-back-btn" aria-label="Indietro" onclick="showPage('home')"><svg viewBox="0 0 24 24"><path d="M15 5.4 13.2 3.6 4.8 12l8.4 8.4 1.8-1.8L8.4 12z"></path></svg></button>
+		<div class="page-sub-title-wrap">
+			<h2 data-i18n="add.title">➕ Nuovo Inserimento</h2>
+			<p class="page-sub-caption"><span data-i18n="settings.loggedInAs">Loggato come</span> <strong id="emailDisplay"></strong></p>
+		</div>
+	</div>
 	<div class="card">
-		<div class="user-info"><span data-i18n="settings.loggedInAs">Loggato come</span> <strong id="emailDisplay"></strong></div>
-		<h3 data-i18n="add.title">➕ Nuovo Inserimento</h3>
-
-		<label data-i18n="add.whatAreYouSmoking">Cosa fumi?</label>
+		<label style="margin-top:0;" data-i18n="add.whatAreYouSmoking">Cosa fumi?</label>
 <div class="substance-checkbox-group" id="substanceGroup">
 	<label>
 		<input type="checkbox" id="fumo" value="fumo"> <span data-i18n="add.smoke">🍫 Fumo</span>
@@ -262,7 +304,7 @@
 <div id="notMineToggle" style="display:none; margin-top: 12px;">
     <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; background: rgba(255,152,0,0.08); border: 1px solid rgba(255,152,0,0.3); border-radius:12px; padding:12px; cursor:pointer;">
         <span style="font-size:14px; font-weight:600; color:var(--warning-text);" data-i18n="add.notMine">👥 Non è mia (non scala dalla scorta)</span>
-        <input type="checkbox" id="notMineCheck" style="width:20px; height:20px; margin:0; padding:0; border:none; background:none; cursor:pointer; accent-color: var(--warning);">
+        <input type="checkbox" id="notMineCheck" class="pill-switch pill-switch--warn">
     </label>
 </div>
 
@@ -271,7 +313,7 @@
 <div style="margin-top:12px;">
     <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; background: rgba(76,175,80,0.08); border: 1px solid rgba(76,175,80,0.3); border-radius:12px; padding:12px; cursor:pointer;">
         <span style="font-size:14px; font-weight:600; color:var(--heading);" data-i18n="add.sharedSession">👥 Sessione condivisa con amici</span>
-        <input type="checkbox" id="sharedSessionCheck" onchange="toggleSharedSession()" style="width:20px; height:20px; margin:0; accent-color: var(--primary-light);">
+        <input type="checkbox" id="sharedSessionCheck" onchange="toggleSharedSession()" class="pill-switch">
     </label>
 </div>
 
@@ -384,6 +426,10 @@
 
 <!-- PAGINA GALLERIA -->
 <div id="page-gallery" class="page">
+	<div class="page-sub-header">
+		<button type="button" class="page-back-btn" aria-label="Indietro" onclick="showPage('more')"><svg viewBox="0 0 24 24"><path d="M15 5.4 13.2 3.6 4.8 12l8.4 8.4 1.8-1.8L8.4 12z"></path></svg></button>
+		<h2 data-i18n="nav.gallery">Galleria</h2>
+	</div>
 	<div class="card" id="galleryLocked" style="display:none; text-align:center;">
 		<h3 data-i18n="gallery.title">📷 Galleria</h3>
 		<p style="color:var(--color-text-muted); font-size:13px;" data-i18n="guest.featureLocked">🔒 Iscriviti per poterla usare</p>
@@ -397,7 +443,15 @@
 <!-- PAGINA STATISTICHE -->
 <div id="page-stats" class="page">
 	<div class="card">
-		<h3 data-i18n="stats.totalQuantities">📊 Quantità Totali</h3>
+		<div class="stats-head-row">
+			<h3 style="margin:0;" data-i18n="stats.totalQuantities">📊 Quantità Totali</h3>
+			<div class="seg-toggle" id="statsPeriodToggle" role="group">
+				<button type="button" data-period="30d" onclick="setStatsPeriod('30d')" data-i18n="stats.period30d">30 giorni</button>
+				<button type="button" data-period="year" onclick="setStatsPeriod('year')" data-i18n="stats.periodYear">Anno</button>
+				<button type="button" class="is-active" data-period="all" onclick="setStatsPeriod('all')" data-i18n="stats.periodAll">Sempre</button>
+			</div>
+		</div>
+		<p id="statsPeriodLabel" style="font-size:12px; color:var(--color-text-muted); margin:8px 0 14px;" data-i18n="stats.periodLabelAll">Da sempre</p>
 		<div class="stat-grid">
 			<div class="stat-box"><big id="sFumo">0</big><small data-i18n="stats.smokeGrams">Grammi Fumo</small></div>
 			<div class="stat-box"><big id="sErba">0</big><small data-i18n="stats.weedGrams">Grammi Erba</small></div>
@@ -449,6 +503,10 @@
 
 <!-- PAGINA OBIETTIVI -->
 <div id="page-goals" class="page">
+	<div class="page-sub-header">
+		<button type="button" class="page-back-btn" aria-label="Indietro" onclick="showPage('more')"><svg viewBox="0 0 24 24"><path d="M15 5.4 13.2 3.6 4.8 12l8.4 8.4 1.8-1.8L8.4 12z"></path></svg></button>
+		<h2 data-i18n="nav.goals">Obiettivi</h2>
+	</div>
 	<div class="card">
 	    <h3 data-i18n="stats.breakTolerance">💤 Pausa / Tolleranza</h3>
 	    <div id="breakCard"></div>
@@ -462,6 +520,10 @@
 
 <!-- PAGINA GRAFICI -->
 <div id="page-charts" class="page">
+	<div class="page-sub-header">
+		<button type="button" class="page-back-btn" aria-label="Indietro" onclick="showPage('more')"><svg viewBox="0 0 24 24"><path d="M15 5.4 13.2 3.6 4.8 12l8.4 8.4 1.8-1.8L8.4 12z"></path></svg></button>
+		<h2 data-i18n="nav.charts">Grafici</h2>
+	</div>
 	<div class="card">
 		<h3 data-i18n="charts.calendarHeatmap">🗓️ Calendario Consumi (ultimi 12 mesi)</h3>
 		<div style="overflow-x:auto; padding-bottom:6px;">
@@ -508,6 +570,10 @@
 
 <!-- PAGINA MAPPA / LUOGHI -->
 <div id="page-map" class="page">
+	<div class="page-sub-header">
+		<button type="button" class="page-back-btn" aria-label="Indietro" onclick="showPage('more')"><svg viewBox="0 0 24 24"><path d="M15 5.4 13.2 3.6 4.8 12l8.4 8.4 1.8-1.8L8.4 12z"></path></svg></button>
+		<h2 data-i18n="nav.places">Luoghi</h2>
+	</div>
 	<div class="card">
 		<h3 data-i18n="places.sessionsMap">🗺️ Mappa delle Sessioni</h3>
 		<div id="mapContainer"></div>
@@ -570,6 +636,10 @@
 
 <!-- PAGINA SOCIAL -->
 <div id="page-social" class="page">
+	<div class="page-sub-header">
+		<button type="button" class="page-back-btn" aria-label="Indietro" onclick="showPage('more')"><svg viewBox="0 0 24 24"><path d="M15 5.4 13.2 3.6 4.8 12l8.4 8.4 1.8-1.8L8.4 12z"></path></svg></button>
+		<h2 data-i18n="nav.social">Social</h2>
+	</div>
 	<div class="card" id="socialLocked" style="display:none; text-align:center;">
 		<div style="font-size:40px; margin-bottom:10px;">🔒</div>
 		<p style="color:var(--color-text-muted);" data-i18n="guest.featureLocked">🔒 Iscriviti per poterla usare</p>
@@ -653,6 +723,10 @@
 
 <!-- PAGINA SCORTE -->
 <div id="page-stock" class="page">
+  <div class="page-sub-header">
+    <button type="button" class="page-back-btn" aria-label="Indietro" onclick="showPage('more')"><svg viewBox="0 0 24 24"><path d="M15 5.4 13.2 3.6 4.8 12l8.4 8.4 1.8-1.8L8.4 12z"></path></svg></button>
+    <h2 data-i18n="nav.stock">Scorte</h2>
+  </div>
 
   <!-- SCORTA ATTIVA FUMO -->
   <div class="card">
@@ -790,6 +864,10 @@
 
 <!-- PAGINA IMPOSTAZIONI -->
 <div id="page-settings" class="page">
+	<div class="page-sub-header">
+		<button type="button" class="page-back-btn" aria-label="Indietro" onclick="showPage('more')"><svg viewBox="0 0 24 24"><path d="M15 5.4 13.2 3.6 4.8 12l8.4 8.4 1.8-1.8L8.4 12z"></path></svg></button>
+		<h2 data-i18n="nav.settings">Impostazioni</h2>
+	</div>
 	<div class="card" id="profileCard">
 		<h3 data-i18n="settings.profile">👤 Profilo</h3>
 
@@ -869,7 +947,7 @@
 		<h3 data-i18n="settings.notificationsReminders">🔔 Notifiche & Promemoria</h3>
 		<label style="margin-top:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
 			<span style="font-size:14px; font-weight:600; color:var(--color-text-secondary);" data-i18n="settings.enableDailyReminder">Attiva promemoria giornaliero</span>
-			<input type="checkbox" id="reminderEnabledCheck" style="width:20px; height:20px; margin:0; accent-color: var(--primary-light);">
+			<input type="checkbox" id="reminderEnabledCheck" class="pill-switch">
 		</label>
 
 		<label for="reminderTimeInput" data-i18n="settings.reminderTime">Orario promemoria</label>
@@ -910,6 +988,30 @@
 	</div>
 </div>
 </main>
+
+<!-- BARRA DI NAVIGAZIONE INFERIORE (visibilità gestita da app.js, come #header) -->
+<nav id="bottomNav" aria-label="Navigazione principale">
+	<button type="button" class="bn-item" data-page="home" onclick="showPage('home')">
+		<svg viewBox="0 0 24 24"><path d="M12 2 1 11h3v11h6v-7h4v7h6V11h3z"></path></svg>
+		<span data-i18n="nav.home">Home</span>
+	</button>
+	<button type="button" class="bn-item" data-page="history" onclick="showPage('history')">
+		<svg viewBox="0 0 24 24"><path d="M3 4h18v3.4H3zM3 10.3h18v3.4H3zM3 16.6h18V20H3z"></path></svg>
+		<span data-i18n="nav.log">Registro</span>
+	</button>
+	<span class="bn-item bn-spacer" aria-hidden="true"></span>
+	<button type="button" class="bn-item" data-page="stats" onclick="showPage('stats')">
+		<svg viewBox="0 0 24 24"><path d="M3 13h4.4v8H3zM9.8 3h4.4v18H9.8zM16.6 8.6H21V21h-4.4z"></path></svg>
+		<span data-i18n="nav.stats">Stats</span>
+	</button>
+	<button type="button" class="bn-item" data-page="more" onclick="showPage('more')">
+		<svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z"></path></svg>
+		<span data-i18n="nav.more">Altro</span>
+	</button>
+</nav>
+<button type="button" id="fabLog" aria-label="Nuova sessione" onclick="showPage('add')">
+	<svg viewBox="0 0 24 24"><path d="M10 2h4v8h8v4h-8v8h-4v-8H2v-4h8z"></path></svg>
+</button>
 
 <script src="/app.js" defer></script>
 

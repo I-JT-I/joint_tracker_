@@ -30,6 +30,15 @@
 	let unlockedAchievements = [];
 	let currentUserProfile = null; // { username, avatar_url } — popolato da loadUserProfile()
 	let friendsCountCache = 0;
+	// Cache leggera del rank globale, popolata da loadSocial(): la pagina "Altro"
+	// la mostra nel sottotitolo della card Social senza rifare la RPC.
+	let lastGlobalRank = null; // { rank, total } | null
+	// Periodo attivo della pagina Stats (redesign 2026: toggle 30d / anno / sempre)
+	let statsPeriod = 'all';
+	// true = la prossima updateStats() anima i numeri col count-up (solo su
+	// ingresso pagina o cambio periodo, non a ogni update() di routine)
+	let statsAnimateOnce = false;
+	let homeAnimateOnce = false; // idem per il numero streak della Home
 	let achievementsLoaded = false;
 	let isGuestMode = false;
 
@@ -411,6 +420,8 @@ document.getElementById("customGrams").addEventListener('input', updateDivideMes
 		authMode = 'login';
 		document.getElementById('page-auth').classList.add('active');
 		document.getElementById('header').style.display = 'none';
+		document.getElementById('bottomNav')?.classList.remove('is-visible');
+		document.getElementById('fabLog')?.classList.remove('is-visible');
 		document.querySelectorAll('.page:not(#page-auth)').forEach(p => p.classList.remove('active'));
 
 		const content = document.getElementById('authContent');
@@ -610,6 +621,8 @@ if (mode === 'signup') {
 	async function showApp() {
 		document.getElementById('page-auth').classList.remove('active');
 		document.getElementById('header').style.display = 'flex';
+		document.getElementById('bottomNav')?.classList.add('is-visible');
+		document.getElementById('fabLog')?.classList.add('is-visible');
 		showPage('home');
 		document.getElementById('emailDisplay').textContent = isGuestMode ? t('guest.emailDisplay') : currentUser.email;
 		document.getElementById('date').value = toDateStr(new Date());
@@ -1493,14 +1506,32 @@ async function addPlaceFromMap() {
 }
 	
 	// ========== NAVIGAZIONE PAGINE ==========
+	// Redesign 2026: barra inferiore (#bottomNav) con 5 slot Home / Registro /
+	// (FAB centro) / Stats / Altro. Le pagine non presenti nella barra
+	// (goals, charts, gallery, map, social, stock, settings) illuminano "Altro".
+	const BOTTOM_NAV_PAGES = ['home', 'history', 'stats', 'more'];
+
+	function setActiveBottomTab(p) {
+		// 'add' (raggiunta dal FAB) non illumina nessun tab; le altre pagine
+		// fuori dalla barra illuminano "Altro".
+		const target = p === 'add' ? null : (BOTTOM_NAV_PAGES.includes(p) ? p : 'more');
+		document.querySelectorAll('#bottomNav .bn-item[data-page]').forEach(btn => {
+			btn.classList.toggle('is-active', btn.dataset.page === target);
+		});
+		const fab = document.getElementById('fabLog');
+		if (fab) fab.classList.toggle('is-active', p === 'add');
+	}
+
 	function showPage(p) {
 		document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
-		document.getElementById("page-" + p).classList.add("active");
+		const pageEl = document.getElementById("page-" + p);
+		if (!pageEl) return;
+		pageEl.classList.add("active");
+		// riavvia le animazioni d'ingresso a ogni entrata nella pagina
+		void pageEl.offsetWidth;
 
-		document.querySelectorAll(".menu-content button").forEach(btn => btn.classList.remove("active-tab"));
-		const pageToIndex = { 'home': 0, 'add': 1, 'history': 2, 'gallery': 3, 'stats': 4, 'goals': 5, 'charts': 6, 'map': 7, 'social': 8, 'stock': 9, 'settings': 10 };
-		const activeBtn = document.querySelectorAll(".menu-content button")[pageToIndex[p]];
-		if(activeBtn) activeBtn.classList.add("active-tab");
+		setActiveBottomTab(p);
+		// il menu dropdown non esiste più; nessun altro reset necessario
 
 		refreshPageDynamicContent(p);
 	}
@@ -1508,6 +1539,9 @@ async function addPlaceFromMap() {
 	// Ricarica i dati/render dinamici di una pagina. Estratto da showPage() così può essere
 	// richiamato anche al cambio lingua, per aggiornare il testo generato via JS senza reload.
 	function refreshPageDynamicContent(p) {
+		if (p === 'more') renderMorePage();
+		if (p === 'stats') statsAnimateOnce = true;
+		if (p === 'home') homeAnimateOnce = true;
 		if (p === 'gallery' && !isGuestMode) loadGallery();
 
 		if (p === 'map') {
@@ -1544,6 +1578,128 @@ async function addPlaceFromMap() {
 	function getCurrentPageName() {
 		const activePage = document.querySelector('.page.active');
 		return activePage ? activePage.id.replace('page-', '') : null;
+	}
+
+	// ========== PAGINA "ALTRO" (redesign 2026) ==========
+	// Sostituisce il dropdown hamburger. Griglia di 6 destinazioni + lista
+	// Impostazioni/Notifiche, ognuna con un numero "live" derivato dai dati
+	// già in memoria (nessuna nuova chiamata di rete).
+	function renderMorePage() {
+		// pill utente
+		const nameEl = document.getElementById('moreUserName');
+		const avEl = document.getElementById('moreUserAvatar');
+		if (nameEl) {
+			const uname = isGuestMode
+				? t('guest.emailDisplay')
+				: (currentUserProfile?.username || currentUser?.email || '–');
+			nameEl.textContent = uname;
+			if (avEl) avEl.innerHTML = avatarMarkup(
+				isGuestMode ? null : currentUserProfile?.avatar_url,
+				uname, 30
+			);
+		}
+
+		const setSub = (id, txt) => { const el = document.getElementById(id); if (el && txt) el.textContent = txt; };
+
+		// Obiettivi: se c'è una pausa attiva mostra il giorno, altrimenti il numero di obiettivi attivi
+		if (activeBreak && activeBreak.start_date) {
+			const day = Math.floor((Date.now() - new Date(activeBreak.start_date).getTime()) / 86400000) + 1;
+			setSub('moreGoalsSub', t('more.goalsBreak', { day: Math.max(1, day) }));
+		} else if (typeof activeGoal !== 'undefined' && activeGoal) {
+			setSub('moreGoalsSub', tn('more.goalsCount', 1, { count: 1 }));
+		} else {
+			setSub('moreGoalsSub', t('more.goalsSubtitle'));
+		}
+
+		// Grafici
+		setSub('moreChartsSub', t('more.chartsMonths'));
+
+		// Galleria: numero di istantanee (righe smokes con photo_path)
+		const snapCount = smokes.filter(s => s.photo_path).length;
+		setSub('moreGallerySub', snapCount > 0 ? tn('more.snapshotsCount', snapCount, { count: snapCount }) : t('more.gallerySubtitle'));
+
+		// Luoghi
+		const placesCount = Array.isArray(userPlaces) ? userPlaces.length : 0;
+		setSub('morePlacesSub', placesCount > 0 ? tn('more.placesCount', placesCount, { count: placesCount }) : t('more.placesSubtitle'));
+
+		// Social: rank globale se già calcolato da una visita a Social
+		setSub('moreSocialSub', lastGlobalRank
+			? t('more.rank', { rank: lastGlobalRank.rank, total: lastGlobalRank.total })
+			: t('more.socialSubtitle'));
+
+		// Scorte: grammi totali rimanenti (fumo + erba)
+		let stockLeft = 0;
+		try {
+			['fumo', 'erba'].forEach(type => {
+				getOpenPurchasesFIFO(type).forEach(p => { stockLeft += gramsRemainingForPurchase(p); });
+			});
+		} catch (e) { stockLeft = 0; }
+		setSub('moreStockSub', stockLeft > 0
+			? t('more.stockLeft', { grams: stockLeft.toFixed(1) })
+			: t('more.stockEmpty'));
+
+		// Pill conteggio notifiche non lette
+		const unread = notifications.filter(n => !n.read).length;
+		const pill = document.getElementById('moreNotifCount');
+		const chevron = document.getElementById('moreNotifChevron');
+		if (pill) {
+			pill.textContent = unread;
+			pill.style.display = unread > 0 ? 'inline-block' : 'none';
+		}
+		if (chevron) chevron.style.display = unread > 0 ? 'none' : 'grid';
+	}
+
+	// ========== STATS: filtro periodo (redesign 2026) ==========
+	// Ritorna le sessioni comprese nel periodo attivo del toggle Stats.
+	function smokesForStatsPeriod() {
+		if (statsPeriod === 'all') return smokes;
+		const now = new Date();
+		const from = new Date(now);
+		if (statsPeriod === '30d') from.setDate(from.getDate() - 30);
+		else from.setFullYear(from.getFullYear() - 1); // 'year'
+		from.setHours(0, 0, 0, 0);
+		return smokes.filter(s => {
+			const d = new Date(s.date);
+			return !isNaN(d) && d >= from && d <= now;
+		});
+	}
+
+	function setStatsPeriod(period) {
+		if (!['30d', 'year', 'all'].includes(period)) return;
+		statsPeriod = period;
+		statsAnimateOnce = true;
+		document.querySelectorAll('#statsPeriodToggle button').forEach(b => {
+			b.classList.toggle('is-active', b.dataset.period === period);
+		});
+		const lbl = document.getElementById('statsPeriodLabel');
+		if (lbl) {
+			const key = period === '30d' ? 'stats.periodLabel30d' : period === 'year' ? 'stats.periodLabelYear' : 'stats.periodLabelAll';
+			lbl.textContent = t(key);
+			lbl.setAttribute('data-i18n', key);
+		}
+		updateStats();
+	}
+
+	// ========== COUNT-UP (redesign 2026) ==========
+	// Anima un numero da 0 al valore finale su ~1.2s con ease-out cubico.
+	// Rispetta prefers-reduced-motion (imposta subito il valore finale).
+	// `decimals`: cifre decimali; `suffix`: testo dopo il numero (es. "g").
+	function animateCount(el, to, decimals = 0, suffix = '') {
+		if (!el) return;
+		to = Number(to) || 0;
+		const fmt = v => v.toFixed(decimals) + suffix;
+		const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (reduce) { el.textContent = fmt(to); return; }
+		const dur = 1100;
+		const t0 = performance.now();
+		const step = now => {
+			const p = Math.min(1, (now - t0) / dur);
+			const e = 1 - Math.pow(1 - p, 3);
+			el.textContent = fmt(to * e);
+			if (p < 1) requestAnimationFrame(step);
+			else el.textContent = fmt(to);
+		};
+		requestAnimationFrame(step);
 	}
 
 	document.addEventListener('i18n:change', () => {
@@ -1747,7 +1903,13 @@ function updateMap() {
 		const greeting = hour < 6 ? t('home.greetingNight') : hour < 12 ? t('home.greetingMorning') : hour < 18 ? t('home.greetingAfternoon') : t('home.greetingEvening');
 		greetingEl.textContent = greeting;
 
-		document.getElementById('homeStreak').textContent = calculateStreak();
+		const streakVal = calculateStreak();
+		if (homeAnimateOnce) {
+			homeAnimateOnce = false;
+			animateCount(document.getElementById('homeStreak'), streakVal, 0);
+		} else {
+			document.getElementById('homeStreak').textContent = streakVal;
+		}
 
 		const now = new Date();
 		const currentMonthKey = getMonthKey(now);
@@ -3410,16 +3572,28 @@ function updateHistory() {
 }
 
 	function updateStats() {
+		// "Quantità Totali" rispetta il toggle periodo (30d / anno / sempre);
+		// le "Medie Reali" e lo streak restano su tutto lo storico (come da etichetta).
+		const periodSmokes = smokesForStatsPeriod();
 		let totF = 0, totE = 0;
-smokes.forEach(s => { 
+periodSmokes.forEach(s => {
 	totF += (s.my_fumo_grams ?? s.fumo_grams ?? 0);
 	totE += (s.my_erba_grams ?? s.erba_grams ?? 0);
 });
 
-		document.getElementById("sFumo").innerText = totF.toFixed(2);
-		document.getElementById("sErba").innerText = totE.toFixed(2);
-		document.getElementById("sJTot").innerText = smokes.length;
-		document.getElementById("sGTot").innerText = (totF + totE).toFixed(2);
+		const animate = statsAnimateOnce;
+		statsAnimateOnce = false;
+		if (animate) {
+			animateCount(document.getElementById("sFumo"), totF, 2);
+			animateCount(document.getElementById("sErba"), totE, 2);
+			animateCount(document.getElementById("sJTot"), periodSmokes.length, 0);
+			animateCount(document.getElementById("sGTot"), totF + totE, 2);
+		} else {
+			document.getElementById("sFumo").innerText = totF.toFixed(2);
+			document.getElementById("sErba").innerText = totE.toFixed(2);
+			document.getElementById("sJTot").innerText = periodSmokes.length;
+			document.getElementById("sGTot").innerText = (totF + totE).toFixed(2);
+		}
 
 		let diffDays = 1;
 		if (smokes.length > 0) {
@@ -3822,6 +3996,11 @@ if (ctxPie) {
 					${isGlobal ? t('social.noGlobalData') : t('social.noFriendsAddWithNickname')}
 				</p>`;
 				return;
+			}
+
+			if (isGlobal) {
+				const myIdx = data.findIndex(u => u.user_id === currentUser.id);
+				lastGlobalRank = myIdx >= 0 ? { rank: myIdx + 1, total: data.length } : null;
 			}
 
 			let sharedMap = {};
@@ -5100,8 +5279,6 @@ function updateNotifBadge() {
 
 async function toggleNotifications() {
 	const panel = document.getElementById('notifPanel');
-	const menu = document.getElementById('menu');
-	if (menu) menu.classList.remove('active');
 
 	const isOpening = !panel.classList.contains('active');
 	panel.classList.toggle('active');
@@ -5944,37 +6121,20 @@ async function confirmCloseStock() {
 		});
 	});
 
-	// ========== GESTIONE MENU DROPDOWN ==========
+	// ========== CHIUSURA PANNELLO NOTIFICHE ==========
+	// (Il dropdown hamburger #menu è stato sostituito dalla barra inferiore +
+	//  pagina "Altro" nel redesign 2026: qui resta solo la logica del pannello
+	//  notifiche.)
 
-function toggleMenu() {
-	const menu = document.getElementById('menu');
-	menu.classList.toggle('active');
-}
-
-// Chiudi il menu quando clicchi su un bottone
 document.addEventListener('DOMContentLoaded', function() {
 	const feedToggle = document.getElementById('snapshotFeedToggle');
 	if (feedToggle) feedToggle.addEventListener('click', () => toggleSnapshotFeed());
 
-	const menuButtons = document.querySelectorAll('#menu button');
-	menuButtons.forEach(btn => {
-		btn.addEventListener('click', function() {
-			setTimeout(() => {
-				document.getElementById('menu').classList.remove('active');
-			}, 100);
-		});
-	});
-
-	// Chiudi menu/notifiche se clicchi fuori
+	// Chiudi le notifiche se clicchi fuori
 	document.addEventListener('click', function(event) {
-		const menu = document.getElementById('menu');
-		const hamburgerBtn = document.getElementById('hamburgerBtn');
 		const notifPanel = document.getElementById('notifPanel');
 		const notifBtn = document.getElementById('notifBtn');
 
-		if (menu && hamburgerBtn && !menu.contains(event.target) && !hamburgerBtn.contains(event.target)) {
-			menu.classList.remove('active');
-		}
 		if (notifPanel && notifBtn && !notifPanel.contains(event.target) && !notifBtn.contains(event.target)) {
 			notifPanel.classList.remove('active');
 		}
