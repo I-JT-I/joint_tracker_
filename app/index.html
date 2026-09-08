@@ -165,9 +165,23 @@
 <!-- PAGINA HOME -->
 <div id="page-home" class="page">
 	<div class="card home-hero is-loading" id="homeHeroCard">
-		<div id="homeGreeting" style="font-size:15px; color:var(--color-text-secondary); font-weight:600;" data-i18n="home.greeting">Ciao 👋</div>
-		<div class="streak-num"><span id="homeStreak">0</span>🔥</div>
-		<div style="font-size:13px; color:var(--color-text-muted);" data-i18n="home.streakLabel">giorni di streak</div>
+		<div class="home-hero-top">
+			<div class="home-hero-streak">
+				<div class="home-streak-line">
+					<span class="streak-num" id="homeStreak">0</span>
+					<span class="home-streak-unit" data-i18n="home.streakUnit">giorni di fila</span>
+				</div>
+				<div class="home-streak-sub">
+					<span id="homeGreeting" data-i18n="home.greeting">Ciao 👋</span><span id="homeStreakBest"></span>
+				</div>
+			</div>
+			<span class="home-flame" aria-hidden="true"><span class="home-flame-pulse"></span><span class="home-flame-core">🔥</span></span>
+		</div>
+		<div class="home-tiles">
+			<div class="home-tile"><b id="homeTodayCount">0</b><small data-i18n="home.tileToday">oggi</small></div>
+			<div class="home-tile"><b id="homeWeekGrams">0</b><small data-i18n="home.tileWeek">questa settimana</small></div>
+			<div class="home-tile"><b id="homeVsLast" class="home-tile-delta">–</b><small data-i18n="home.tileVsLast">vs mese scorso</small></div>
+		</div>
 		<div class="home-quick-row">
 			<span id="homeMonthStat" data-i18n="home.monthStatPlaceholder">Questo mese: – sessioni</span>
 			<span id="homeReminderLine" style="display:none;"></span>
@@ -179,37 +193,45 @@
 	<!-- Card sostitutiva mostrata al posto di homeHeroCard durante una tolerance break attiva
 	     (auto-rilevata o pianificata-confermata) — vedi renderHomeBreakState() in app.js. -->
 	<div class="card home-hero home-hero--break" id="homeBreakHero" style="display:none;">
-		<div style="font-size:15px; color:var(--color-text-secondary); font-weight:600;" data-i18n="breaks.homeGreeting">💤 Pausa in corso</div>
-		<div class="streak-num"><span id="homeBreakDays">0</span></div>
-		<div style="font-size:13px; color:var(--color-text-muted);" data-i18n="breaks.homeDaysLabel">giorno di pausa</div>
+		<div class="home-break-top">
+			<div class="home-break-ring">
+				<svg viewBox="0 0 120 120" aria-hidden="true">
+					<circle class="home-break-ring-track" cx="60" cy="60" r="52"></circle>
+					<circle class="home-break-ring-fill" id="homeBreakRing" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></circle>
+				</svg>
+				<div class="home-break-ring-label"><span id="homeBreakDays">0</span><small data-i18n="breaks.homeDaysShort">giorni</small></div>
+			</div>
+			<div class="home-break-meta">
+				<div class="home-break-kicker" data-i18n="breaks.homeGreeting">💤 Pausa in corso</div>
+				<div id="homeBreakMicroText" class="home-break-micro"></div>
+				<div id="homeBreakRecord" class="home-break-record" style="display:none;"></div>
+			</div>
+		</div>
 		<div class="break-progress-track"><div class="break-progress-fill" id="homeBreakProgressBar" style="width:0%;"></div></div>
-		<div id="homeBreakProgressLabel" style="font-size:12px; color:var(--color-text-muted); margin-top:4px;"></div>
-		<div id="homeBreakMicroText" style="font-size:13px; color:var(--heading); font-weight:600; margin-top:10px;"></div>
-		<div id="homeBreakRecord" style="display:none; font-size:12px; color:var(--color-text-muted); margin-top:6px;"></div>
+		<div id="homeBreakProgressLabel" class="home-break-progress-label"></div>
 		<button class="secondary-btn home-break-log-btn" onclick="showPage('add')" data-i18n="breaks.homeLogSession">hai fumato? segna qui</button>
 	</div>
 
-	<div class="card is-loading" id="homeStockCard">
-		<h3 data-i18n="home.stockTitle">📦 Scorte</h3>
-		<div id="miniStockWidget" style="display:none;">
-		  <div style="display:flex; gap:10px;">
-		    <div style="flex:1; background: rgba(139,69,19,0.08); border:1px solid rgba(139,69,19,0.2); border-radius:12px; padding:10px;">
-		      <div style="font-size:11px; font-weight:600; color:#795548; margin-bottom:6px;" data-i18n="home.stockSmokeRemaining">🍫 Fumo rimanente</div>
-		      <div style="font-size:15px; font-weight:700; color:#5D4037;" id="miniFumoGrams">–</div>
-		      <div style="background:rgba(139,69,19,0.15); border-radius:6px; height:6px; margin-top:6px; overflow:hidden;">
-		        <div id="miniFumoBar" style="height:100%; width:100%; background:#795548; border-radius:6px; transition: transform 0.5s ease; transform:scaleX(0); transform-origin:left;"></div>
-		      </div>
-		    </div>
-		    <div style="flex:1; background: rgba(76,175,80,0.08); border:1px solid rgba(76,175,80,0.2); border-radius:12px; padding:10px;">
-		      <div style="font-size:11px; font-weight:600; color:var(--primary); margin-bottom:6px;" data-i18n="home.stockWeedRemaining">🍃 Erba rimanente</div>
-		      <div style="font-size:15px; font-weight:700; color:var(--heading);" id="miniErbaGrams">–</div>
-		      <div style="background:rgba(76,175,80,0.15); border-radius:6px; height:6px; margin-top:6px; overflow:hidden;">
-		        <div id="miniErbaBar" style="height:100%; width:100%; background:var(--primary-light); border-radius:6px; transition: transform 0.5s ease; transform:scaleX(0); transform-origin:left;"></div>
-		      </div>
-		    </div>
-		  </div>
+	<div class="card home-stock-hero is-loading" id="homeStockCard">
+		<div class="home-stock-head">
+			<span class="home-stock-kicker" data-i18n="home.stockTitle">📦 Scorte</span>
+			<span class="home-stock-hint" id="homeStockHint"></span>
 		</div>
-		<p id="homeNoStock" style="text-align:center; color:var(--color-text-muted); font-size:13px;" data-i18n="home.noStock">Nessuna scorta attiva. Registrane una dalla pagina Scorte.</p>
+		<div id="miniStockWidget" style="display:none;">
+			<div class="home-stock-substances">
+				<div class="home-stock-sub">
+					<div class="home-stock-sub-label" data-i18n="home.stockSmokeRemaining">🍫 Fumo rimanente</div>
+					<div class="home-stock-sub-val" id="miniFumoGrams">–</div>
+					<div class="home-stock-bar"><div id="miniFumoBar" class="home-stock-bar-fill home-stock-bar-fill--smoke"></div></div>
+				</div>
+				<div class="home-stock-sub">
+					<div class="home-stock-sub-label" data-i18n="home.stockWeedRemaining">🍃 Erba rimanente</div>
+					<div class="home-stock-sub-val" id="miniErbaGrams">–</div>
+					<div class="home-stock-bar"><div id="miniErbaBar" class="home-stock-bar-fill"></div></div>
+				</div>
+			</div>
+		</div>
+		<p id="homeNoStock" class="home-stock-empty" data-i18n="home.noStock">Nessuna scorta attiva. Registrane una dalla pagina Scorte.</p>
 	</div>
 </div>
 

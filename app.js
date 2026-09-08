@@ -180,7 +180,9 @@ function updateDivideMessage() {
         const fumo = (grams / 2).toFixed(1);
         const erba = (grams / 2).toFixed(1);
         msgDiv.style.display = "block";
-        document.getElementById("divideText").textContent = `${fumo}g 🍫 + ${erba}g 🍃`;
+        // #divideText è opzionale (non presente nel markup attuale): guardia contro il null
+        const divideText = document.getElementById("divideText");
+        if (divideText) divideText.textContent = `${fumo}g 🍫 + ${erba}g 🍃`;
     } else {
         msgDiv.style.display = "none";
     }
@@ -1904,11 +1906,19 @@ function updateMap() {
 		greetingEl.textContent = greeting;
 
 		const streakVal = calculateStreak();
-		if (homeAnimateOnce) {
-			homeAnimateOnce = false;
+		const animateHome = homeAnimateOnce;
+		homeAnimateOnce = false;
+		if (animateHome) {
 			animateCount(document.getElementById('homeStreak'), streakVal, 0);
 		} else {
 			document.getElementById('homeStreak').textContent = streakVal;
+		}
+
+		// Sotto-riga: "record N giorni" se il miglior streak storico supera quello attuale
+		const bestEl = document.getElementById('homeStreakBest');
+		if (bestEl) {
+			const best = longestStreak();
+			bestEl.textContent = best > streakVal ? ' · ' + t('home.streakBest', { days: best }) : '';
 		}
 
 		const now = new Date();
@@ -1916,6 +1926,40 @@ function updateMap() {
 		const monthSmokes = smokes.filter(s => getMonthKey(s.date) === currentMonthKey);
 		const monthGrams = monthSmokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
 		document.getElementById('homeMonthStat').textContent = tn('home.monthStat', monthSmokes.length, { grams: monthGrams.toFixed(1) });
+
+		// ---- Tessere hero: oggi / questa settimana / vs mese scorso ----
+		const todayStr = toDateStr(now);
+		const todayCount = smokes.filter(s => s.date === todayStr).length;
+		const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 6); weekAgo.setHours(0, 0, 0, 0);
+		const weekGrams = smokes
+			.filter(s => { const d = new Date(s.date); return !isNaN(d) && d >= weekAgo && d <= now; })
+			.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
+
+		const lastMonthKey = getMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+		const lastMonthCount = smokes.filter(s => getMonthKey(s.date) === lastMonthKey).length;
+
+		const todayEl = document.getElementById('homeTodayCount');
+		const weekEl = document.getElementById('homeWeekGrams');
+		const vsEl = document.getElementById('homeVsLast');
+		if (animateHome) {
+			animateCount(todayEl, todayCount, 0);
+			animateCount(weekEl, weekGrams, 1, ' g');
+		} else {
+			if (todayEl) todayEl.textContent = todayCount;
+			if (weekEl) weekEl.textContent = weekGrams.toFixed(1) + ' g';
+		}
+		if (vsEl) {
+			vsEl.classList.remove('is-up', 'is-down');
+			if (lastMonthCount === 0) {
+				vsEl.textContent = monthSmokes.length > 0 ? t('home.deltaNew') : '–';
+			} else {
+				const pct = ((monthSmokes.length - lastMonthCount) / lastMonthCount) * 100;
+				const up = pct > 0.5, down = pct < -0.5;
+				vsEl.textContent = (up ? '▲ ' : down ? '▼ ' : '→ ') + Math.abs(pct).toFixed(0) + '%';
+				if (up) vsEl.classList.add('is-up');
+				if (down) vsEl.classList.add('is-down');
+			}
+		}
 
 		const reminderLine = document.getElementById('homeReminderLine');
 		if (userReminderSettings && userReminderSettings.reminder_enabled && userReminderSettings.reminder_time) {
@@ -1969,15 +2013,20 @@ function renderHomeBreakState() {
 
 	const progressLabel = document.getElementById('homeBreakProgressLabel');
 	const progressBar = document.getElementById('homeBreakProgressBar');
+	const ring = document.getElementById('homeBreakRing');
+	let pct;
 	if (nextMilestone) {
 		const prevAnchor = prevMilestone || 0;
-		const pct = Math.min(100, Math.round(((days - prevAnchor) / (nextMilestone - prevAnchor)) * 100));
+		pct = Math.min(100, Math.round(((days - prevAnchor) / (nextMilestone - prevAnchor)) * 100));
 		progressBar.style.width = pct + '%';
 		progressLabel.textContent = tn('breaks.homeNextMilestone', nextMilestone - days, { days: nextMilestone - days, milestone: nextMilestone });
 	} else {
+		pct = 100;
 		progressBar.style.width = '100%';
 		progressLabel.textContent = t('breaks.homeMilestonesComplete');
 	}
+	// anello: pathLength=100, offset 100→0 = 0%→100%
+	if (ring) requestAnimationFrame(() => { ring.style.strokeDashoffset = String(100 - pct); });
 
 	document.getElementById('homeBreakMicroText').textContent = prevMilestone ? t(`breaks.milestone${prevMilestone}Short`) : t('breaks.homeJustStarted');
 
@@ -3648,6 +3697,21 @@ periodSmokes.forEach(s => {
 		if (diffFromToday > 1) return 0;
 
 		return streak;
+	}
+
+	// Miglior streak calcolato in locale dallo storico (nessuna scrittura DB, a
+	// differenza di updateBestStreak): la Home lo usa solo per la sotto-riga "record N".
+	function longestStreak() {
+		if (smokes.length === 0) return 0;
+		const days = [...new Set(smokes.map(s => s.date))].sort();
+		let best = 1, run = 1;
+		for (let i = 1; i < days.length; i++) {
+			const a = new Date(days[i - 1]), b = new Date(days[i]);
+			a.setHours(0, 0, 0, 0); b.setHours(0, 0, 0, 0);
+			if ((b - a) / 86400000 === 1) { run++; if (run > best) best = run; }
+			else run = 1;
+		}
+		return best;
 	}
 
 	async function updateBestStreak(currentStreak) {
@@ -5787,10 +5851,13 @@ function renderMiniWidget() {
     widget.style.display = 'block';
     if (noStockMsg) noStockMsg.style.display = 'none';
 
+    let totalRemaining = 0;
+
     // FUMO — scala dal più vecchio
     if (openFumo.length > 0) {
         const oldest = openFumo[0];
         const remaining = gramsRemainingForPurchase(oldest);
+        totalRemaining += openFumo.reduce((s, p) => s + gramsRemainingForPurchase(p), 0);
         const pct = Math.min(100, (remaining / parseFloat(oldest.grams)) * 100);
         document.getElementById('miniFumoGrams').textContent = remaining.toFixed(2) + 'g';
         document.getElementById('miniFumoBar').style.transform = 'scaleX(' + (pct / 100) + ')';
@@ -5803,6 +5870,7 @@ function renderMiniWidget() {
     if (openErba.length > 0) {
         const oldest = openErba[0];
         const remaining = gramsRemainingForPurchase(oldest);
+        totalRemaining += openErba.reduce((s, p) => s + gramsRemainingForPurchase(p), 0);
         const pct = Math.min(100, (remaining / parseFloat(oldest.grams)) * 100);
         document.getElementById('miniErbaGrams').textContent = remaining.toFixed(2) + 'g';
         document.getElementById('miniErbaBar').style.transform = 'scaleX(' + (pct / 100) + ')';
@@ -5810,6 +5878,9 @@ function renderMiniWidget() {
         document.getElementById('miniErbaGrams').textContent = '–';
         document.getElementById('miniErbaBar').style.transform = 'scaleX(0)';
     }
+
+    const hintEl = document.getElementById('homeStockHint');
+    if (hintEl) hintEl.textContent = t('home.stockTotalLeft', { grams: totalRemaining.toFixed(1) });
 }
 
 // ========== STORICO ACQUISTI ==========
