@@ -459,8 +459,14 @@
 		<p style="color:var(--color-text-muted); font-size:13px;" data-i18n="guest.featureLocked">🔒 Iscriviti per poterla usare</p>
 	</div>
 	<div class="card" id="galleryCard">
-		<h3 data-i18n="gallery.title">📷 Galleria</h3>
-		<div id="galleryGrid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;"></div>
+		<div class="gallery-head">
+			<h3 data-i18n="gallery.title">📷 Galleria</h3>
+			<div class="seg-toggle" id="galleryModeToggle" role="group">
+				<button type="button" data-mode="grid" onclick="setGalleryMode('grid')" data-i18n="gallery.modeGrid">Griglia</button>
+				<button type="button" data-mode="feed" onclick="setGalleryMode('feed')" data-i18n="gallery.modeFeed">Feed</button>
+			</div>
+		</div>
+		<div id="galleryGrid" class="gallery-grid"></div>
 	</div>
 </div>
 

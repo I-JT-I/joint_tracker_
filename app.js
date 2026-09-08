@@ -2813,23 +2813,68 @@ async function fallbackPlainPhoto(img) {
 	if (!error && data) img.src = data.signedUrl;
 }
 
+// Modalità galleria (redesign 2026, handoff 2h): 'grid' (miniature 3 col) o
+// 'feed' (card 4:3). Persistita in localStorage 'jt_gallery_mode'.
+function galleryMode() {
+	try { return localStorage.getItem('jt_gallery_mode') === 'feed' ? 'feed' : 'grid'; } catch (e) { return 'grid'; }
+}
+function setGalleryMode(m) {
+	try { localStorage.setItem('jt_gallery_mode', m); } catch (e) {}
+	loadGallery();
+}
+
 async function loadGallery() {
 	const el = document.getElementById('galleryGrid');
 	if (!el) return;
+
+	const mode = galleryMode();
+	el.className = mode === 'feed' ? 'gallery-feed' : 'gallery-grid';
+	document.querySelectorAll('#galleryModeToggle button').forEach(b => b.classList.toggle('is-active', b.dataset.mode === mode));
 	el.innerHTML = '<div class="spinner"></div>';
 
 	const withPhotos = [...smokes].filter(s => s.photo_path).sort((a, b) => b.ts - a.ts);
 
 	if (withPhotos.length === 0) {
-		el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px; padding:20px 0;">${t('gallery.noPhotosYet')}</p>`;
+		el.innerHTML = `<p class="gallery-empty">${t('gallery.noPhotosYet')}</p>`;
 		return;
 	}
 
 	const paths = withPhotos.map(s => s.photo_path);
-	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrls(paths, 3600, transformOpts(GALLERY_THUMB_TRANSFORM));
+	const transform = mode === 'feed' ? GALLERY_VIEWER_TRANSFORM : GALLERY_THUMB_TRANSFORM;
+	const { data, error } = await supabaseClient.storage.from('session-photos').createSignedUrls(paths, 3600, transformOpts(transform));
 
 	if (error || !data) {
-		el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--color-text-muted); font-size:13px;">${t('gallery.loadPhotosError')}</p>`;
+		el.innerHTML = `<p class="gallery-empty">${t('gallery.loadPhotosError')}</p>`;
+		return;
+	}
+
+	if (mode === 'feed') {
+		const av = avatarMarkup(isGuestMode ? getGuestAvatar() : (currentUserProfile?.avatar_url || null), currentUserProfile?.username || '', 34);
+		const myName = escapeHtml(currentUserProfile?.username || t('shared.you'));
+		el.innerHTML = withPhotos.map((s, i) => {
+			const signed = data[i]?.signedUrl;
+			if (!signed) return '';
+			const place = s.location_name ? ` · 📍 ${escapeHtml(s.location_name)}` : '';
+			const typeLabel = s.type === 'fumo' ? t('common.smoke') : s.type === 'erba' ? t('common.weed') : t('common.smokeWeed');
+			return `
+				<article class="gallery-feed-card">
+					<div class="gallery-feed-head">
+						${av}
+						<div class="gallery-feed-who">
+							<span class="gallery-feed-name">${myName}</span>
+							<span class="gallery-feed-when">${formatShortDate(s.date)} · ${s.time}${place}</span>
+						</div>
+					</div>
+					<button type="button" class="gallery-feed-imgwrap" onclick="openPhotoViewer(${s.ts})">
+						<img class="gallery-feed-img" src="${signed}" data-path="${s.photo_path}" onerror="fallbackPlainPhoto(this)" loading="lazy" alt="">
+					</button>
+					<div class="gallery-feed-meta">
+						<span class="gallery-feed-pill">${typeLabel} · ${parseFloat(personalGrams(s).toFixed(2))}g</span>
+						${s.context_tag ? `<span class="gallery-feed-pill">${escapeHtml(s.context_tag)}</span>` : ''}
+					</div>
+				</article>
+			`;
+		}).join('');
 		return;
 	}
 
@@ -2837,9 +2882,9 @@ async function loadGallery() {
 		const signed = data[i]?.signedUrl;
 		if (!signed) return '';
 		return `
-			<div onclick="openPhotoViewer(${s.ts})" style="aspect-ratio:1; border-radius:10px; overflow:hidden; cursor:pointer; background:rgba(var(--overlay-rgb),0.08);">
-				<img src="${signed}" data-path="${s.photo_path}" onerror="fallbackPlainPhoto(this)" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
-			</div>
+			<button type="button" class="gallery-thumb" onclick="openPhotoViewer(${s.ts})">
+				<img src="${signed}" data-path="${s.photo_path}" onerror="fallbackPlainPhoto(this)" loading="lazy" alt="">
+			</button>
 		`;
 	}).join('');
 }

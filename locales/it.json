@@ -240,6 +240,8 @@
   },
   "gallery": {
     "title": "📷 Galleria",
+    "modeGrid": "Griglia",
+    "modeFeed": "Feed",
     "photoTooLarge": "Foto troppo grande (max 8MB).",
     "noPhotosYet": "Nessuna foto ancora. Scattane una dalla pagina Aggiungi!",
     "loadPhotosError": "Errore nel caricamento delle foto.",

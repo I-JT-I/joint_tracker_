@@ -2120,3 +2120,93 @@ button.avatar-remove-btn { margin-top: 0; width: auto; padding: 6px 14px; font-s
 	color: var(--color-text);
 	box-shadow: none;
 }
+
+/* ==========================================================================
+   REDESIGN 2026 — GALLERIA: toggle Griglia / Feed (handoff 2h)
+   #galleryGrid prende .gallery-grid (miniature 3 col) o .gallery-feed
+   (card 4:3) a seconda di galleryMode(); il toggle riusa .seg-toggle.
+   ========================================================================== */
+.gallery-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 14px;
+}
+.gallery-head h3 { margin: 0; }
+
+.gallery-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px;
+}
+.gallery-thumb {
+	padding: 0;
+	border: none;
+	background: rgba(var(--overlay-rgb), 0.08);
+	border-radius: 10px;
+	overflow: hidden;
+	cursor: pointer;
+	aspect-ratio: 1;
+}
+.gallery-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.gallery-feed { display: flex; flex-direction: column; gap: 16px; }
+.gallery-feed-card {
+	flex: 0 0 auto;
+	border: 1px solid var(--border-c);
+	border-radius: 24px;
+	overflow: hidden;
+	background: var(--chip);
+}
+.gallery-feed-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px 14px;
+}
+.gallery-feed-head .avatar { width: 34px; height: 34px; font-size: 13px; flex: 0 0 auto; }
+.gallery-feed-who { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.gallery-feed-name { font-size: 14px; font-weight: 700; }
+.gallery-feed-when {
+	font-size: 11.5px;
+	color: var(--muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.gallery-feed-imgwrap {
+	display: block;
+	width: 100%;
+	padding: 0;
+	border: none;
+	background: rgba(var(--overlay-rgb), 0.06);
+	cursor: pointer;
+}
+.gallery-feed-img {
+	display: block;
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+}
+.gallery-feed-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 14px;
+}
+.gallery-feed-pill {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sec);
+	background: var(--chip-solid);
+	border-radius: var(--r-pill);
+	padding: 5px 12px;
+}
+.gallery-empty {
+	grid-column: 1 / -1;
+	text-align: center;
+	color: var(--muted);
+	font-size: 13px;
+	padding: 20px 0;
+}

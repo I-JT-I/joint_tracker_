@@ -240,6 +240,8 @@
   },
   "gallery": {
     "title": "📷 Gallery",
+    "modeGrid": "Grid",
+    "modeFeed": "Feed",
     "photoTooLarge": "Photo too large (max 8MB).",
     "noPhotosYet": "No photos yet. Take one from the Add page!",
     "loadPhotosError": "Error loading photos.",
