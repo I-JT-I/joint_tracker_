@@ -4095,10 +4095,49 @@ if (ctxPie) {
 	loadSocial();
 }
 
+	// Riga della classifica (redesign 2026, handoff 2g). `rank` è il numero
+	// 1-based; il 1° posto è oro, gli altri --sec. `avatarHtml` già pronto,
+	// `name` / `sub` già escapati dal chiamante.
+	function lbRow({ rank, avatarHtml, name, sub, score, onclick, isMe }) {
+		return `
+			<button type="button" class="lb-item${isMe ? ' is-me' : ''}" onclick="${onclick}">
+				<span class="lb-rank${rank === 1 ? ' is-first' : ''}">${rank}</span>
+				${avatarHtml}
+				<span class="lb-name">
+					<span class="lb-name-main">${name}</span>
+					${sub ? `<span class="lb-name-sub">${sub}</span>` : ''}
+				</span>
+				<span class="lb-score">${score}</span>
+			</button>
+		`;
+	}
+
+	// Card "Il tuo rank" in cima a Social — solo nel tab Mondiale (handoff 2g).
+	function renderSocialRank() {
+		const card = document.getElementById('socialRankCard');
+		if (!card) return;
+		if (!lastGlobalRank || currentSocialTab !== 'global') { card.style.display = 'none'; return; }
+		const { rank, total } = lastGlobalRank;
+		const pct = Math.max(1, Math.round((rank / total) * 100));
+		const av = avatarMarkup(currentUserProfile?.avatar_url || null, currentUserProfile?.username || '', 62);
+		card.style.display = 'block';
+		card.innerHTML = `
+			<div class="social-rank-inner">
+				${av}
+				<div class="social-rank-meta">
+					<span class="social-rank-kicker">${t('social.yourRank')}</span>
+					<div class="social-rank-num">#${rank}<span>${t('social.rankOf', { total })}</span></div>
+					<div class="social-rank-move">${t('social.rankTopPct', { pct })}</div>
+				</div>
+			</div>
+		`;
+	}
+
 	async function loadSocial() {
 		const list = document.getElementById('leaderboardList');
 		if (!list) return;
 
+		renderSocialRank();
 		list.innerHTML = '<div class="spinner"></div>';
 
 		if (!currentUser) {
@@ -4133,6 +4172,7 @@ if (ctxPie) {
 			if (isGlobal) {
 				const myIdx = data.findIndex(u => u.user_id === currentUser.id);
 				lastGlobalRank = myIdx >= 0 ? { rank: myIdx + 1, total: data.length } : null;
+				renderSocialRank();
 			}
 
 			let sharedMap = {};
@@ -4144,34 +4184,20 @@ if (ctxPie) {
 			}
 
 			list.innerHTML = data.map((u, i) => {
-				const rankStr = i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`;
-				const rankClass = i < 3 ? 'top3' : '';
 				const isMe = u.user_id === currentUser.id;
-
 				const shared = sharedMap[u.user_id];
-				const sharedBadge = (!isGlobal && shared && shared.sessions_together > 0)
-					? `<br><small style="color: var(--primary-light); font-weight:600;">${t('social.togetherBadge', { count: shared.sessions_together })}</small>`
-					: '';
-
-				const av = avatarMarkup(u.avatar_url, u.username, 30);
-
-				return `
-					<div class="lb-item" onclick="viewFriendStats('${u.user_id}')"
-						 style="${isMe ? 'background: rgba(76, 175, 80, 0.1);' : ''}">
-						<div style="display: flex; align-items: center; gap: 8px;">
-							<span class="lb-rank ${rankClass}">${rankStr}</span>
-							${av}
-							<span style="font-weight: ${isMe ? 'bold' : '500'};">
-								${escapeHtml(u.username)} ${isMe ? t('social.youSuffix') : ''}
-								${sharedBadge}
-							</span>
-						</div>
-						<div style="text-align: right;">
-							<span style="font-weight: bold; color: var(--primary);">${Number(u.total_g).toFixed(1)}g</span><br>
-							<small style="color: var(--color-text-muted);">${u.total_j} ${t('stats.jointUnit')}</small>
-						</div>
-					</div>
-				`;
+				const sub = (!isGlobal && shared && shared.sessions_together > 0)
+					? t('social.togetherBadge', { count: shared.sessions_together })
+					: `${u.total_j} ${t('stats.jointUnit')}`;
+				return lbRow({
+					rank: i + 1,
+					avatarHtml: avatarMarkup(u.avatar_url, u.username, 38),
+					name: escapeHtml(u.username) + (isMe ? ` ${t('social.youSuffix')}` : ''),
+					sub,
+					score: `${Number(u.total_g).toFixed(1)}g`,
+					onclick: `viewFriendStats('${u.user_id}')`,
+					isMe,
+				});
 			}).join('');
 
 		} catch (err) {
@@ -4201,24 +4227,15 @@ if (ctxPie) {
 				return;
 			}
 
-			list.innerHTML = filtered.map((u, i) => {
-				const rankStr = i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`;
-				const rankClass = i < 3 ? 'top3' : '';
-
-				return `
-					<div class="lb-item" onclick="viewFriendStats('${u.friend_id}')">
-						<div style="display: flex; align-items: center; gap: 8px;">
-							<span class="lb-rank ${rankClass}">${rankStr}</span>
-							${avatarMarkup(u.avatar_url, u.username, 30)}
-							<span style="font-weight: 500;">🤝 ${escapeHtml(u.username)}</span>
-						</div>
-						<div style="text-align: right;">
-							<span style="font-weight: bold; color: var(--primary);">${u.sessions_together}</span><br>
-							<small style="color: var(--color-text-muted);">${t('social.gramsTogetherSuffix', { grams: Number(u.grams_together).toFixed(1) })}</small>
-						</div>
-					</div>
-				`;
-			}).join('');
+			list.innerHTML = filtered.map((u, i) => lbRow({
+				rank: i + 1,
+				avatarHtml: avatarMarkup(u.avatar_url, u.username, 38),
+				name: `🤝 ${escapeHtml(u.username)}`,
+				sub: t('social.gramsTogetherSuffix', { grams: Number(u.grams_together).toFixed(1) }),
+				score: String(u.sessions_together),
+				onclick: `viewFriendStats('${u.friend_id}')`,
+				isMe: false,
+			})).join('');
 
 		} catch (err) {
 			console.error("Errore generico leaderboard condivise:", err);

@@ -793,42 +793,110 @@ hr {
 	color: white;
 }
 
+/* ---- Classifica (redesign 2026, handoff 2g) ---- */
 .lb-item {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
 	gap: 12px;
+	width: 100%;
 	padding: 12px 14px;
+	border: none;
+	background: none;
 	border-bottom: 1px solid var(--border-c);
-	cursor: pointer;
-	transition: background 0.2s ease;
 	border-radius: var(--r-row);
+	cursor: pointer;
+	font: inherit;
+	color: var(--color-text);
+	text-align: left;
+	transition: background 0.2s ease;
 }
 .lb-item:last-child { border-bottom: none; }
-
-.lb-item:hover {
-	background: rgba(76, 175, 80, 0.08);
-}
+.lb-item:hover { background: rgba(76, 175, 80, 0.08); }
 
 /* riga dell'utente corrente evidenziata */
 .lb-item.is-me {
 	background: var(--badge);
+	border-bottom-color: transparent;
 }
 
 .lb-rank {
-	font-size: 16px;
+	flex: 0 0 auto;
+	min-width: 34px;
+	font-size: 26px;
 	font-weight: 800;
-	min-width: 26px;
+	letter-spacing: -0.03em;
 	color: var(--sec);
 }
-.lb-rank.top3 { color: var(--gold); }
+.lb-rank.is-first { color: var(--gold); }
 
-.lb-item .avatar {
+.lb-item .avatar { flex: 0 0 auto; }
+
+.lb-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.lb-name-main {
+	font-size: 14px;
+	font-weight: 700;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.lb-name-sub { font-size: 12px; color: var(--muted); }
+
+.lb-score {
 	flex: 0 0 auto;
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--heading);
 }
 
-.lb-rank.top3 {
-	font-weight: bold;
+/* ---- Card "Il tuo rank" ---- */
+.social-rank-card {
+	background: linear-gradient(150deg, rgba(76, 175, 80, 0.2), var(--surface) 70%);
+}
+.social-rank-inner {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+.social-rank-inner .avatar {
+	width: 62px;
+	height: 62px;
+	font-size: 22px;
+	flex: 0 0 auto;
+}
+.social-rank-meta { min-width: 0; }
+.social-rank-kicker {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+.social-rank-num {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	margin-top: 2px;
+	font-size: 38px;
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	color: var(--color-text);
+}
+.social-rank-num span {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sec);
+	letter-spacing: 0;
+}
+.social-rank-move {
+	margin-top: 4px;
+	font-size: 12.5px;
+	color: var(--muted);
 }
 
 .modal {
