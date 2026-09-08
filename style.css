@@ -694,15 +694,21 @@ hr {
 	padding-left: 0;
 }
 
+/* Redesign 2026 (handoff 2c): ogni giorno è una card superficie radius 20,
+   header piatto --chip, righe sessione con separatore --border inset 16px. */
 .day-group {
 	margin-top: 10px;
 	margin-bottom: 10px;
+	background: var(--surface);
+	border: 1px solid var(--border-c);
+	border-radius: var(--r-list);
+	overflow: hidden;
 }
 
 .day-header {
 	background: var(--chip);
-	padding: 12px 14px;
-	border-radius: 12px;
+	padding: 12px 16px;
+	border-radius: 0;
 	cursor: pointer;
 	display: flex;
 	justify-content: space-between;
@@ -713,8 +719,15 @@ hr {
 
 .day-content {
 	display: none;
-	padding-left: 0;
-	padding-top: 10px;
+	padding: 0 16px;
+}
+
+.day-content .history-item {
+	padding: 12px 0;
+	border-bottom: none;
+}
+.day-content .history-item + .history-item {
+	border-top: 1px solid var(--border-c);
 }
 
 .year-group {
