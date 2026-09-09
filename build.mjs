@@ -9,11 +9,31 @@
 // minificati/rinominati: questo script gira solo in fase di deploy (vedi
 // vercel.json -> buildCommand).
 import { build } from 'esbuild';
-import { cpSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import { cpSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync, readdirSync } from 'fs';
+import { join } from 'path';
 import { createHash } from 'crypto';
 import { buildMarketing } from './build-marketing.mjs';
 
 const OUT = 'dist';
+
+// Hash dell'albero sorgente marketing/ (routes.json + layout + partials + content):
+// un deploy che cambia solo il marketing deve comunque bustare CACHE_NAME del SW,
+// che altrimenti (derivato dal solo hash di app.js) servirebbe l'HTML marketing
+// pre-branch ai visitatori di ritorno fino al secondo load.
+function hashDir(dir) {
+	const files = [];
+	(function walk(d) {
+		for (const e of readdirSync(d, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+			const full = join(d, e.name);
+			if (e.isDirectory()) walk(full);
+			else files.push(full);
+		}
+	})(dir);
+	const h = createHash('sha256');
+	for (const f of files) { h.update(f.replace(/\\/g, '/')); h.update(readFileSync(f)); }
+	return h.digest('hex').slice(0, 10);
+}
+const mktHash = hashDir('marketing');
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);
@@ -64,7 +84,7 @@ writeFileSync(`${OUT}/app/index.html`, appHtml);
 // dall'hash di app.js cosi' cambia automaticamente a ogni deploy con codice
 // diverso, senza doverlo ricordare di bumpare a mano.
 let sw = readFileSync('sw.js', 'utf8');
-sw = sw.replace(/const CACHE_NAME = '[^']*';/, `const CACHE_NAME = 'jointtracker-${appHashed.replace('app.', '').replace('.js', '')}';`);
+sw = sw.replace(/const CACHE_NAME = '[^']*';/, `const CACHE_NAME = 'jointtracker-${appHashed.replace('app.', '').replace('.js', '')}-${mktHash}';`);
 sw = sw.replace("'/style.css'", `'/${styleHashed}'`);
 sw = sw.replace("'/app.js'", `'/${appHashed}'`);
 sw = sw.replace("'/i18n.js'", `'/${i18nHashed}'`);

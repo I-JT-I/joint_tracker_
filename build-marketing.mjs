@@ -16,7 +16,11 @@ const LOCALES = ['it', 'en'];
 const OG_LOCALE = { it: 'it_IT', en: 'en_US' };
 const other = (loc) => (loc === 'it' ? 'en' : 'it');
 
-const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+// escAttr: per i valori di attributo (contengono "). escText: per il contenuto di
+// <title> (le " non vanno escapate). Esportati e riusati da verify-marketing.mjs
+// (C4b) per non avere due implementazioni che possono divergere.
+export const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+export const escText = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 // callback form ovunque: il value non deve mai essere interpretato come pattern
 // di replacement ($&, $1, ...) — vedi Global Constraint del piano.
 const put = (tpl, token, value) => tpl.replace(token, () => value);
@@ -25,8 +29,13 @@ const putAll = (tpl, token, value) => tpl.replaceAll(token, () => value);
 // EN home is a clean URL with NO trailing slash: cleanUrls (serve + Vercel)
 // 301-redirects /en/ -> /en, and canonical/hreflang/sitemap must point at the
 // final 200 URL. Non-empty EN slugs already produce /en/<slug> correctly.
-export const mkEnUrl = (slug) => routes.baseUrl + (slug ? `/en/${slug}` : '/en');
-export const mkItUrl = (slug) => routes.baseUrl + (slug ? `/${slug}` : '/');
+// mkEnPath/mkItPath = sola porzione path (root-relative), unica fonte di verita'
+// per la forma del path: la usano sia gli URL assoluti (mkEnUrl/mkItUrl) sia
+// localizeLinks sia lo switcher in-page.
+export const mkEnPath = (slug) => (slug ? `/en/${slug}` : '/en');
+export const mkItPath = (slug) => (slug ? `/${slug}` : '/');
+export const mkEnUrl = (slug) => routes.baseUrl + mkEnPath(slug);
+export const mkItUrl = (slug) => routes.baseUrl + mkItPath(slug);
 
 export function urlFor(page, loc) {
 	const slug = page[loc].slug;
@@ -50,7 +59,7 @@ function headFor(page, loc) {
 	const ogTitle = m.ogTitle || m.title;
 	const ogDesc = m.ogDescription || m.description;
 	const out = [
-		`<title>${escAttr(m.title)}</title>`,
+		`<title>${escText(m.title)}</title>`,
 		`<meta name="description" content="${escAttr(m.description)}">`,
 		`<link rel="canonical" href="${canonical}">`,
 		`<link rel="alternate" hreflang="it" href="${itUrl}">`,
@@ -79,9 +88,7 @@ function localizeLinks(html, loc) {
 	if (loc === 'it') return html;
 	const map = new Map();
 	for (const p of routes.pages) {
-		const it = p.it.slug ? `/${p.it.slug}` : '/';
-		const en = p.en.slug ? `/en/${p.en.slug}` : '/en';
-		map.set(it, en);
+		map.set(mkItPath(p.it.slug), mkEnPath(p.en.slug));
 	}
 	return html.replace(/href="(\/[a-z0-9\-/]*)(#[^"]*)?"/gi, (mtch, path, hash = '') => {
 		if (path === '/app' || path.startsWith('/app/')) return mtch;
@@ -118,10 +125,13 @@ const FOOT = [
 
 function render(page, loc) {
 	const frag = localizeLdJsonUrls(localizeLinks(readFileSync(`${M}/content/${loc}/${page.key}.html`, 'utf8').trim(), loc), loc);
-	const alt = urlFor(page, other(loc));
-	const nav = putAll(localizeLinks(partial(`nav.${page.shell}.${loc}.html`), loc), '{{ALT_URL}}', alt);
-	const footer = putAll(localizeLinks(partial(`footer.${page.shell}.${loc}.html`), loc), '{{ALT_URL}}', alt);
-	const banner = loc === 'it' ? putAll(partial('lang-banner.html'), '{{ALT_URL}}', alt) : '';
+	// Lo switcher/banner in-page devono essere root-relative: un link assoluto a
+	// produzione romperebbe la review su localhost / preview Vercel. canonical /
+	// hreflang / og:url / sitemap restano assoluti (li genera headFor/writeSitemap).
+	const altPath = other(loc) === 'en' ? mkEnPath(page.en.slug) : mkItPath(page.it.slug);
+	const nav = putAll(localizeLinks(partial(`nav.${page.shell}.${loc}.html`), loc), '{{ALT_URL}}', altPath);
+	const footer = putAll(localizeLinks(partial(`footer.${page.shell}.${loc}.html`), loc), '{{ALT_URL}}', altPath);
+	const banner = loc === 'it' ? putAll(partial('lang-banner.html'), '{{ALT_URL}}', altPath) : '';
 	const pageOpen = page.shell === 'landing' ? '<div class="jt-page">' : '';
 	const pageClose = page.shell === 'landing' ? '</div>' : '';
 	let doc = put(layout, '{{LANG}}', loc);
@@ -148,8 +158,8 @@ function writeSitemap(outDir) {
 			rows.push(`  <url>\n    <loc>${urlFor(page, loc)}</loc>\n${alts}\n    <changefreq>${page.changefreq}</changefreq>\n    <priority>${page.priority}</priority>\n  </url>`);
 		}
 	}
-	writeSitemap._xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${rows.join('\n')}\n</urlset>\n`;
-	writeFileSync(join(outDir, 'sitemap.xml'), writeSitemap._xml);
+	const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${rows.join('\n')}\n</urlset>\n`;
+	writeFileSync(join(outDir, 'sitemap.xml'), xml);
 }
 
 export function buildMarketing(outDir = 'dist') {

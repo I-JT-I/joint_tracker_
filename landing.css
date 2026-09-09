@@ -147,3 +147,8 @@
 
 /* ========== LANGUAGE SWITCHER ========== */
 .jt-lang-link { font-weight: 700; }
+/* `.jt-nav__links > a.jt-btn { color:#fff }` (0,2,1) sopra out-specifica
+   `.jt-btn--ghost` (0,1,0): lo switcher ghost in nav renderebbe bianco-su-bianco
+   in light. Questa regola pareggia la specificita' (0,2,1) e vince per source order. */
+.jt-nav__links > a.jt-btn--ghost,
+.jt-nav__links > a.jt-btn--ghost:hover { color: var(--jt-accent); }

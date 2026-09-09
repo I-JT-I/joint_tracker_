@@ -7,7 +7,7 @@
 ## Slug (congelati)
 | Pagina | IT | EN |
 |---|---|---|
-| Home | `/` | `/en/` |
+| Home | `/` | `/en` |
 | Come funziona | `/come-funziona` | `/en/how-it-works` |
 | FAQ | `/faq` | `/en/faq` |
 | Blog | `/blog` | `/en/blog` |
@@ -17,7 +17,7 @@
 
 ---
 
-## Home (`/` → `/en/`)
+## Home (`/` → `/en`)
 
 | IT | EN (bozza) |
 |---|---|

@@ -2,6 +2,7 @@
 	"buildCommand": "npm run build",
 	"outputDirectory": "dist",
 	"cleanUrls": true,
+	"trailingSlash": false,
 	"headers": [
 		{
 			"source": "/(.*)",
@@ -17,6 +18,12 @@
 		},
 		{
 			"source": "/marketing.css",
+			"headers": [
+				{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }
+			]
+		},
+		{
+			"source": "/landing.css",
 			"headers": [
 				{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }
 			]
