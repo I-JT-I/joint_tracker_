@@ -63,6 +63,17 @@ for (const { p, loc, path, html } of pages) {
 	if (ld.length > 1) fail(`${path}: ${ld.length} blocchi JSON-LD (atteso 0 o 1)`);
 	for (const m of ld) { try { JSON.parse(m[1]); } catch { fail(`${path}: JSON-LD non valido`); } }
 
+	// C5b nessuna self-URL IT residua dentro il JSON-LD delle pagine EN
+	if (loc === 'en') {
+		const ldBlocks = ld.map((m) => m[1]);
+		for (const q of routes.pages) {
+			const itSelf = `"${routes.baseUrl}/${q.it.slug}"`;
+			for (const block of ldBlocks) {
+				if (block.includes(itSelf)) fail(`${path}: JSON-LD self-URL IT non localizzata (${itSelf})`);
+			}
+		}
+	}
+
 	// C6 nessun placeholder / attributo morto residuo
 	if (html.includes('{{')) fail(`${path}: placeholder {{...}} non risolto`);
 	if (html.includes('data-i18n')) fail(`${path}: attributo data-i18n residuo`);

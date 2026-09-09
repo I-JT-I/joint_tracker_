@@ -85,13 +85,34 @@ function localizeLinks(html, loc) {
 	});
 }
 
+// Nei fragment EN il JSON-LD incorporato self-referenzia la URL assoluta IT
+// (i traduttori toccano solo headline/description): qui rimappo le self-URL
+// assolute virgolettate alla controparte EN, ma SOLO dentro i blocchi
+// <script type="application/ld+json">. Il resto dell'HTML resta intatto: il
+// language switcher di nav/footer linka di proposito la URL IT via href=, e i
+// tag canonical/og/twitter di headFor() sono gia' corretti.
+function localizeLdJsonUrls(html, loc) {
+	if (loc === 'it') return html;
+	const map = new Map();
+	for (const p of routes.pages) {
+		const it = `"${routes.baseUrl}/${p.it.slug}"`;
+		const en = `"${routes.baseUrl}/en/${p.en.slug}"`;
+		map.set(it, en);
+	}
+	return html.replace(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g, (block) => {
+		let out = block;
+		for (const [it, en] of map) out = out.replaceAll(it, () => en);
+		return out;
+	});
+}
+
 const FOOT = [
 	`<script>window.si=window.si||function(){(window.siq=window.siq||[]).push(arguments)};</script>`,
 	`<script defer src="/_vercel/speed-insights/script.js"></script>`,
 ].join('\n');
 
 function render(page, loc) {
-	const frag = localizeLinks(readFileSync(`${M}/content/${loc}/${page.key}.html`, 'utf8').trim(), loc);
+	const frag = localizeLdJsonUrls(localizeLinks(readFileSync(`${M}/content/${loc}/${page.key}.html`, 'utf8').trim(), loc), loc);
 	const alt = urlFor(page, other(loc));
 	const nav = putAll(localizeLinks(partial(`nav.${page.shell}.${loc}.html`), loc), '{{ALT_URL}}', alt);
 	const footer = putAll(localizeLinks(partial(`footer.${page.shell}.${loc}.html`), loc), '{{ALT_URL}}', alt);
