@@ -2,7 +2,8 @@
 	"name": "joint-tracker",
 	"private": true,
 	"scripts": {
-		"build": "node build.mjs"
+		"build": "node build.mjs",
+		"verify:marketing": "node verify-marketing.mjs"
 	},
 	"devDependencies": {
 		"esbuild": "^0.24.2"

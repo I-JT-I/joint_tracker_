@@ -1,0 +1,160 @@
+{
+	"baseUrl": "https://joint-tracker.vercel.app",
+	"pages": [
+		{
+			"key": "home",
+			"shell": "landing",
+			"ogType": "website",
+			"changefreq": "weekly",
+			"priority": "1.0",
+			"headExtra": "head-home.html",
+			"it": {
+				"slug": "",
+				"title": "JointTracker – Cannabis Tracker & Tolerance Break App",
+				"description": "Traccia le tue sessioni, monitora le tolerance break e visualizza statistiche dettagliate sul consumo di cannabis. Track cannabis sessions, tolerance breaks and usage stats. App gratuita, funziona offline, dati privati.",
+				"ogTitle": "JointTracker – Cannabis Tracker & Tolerance Break App",
+				"ogDescription": "Traccia sessioni, tolerance break e statistiche sul consumo di cannabis. Gratis, privata, funziona offline."
+			},
+			"en": {
+				"slug": "",
+				"title": "JointTracker – Free Cannabis Tracker & Tolerance Break App",
+				"description": "Track your cannabis sessions, monitor tolerance breaks and see detailed usage stats. Free, works offline, private by design.",
+				"ogTitle": "JointTracker – Free Cannabis Tracker & Tolerance Break App",
+				"ogDescription": "Track cannabis sessions, tolerance breaks and usage stats. Free, private, works offline."
+			}
+		},
+		{
+			"key": "how-it-works",
+			"shell": "site",
+			"ogType": "article",
+			"changefreq": "monthly",
+			"priority": "0.8",
+			"headExtra": null,
+			"it": {
+				"slug": "come-funziona",
+				"title": "Come funziona JointTracker – Guida al cannabis tracker",
+				"description": "Scopri come funziona JointTracker: come registrare le sessioni, impostare una tolerance break, leggere le statistiche e usare l'app anche offline.",
+				"ogTitle": "Come funziona JointTracker",
+				"ogDescription": "Guida rapida a JointTracker: registro sessioni, tolerance break, statistiche e uso offline."
+			},
+			"en": {
+				"slug": "how-it-works",
+				"title": "How JointTracker Works – Cannabis Tracker Guide",
+				"description": "How JointTracker works: logging sessions, starting a tolerance break, reading your stats and using the app offline.",
+				"ogTitle": "How JointTracker Works",
+				"ogDescription": "A quick guide to JointTracker: session log, tolerance breaks, stats and offline use."
+			}
+		},
+		{
+			"key": "faq",
+			"shell": "site",
+			"ogType": "website",
+			"changefreq": "monthly",
+			"priority": "0.8",
+			"headExtra": "head-faq.html",
+			"it": {
+				"slug": "faq",
+				"title": "FAQ JointTracker – Domande frequenti sul cannabis tracker",
+				"description": "Le domande più frequenti su JointTracker: privacy dei dati, prezzo, funzionamento offline, tolerance break tracker e altro.",
+				"ogTitle": "FAQ JointTracker",
+				"ogDescription": "Le domande più frequenti su JointTracker: privacy, prezzo, offline, tolerance break."
+			},
+			"en": {
+				"slug": "faq",
+				"title": "JointTracker FAQ – Cannabis Tracker Questions",
+				"description": "Common questions about JointTracker: data privacy, price, offline use, the tolerance break tracker and more.",
+				"ogTitle": "JointTracker FAQ",
+				"ogDescription": "Common questions about JointTracker: privacy, price, offline use, tolerance breaks."
+			}
+		},
+		{
+			"key": "blog-index",
+			"shell": "site",
+			"ogType": "website",
+			"changefreq": "weekly",
+			"priority": "0.7",
+			"headExtra": null,
+			"dir": true,
+			"it": {
+				"slug": "blog",
+				"title": "Blog JointTracker – Articoli su cannabis, consumo e tolerance break",
+				"description": "Articoli su tolerance break, riduzione del consumo di cannabis e uso consapevole. Dal blog di JointTracker, il cannabis tracker gratuito.",
+				"ogTitle": "Blog JointTracker",
+				"ogDescription": "Articoli su tolerance break, riduzione del consumo e uso consapevole della cannabis."
+			},
+			"en": {
+				"slug": "blog",
+				"title": "JointTracker Blog – Cannabis, Usage & Tolerance Breaks",
+				"description": "Articles on tolerance breaks, cutting down on cannabis and mindful use. From the JointTracker blog, the free cannabis tracker.",
+				"ogTitle": "JointTracker Blog",
+				"ogDescription": "Articles on tolerance breaks, cutting down and mindful cannabis use."
+			}
+		},
+		{
+			"key": "blog/tolerance-break",
+			"shell": "site",
+			"ogType": "article",
+			"changefreq": "monthly",
+			"priority": "0.6",
+			"headExtra": null,
+			"it": {
+				"slug": "blog/cose-una-tolerance-break",
+				"title": "Cos'è una tolerance break e perché farla | Blog JointTracker",
+				"description": "Cosa succede alla tolleranza con l'uso regolare di cannabis, quanto dura una tolerance break efficace e come pianificarla e monitorarla.",
+				"ogTitle": "Cos'è una tolerance break e perché farla",
+				"ogDescription": "Cosa succede alla tolleranza con l'uso regolare di cannabis e come pianificare una t-break efficace."
+			},
+			"en": {
+				"slug": "blog/what-is-a-tolerance-break",
+				"title": "What Is a Tolerance Break and Why Take One | JointTracker Blog",
+				"description": "What happens to tolerance with regular cannabis use, how long an effective tolerance break lasts, and how to plan and track one.",
+				"ogTitle": "What Is a Tolerance Break and Why Take One",
+				"ogDescription": "What happens to tolerance with regular cannabis use and how to plan an effective t-break."
+			}
+		},
+		{
+			"key": "blog/cut-down",
+			"shell": "site",
+			"ogType": "article",
+			"changefreq": "monthly",
+			"priority": "0.6",
+			"headExtra": null,
+			"it": {
+				"slug": "blog/come-ridurre-il-consumo-di-cannabis",
+				"title": "Come ridurre il consumo di cannabis: guida pratica | Blog JointTracker",
+				"description": "Strategie concrete per ridurre gradualmente il consumo di cannabis, con l'aiuto di un diario e obiettivi realistici.",
+				"ogTitle": "Come ridurre il consumo di cannabis: guida pratica",
+				"ogDescription": "Strategie concrete per ridurre gradualmente il consumo, con l'aiuto di un diario e obiettivi realistici."
+			},
+			"en": {
+				"slug": "blog/how-to-cut-down-cannabis-use",
+				"title": "How to Cut Down on Cannabis Use: A Practical Guide | JointTracker Blog",
+				"description": "Concrete strategies to gradually reduce your cannabis use, with the help of a diary and realistic goals.",
+				"ogTitle": "How to Cut Down on Cannabis Use: A Practical Guide",
+				"ogDescription": "Concrete strategies to gradually reduce use, with the help of a diary and realistic goals."
+			}
+		},
+		{
+			"key": "blog/diary",
+			"shell": "site",
+			"ogType": "article",
+			"changefreq": "monthly",
+			"priority": "0.6",
+			"headExtra": null,
+			"it": {
+				"slug": "blog/perche-tenere-un-diario-di-consumo",
+				"title": "Perché tenere un diario di consumo cambia le cose | Blog JointTracker",
+				"description": "La differenza tra abitudini percepite e abitudini reali, e perché i dati aiutano a decidere meglio.",
+				"ogTitle": "Perché tenere un diario di consumo cambia le cose",
+				"ogDescription": "La differenza tra abitudini percepite e abitudini reali, e perché i dati aiutano a decidere meglio."
+			},
+			"en": {
+				"slug": "blog/why-keep-a-consumption-diary",
+				"title": "Why Keeping a Consumption Diary Changes Things | JointTracker Blog",
+				"description": "The gap between perceived and real habits, and why objective data helps you make better decisions.",
+				"ogTitle": "Why Keeping a Consumption Diary Changes Things",
+				"ogDescription": "The gap between perceived and real habits, and why data helps you decide better."
+			}
+		}
+	]
+}
