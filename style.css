@@ -254,16 +254,20 @@ header h1 {
 	border: 1px solid var(--border-c);
 }
 
-/* Entrata a comparsa delle card (stagger applicato via nth-child). */
+/* Entrata a comparsa delle card (stagger applicato via nth-child).
+   Gate su :root.anim-ready (aggiunto da armEntranceAnimations() in app.js solo a
+   documento visibile): una CSS animation con fill "both" da opacity:0 creata mentre
+   la pagina è in background resta congelata a 0% e la card non compare mai finché
+   non si cambia pagina e si torna indietro. */
 @keyframes jtRise {
 	from { opacity: 0; transform: translateY(18px) scale(0.985); }
 	to   { opacity: 1; transform: none; }
 }
 
-.page.active > .card,
-.page.active > #socialContent > .card,
-.page.active > .more-grid,
-.page.active > .more-list {
+:root.anim-ready .page.active > .card,
+:root.anim-ready .page.active > #socialContent > .card,
+:root.anim-ready .page.active > .more-grid,
+:root.anim-ready .page.active > .more-list {
 	animation: jtRise calc(0.55s * var(--motion) + 0.001s) cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 .page.active > .card:nth-child(2),

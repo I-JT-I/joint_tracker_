@@ -1594,6 +1594,19 @@ async function addPlaceFromMap() {
 		return activePage ? activePage.id.replace('page-', '') : null;
 	}
 
+	// Abilita le animazioni d'ingresso delle card (CSS: :root.anim-ready .page.active > .card)
+	// solo quando il documento è davvero visibile. Se l'app viene avviata in background
+	// (PWA che pre-carica all'apertura, tab non a fuoco) una jtRise con fill "both" da
+	// opacity:0 resterebbe bloccata a 0% e la Home resterebbe vuota finché non si cambia
+	// pagina e si torna indietro. Idempotente; ri-tentato a ogni visibilitychange.
+	function armEntranceAnimations() {
+		const root = document.documentElement;
+		if (root.classList.contains('anim-ready')) return;
+		if (document.visibilityState !== 'visible') return;
+		root.classList.add('anim-ready');
+	}
+	document.addEventListener('visibilitychange', armEntranceAnimations);
+
 	// ========== PAGINA "ALTRO" (redesign 2026) ==========
 	// Sostituisce il dropdown hamburger. Griglia di 6 destinazioni + lista
 	// Impostazioni/Notifiche, ognuna con un numero "live" derivato dai dati
@@ -6433,6 +6446,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	updateOnlineStatus();
 
 	initTheme();
+	armEntranceAnimations();
 	checkAuth();
 
 // ========== PWA INSTALL: bottone custom (Chromium) + istruzioni manuali (iOS) ==========
