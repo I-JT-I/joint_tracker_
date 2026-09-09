@@ -175,8 +175,10 @@ img { max-width: 100%; height: auto; }
 .jt-article li { margin: 0 0 8px; }
 .jt-article ul { margin: 0 0 16px; padding-left: 22px; }
 .jt-article strong { color: var(--jt-ink); }
-.jt-article__lead { color: var(--jt-ink); font-size: 17px; line-height: 1.65; }
-.jt-article__cta { margin-top: 34px; }
+/* p.<mod> pareggia la specificita' di `.jt-article p` (0,1,1) e vince per source order:
+   la forma non-composta veniva sovrascritta e lead/cta rendevano come <p> normali. */
+p.jt-article__lead { color: var(--jt-ink); font-size: 17px; line-height: 1.65; }
+p.jt-article__cta { margin: 34px 0 16px; }
 
 /* FAQ accordion — ogni <details> come card */
 .jt-faq h1 { margin-bottom: 28px; }
