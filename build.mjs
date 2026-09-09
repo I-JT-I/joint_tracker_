@@ -44,10 +44,10 @@ const STATIC_ENTRIES = [
 	'icon-192.png', 'icon-384.png', 'icon-512.png', 'icon-1024.png',
 	'icon-maskable-192.png', 'icon-maskable-384.png', 'icon-maskable-512.png', 'icon-maskable-1024.png',
 	'locales', 'splash', 'img',
-	// CSS marketing (non hashati) + og-image + admin. Le PAGINE marketing non sono
+	// CSS marketing (non hashato) + og-image + admin. Le PAGINE marketing non sono
 	// piu' qui: le genera build-marketing.mjs da marketing/** (vedi sotto), sitemap.xml
-	// inclusa. landing.css è servito solo dalla landing; le altre pagine usano marketing.css.
-	'marketing.css', 'landing.css', 'og-image.png',
+	// inclusa. landing.css è il foglio di stile condiviso di tutte le pagine marketing.
+	'landing.css', 'og-image.png',
 	'admin.html'
 ];
 

@@ -152,3 +152,69 @@
    in light. Questa regola pareggia la specificita' (0,2,1) e vince per source order. */
 .jt-nav__links > a.jt-btn--ghost,
 .jt-nav__links > a.jt-btn--ghost:hover { color: var(--jt-accent); }
+
+/* ========== PAGINE DI CONTENUTO (articoli / FAQ / blog) ========== */
+.jt-article,
+.jt-faq { max-width: 760px; margin: 0 auto; padding: 56px 22px 76px; }
+.jt-crumb { font-size: 13px; color: var(--jt-ink-3); margin: 0 0 22px; }
+.jt-crumb a { color: inherit; }
+.jt-crumb a:hover { color: var(--jt-accent); }
+
+.jt-article h1,
+.jt-faq h1 { font-size: clamp(30px, 4.6vw, 42px); font-weight: 800; letter-spacing: -.03em;
+  line-height: 1.12; margin: 0 0 12px; text-wrap: pretty; }
+.jt-article h2 { font-size: clamp(20px, 2.6vw, 26px); font-weight: 700; letter-spacing: -.02em;
+  margin: 40px 0 12px; text-wrap: pretty; }
+.jt-article p,
+.jt-article li { font-size: 16px; line-height: 1.7; color: var(--jt-ink-2); margin: 0 0 16px; }
+.jt-article li { margin: 0 0 8px; }
+.jt-article ul { margin: 0 0 16px; padding-left: 22px; }
+.jt-article strong { color: var(--jt-ink); }
+.jt-article__lead { color: var(--jt-ink); font-size: 17px; line-height: 1.65; }
+.jt-article__cta { margin-top: 34px; }
+
+/* FAQ accordion — ogni <details> come card */
+.jt-faq h1 { margin-bottom: 28px; }
+.jt-faq details { background: var(--jt-surface); border: 1px solid var(--jt-line);
+  border-radius: 18px; padding: 2px 20px; margin: 0 0 12px; }
+.jt-faq summary { cursor: pointer; list-style: none; display: flex; align-items: center;
+  justify-content: space-between; gap: 14px; padding: 16px 0; font-size: 16px; font-weight: 700;
+  color: var(--jt-ink); }
+.jt-faq summary::-webkit-details-marker { display: none; }
+.jt-faq summary::after { content: ""; flex: 0 0 auto; width: 9px; height: 9px;
+  border-right: 2px solid var(--jt-accent); border-bottom: 2px solid var(--jt-accent);
+  transform: rotate(45deg); transition: transform .2s; }
+.jt-faq details[open] summary::after { transform: rotate(-135deg); }
+.jt-faq details p { margin: 0 0 16px; font-size: 15px; line-height: 1.65; color: var(--jt-ink-2); }
+
+/* lista articoli blog */
+.jt-post-list { display: grid; gap: 14px; }
+.jt-post-card { display: block; transition: transform .18s, box-shadow .18s; }
+.jt-post-card:hover { transform: translateY(-2px);
+  box-shadow: 0 16px 34px light-dark(rgba(0,0,0,.10), rgba(0,0,0,.4)); }
+.jt-post-card__tag { font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--jt-accent); }
+.jt-post-card h2 { font-size: 18px; font-weight: 700; color: var(--jt-ink); margin: 6px 0; }
+.jt-post-card p { font-size: 14px; line-height: 1.6; color: var(--jt-ink-2); margin: 0; }
+
+/* ========== LANGUAGE HINT BANNER ========== */
+.lang-hint {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	justify-content: center;
+	flex-wrap: wrap;
+	padding: 8px 16px;
+	background: #0c120c;
+	color: #f4f7f6;
+	font-size: 0.9rem;
+	text-align: center;
+}
+.lang-hint a { color: inherit; text-decoration: underline; font-weight: 600; }
+.lang-hint button {
+	background: none; border: 0; color: inherit;
+	font-size: 1.2rem; line-height: 1; cursor: pointer; padding: 0 4px;
+}
+@media (prefers-color-scheme: light) {
+	.lang-hint { background: #f4f7f6; color: #0c120c; }
+}

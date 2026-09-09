@@ -129,19 +129,15 @@ function render(page, loc) {
 	// produzione romperebbe la review su localhost / preview Vercel. canonical /
 	// hreflang / og:url / sitemap restano assoluti (li genera headFor/writeSitemap).
 	const altPath = other(loc) === 'en' ? mkEnPath(page.en.slug) : mkItPath(page.it.slug);
-	const nav = putAll(localizeLinks(partial(`nav.${page.shell}.${loc}.html`), loc), '{{ALT_URL}}', altPath);
-	const footer = putAll(localizeLinks(partial(`footer.${page.shell}.${loc}.html`), loc), '{{ALT_URL}}', altPath);
+	const nav = putAll(localizeLinks(partial(`nav.${loc}.html`), loc), '{{ALT_URL}}', altPath);
+	const footer = putAll(localizeLinks(partial(`footer.${loc}.html`), loc), '{{ALT_URL}}', altPath);
 	const banner = loc === 'it' ? putAll(partial('lang-banner.html'), '{{ALT_URL}}', altPath) : '';
-	const pageOpen = page.shell === 'landing' ? '<div class="jt-page">' : '';
-	const pageClose = page.shell === 'landing' ? '</div>' : '';
 	let doc = put(layout, '{{LANG}}', loc);
 	doc = put(doc, '{{HEAD}}', headFor(page, loc));
 	doc = put(doc, '{{BANNER}}', banner);
-	doc = put(doc, '{{PAGE_OPEN}}', pageOpen);
 	doc = put(doc, '{{NAV}}', nav);
 	doc = put(doc, '{{MAIN}}', frag);
 	doc = put(doc, '{{FOOTER}}', footer);
-	doc = put(doc, '{{PAGE_CLOSE}}', pageClose);
 	doc = put(doc, '{{FOOT}}', FOOT);
 	return doc;
 }
