@@ -11,6 +11,7 @@
 import { build } from 'esbuild';
 import { cpSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { createHash } from 'crypto';
+import { buildMarketing } from './build-marketing.mjs';
 
 const OUT = 'dist';
 
@@ -18,15 +19,15 @@ rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);
 
 const STATIC_ENTRIES = [
-	'manifest.json', 'robots.txt', 'sitemap.xml',
+	'manifest.json', 'robots.txt',
 	'favicon.svg', 'favicon-16.png', 'favicon-32.png', 'apple-touch-icon.png',
 	'icon-192.png', 'icon-384.png', 'icon-512.png', 'icon-1024.png',
 	'icon-maskable-192.png', 'icon-maskable-384.png', 'icon-maskable-512.png', 'icon-maskable-1024.png',
 	'locales', 'splash', 'img',
-	// Pagine marketing/SEO statiche: nessun riferimento ad app.js/style.css/i18n.js,
-	// quindi non passano dalla riscrittura hash qui sotto (a differenza di app/index.html).
-	// landing.css è servito solo dalla landing (index.html); le altre pagine marketing usano marketing.css.
-	'index.html', 'come-funziona.html', 'faq.html', 'blog', 'marketing.css', 'landing.css', 'og-image.png',
+	// CSS marketing (non hashati) + og-image + admin. Le PAGINE marketing non sono
+	// piu' qui: le genera build-marketing.mjs da marketing/** (vedi sotto), sitemap.xml
+	// inclusa. landing.css è servito solo dalla landing; le altre pagine usano marketing.css.
+	'marketing.css', 'landing.css', 'og-image.png',
 	'admin.html'
 ];
 
@@ -68,5 +69,8 @@ sw = sw.replace("'/style.css'", `'/${styleHashed}'`);
 sw = sw.replace("'/app.js'", `'/${appHashed}'`);
 sw = sw.replace("'/i18n.js'", `'/${i18nHashed}'`);
 writeFileSync(`${OUT}/sw.js`, sw);
+
+// Pagine marketing IT/EN + sitemap.xml, montate da marketing/** dentro dist/**.
+buildMarketing(OUT);
 
 console.log(`Build completata in ./dist (app.js -> ${appHashed}, i18n.js -> ${i18nHashed}, style.css -> ${styleHashed})`);
