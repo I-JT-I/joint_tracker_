@@ -2,7 +2,7 @@
 	"name": "joint-tracker",
 	"private": true,
 	"scripts": {
-		"build": "node build.mjs",
+		"build": "node build.mjs && node verify-marketing.mjs",
 		"verify:marketing": "node verify-marketing.mjs"
 	},
 	"devDependencies": {

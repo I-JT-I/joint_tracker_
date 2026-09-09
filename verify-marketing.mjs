@@ -52,6 +52,12 @@ for (const { p, loc, path, html } of pages) {
 	if (!html.includes(`<meta property="og:locale" content="${ogl}">`)) fail(`${path}: og:locale != ${ogl}`);
 	if (!html.includes(`<meta property="og:locale:alternate" content="${ogla}">`)) fail(`${path}: og:locale:alternate != ${ogla}`);
 
+	// C4b title/description = routes.json
+	const m = p[loc];
+	if (!html.includes(`<title>${m.title.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</title>`)) fail(`${path}: <title> != routes.json`);
+	const descEsc = m.description.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+	if (!html.includes(`<meta name="description" content="${descEsc}">`)) fail(`${path}: description != routes.json`);
+
 	// C5 esattamente 1 JSON-LD valido (se presente)
 	const ld = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
 	if (ld.length > 1) fail(`${path}: ${ld.length} blocchi JSON-LD (atteso 0 o 1)`);
