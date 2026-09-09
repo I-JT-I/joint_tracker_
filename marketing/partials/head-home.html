@@ -1,0 +1,49 @@
+<meta name="google-site-verification" content="FjvZpRN13XyjFacmmelH4SajsY6uXV7nhszCzV2g5FA" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/landing.css">
+<script>
+(function () {
+	try {
+		var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+		if (standalone) window.location.replace('/app');
+	} catch (e) {}
+})();
+</script>
+<script>
+(function () {
+	var deferredPrompt = null;
+	window.addEventListener('beforeinstallprompt', function (e) {
+		e.preventDefault();
+		deferredPrompt = e;
+		var row = document.getElementById('installRow');
+		var hint = document.getElementById('installHint');
+		if (row) row.style.display = 'flex';
+		if (hint) hint.style.display = 'none';
+	});
+	window.addEventListener('appinstalled', function () {
+		deferredPrompt = null;
+		var row = document.getElementById('installRow');
+		if (row) row.style.display = 'none';
+	});
+	document.addEventListener('DOMContentLoaded', function () {
+		var btn = document.getElementById('installBtn');
+		if (btn) btn.addEventListener('click', async function () {
+			if (!deferredPrompt) return;
+			deferredPrompt.prompt();
+			await deferredPrompt.userChoice;
+			deferredPrompt = null;
+			var row = document.getElementById('installRow');
+			if (row) row.style.display = 'none';
+		});
+	});
+	if ('serviceWorker' in navigator) {
+		navigator.serviceWorker.register('/sw.js').catch(function () {});
+	}
+})();
+</script>
+<script>
+	window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>

@@ -1,0 +1,14 @@
+<script>
+// <details> non si apre da solo seguendo un link con #hash: lo forziamo qui,
+// altrimenti chi arriva da un link diretto (es. dalla landing) vede solo la
+// domanda chiusa senza la risposta.
+if (location.hash) {
+	document.addEventListener('DOMContentLoaded', function () {
+		const el = document.querySelector(location.hash);
+		if (el && el.tagName === 'DETAILS') {
+			el.open = true;
+			el.scrollIntoView();
+		}
+	});
+}
+</script>

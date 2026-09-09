@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta name="google-site-verification" content="FjvZpRN13XyjFacmmelH4SajsY6uXV7nhszCzV2g5FA" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JointTracker – Cannabis Tracker & Tolerance Break App</title>
+<meta name="description" content="Traccia le tue sessioni, monitora le tolerance break e visualizza statistiche dettagliate sul consumo di cannabis. Track cannabis sessions, tolerance breaks and usage stats. App gratuita, funziona offline, dati privati.">
+<link rel="canonical" href="https://joint-tracker.vercel.app/">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0c120c">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f7f6">
+
+<meta property="og:title" content="JointTracker – Cannabis Tracker & Tolerance Break App">
+<meta property="og:description" content="Traccia sessioni, tolerance break e statistiche sul consumo di cannabis. Gratis, privata, funziona offline.">
+<meta property="og:image" content="https://joint-tracker.vercel.app/og-image.png">
+<meta property="og:url" content="https://joint-tracker.vercel.app/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="it_IT">
+<meta property="og:locale:alternate" content="en_US">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="JointTracker – Cannabis Tracker & Tolerance Break App">
+<meta name="twitter:description" content="Traccia sessioni, tolerance break e statistiche sul consumo di cannabis. Gratis, privata, funziona offline.">
+<meta name="twitter:image" content="https://joint-tracker.vercel.app/og-image.png">
+
+<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<link rel="manifest" href="/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preload" href="/marketing.css" as="style">
+<link rel="stylesheet" href="/marketing.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/landing.css">
+
+<!-- Se l'app e' aperta da un'icona gia' installata sulla home screen (utenti che
+     l'avevano aggiunta prima che l'app si spostasse su /app), manda dritti alla
+     dashboard invece di mostrare la landing page marketing. -->
+<script>
+(function () {
+	try {
+		var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+		if (standalone) window.location.replace('/app');
+	} catch (e) {}
+})();
+</script>
+
+<script type="application/ld+json">
+{
+	"@context": "https://schema.org",
+	"@type": "WebApplication",
+	"name": "JointTracker",
+	"url": "https://joint-tracker.vercel.app/",
+	"description": "App gratuita per tracciare sessioni di consumo cannabis, gestire tolerance break e visualizzare statistiche dettagliate. Funziona offline, dati privati.",
+	"applicationCategory": "HealthApplication",
+	"operatingSystem": "Any (PWA)",
+	"offers": {
+		"@type": "Offer",
+		"price": "0",
+		"priceCurrency": "EUR"
+	},
+	"inLanguage": ["it", "en"],
+	"browserRequirements": "Richiede un browser moderno con supporto Service Worker"
+}
+</script>
+
+<!-- Installazione PWA reale dalla landing: cattura il prompt nativo del browser
+     e lo attiva dal nostro bottone (Chrome/Edge non lo mostrano da soli finché
+     non lo richiami tu). Su iPhone/Safari questo evento non esiste: resta
+     visibile solo l'istruzione testuale "Aggiungi a Home". -->
+<script>
+(function () {
+	var deferredPrompt = null;
+	window.addEventListener('beforeinstallprompt', function (e) {
+		e.preventDefault();
+		deferredPrompt = e;
+		var row = document.getElementById('installRow');
+		var hint = document.getElementById('installHint');
+		if (row) row.style.display = 'flex';
+		if (hint) hint.style.display = 'none';
+	});
+	window.addEventListener('appinstalled', function () {
+		deferredPrompt = null;
+		var row = document.getElementById('installRow');
+		if (row) row.style.display = 'none';
+	});
+	document.addEventListener('DOMContentLoaded', function () {
+		var btn = document.getElementById('installBtn');
+		if (btn) btn.addEventListener('click', async function () {
+			if (!deferredPrompt) return;
+			deferredPrompt.prompt();
+			await deferredPrompt.userChoice;
+			deferredPrompt = null;
+			var row = document.getElementById('installRow');
+			if (row) row.style.display = 'none';
+		});
+	});
+	if ('serviceWorker' in navigator) {
+		navigator.serviceWorker.register('/sw.js').catch(function () {});
+	}
+})();
+</script>
+
+<!-- Vercel Web Analytics -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+
+<div class="jt-page">
+  <div class="jt-glow jt-glow--a" aria-hidden="true"></div>
+  <div class="jt-glow jt-glow--b" aria-hidden="true"></div>
+
+  <!-- defs SVG condivise: lasciare come primo elemento del body -->
+  <svg width="0" height="0" class="jt-defs" aria-hidden="true">
+    <defs>
+      <linearGradient id="jtPaper" x1="0" y1="24.6" x2="0" y2="39.4" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#c9cec6"/><stop offset=".16" stop-color="#ffffff"/><stop offset=".42" stop-color="#fdfdfb"/><stop offset=".78" stop-color="#cdd2c9"/><stop offset="1" stop-color="#9aa096"/>
+      </linearGradient>
+      <linearGradient id="jtAsh" x1="0" y1="25.2" x2="0" y2="38.9" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#8e9089"/><stop offset=".3" stop-color="#c4c6bf"/><stop offset="1" stop-color="#5c5e58"/>
+      </linearGradient>
+      <radialGradient id="jtEmberG" cx=".42" cy=".4" r=".72">
+        <stop offset="0" stop-color="#fff3c4"/><stop offset=".3" stop-color="#ffcf5c"/><stop offset=".68" stop-color="#f08a1c"/><stop offset="1" stop-color="#a83c07"/>
+      </radialGradient>
+      <radialGradient id="jtGlowG" cx=".5" cy=".5" r=".5">
+        <stop offset="0" stop-color="#ffb03a" stop-opacity=".62"/><stop offset="1" stop-color="#ffb03a" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="jtAsh2" cx=".44" cy=".38" r=".7">
+        <stop offset="0" stop-color="#d3d5cd"/><stop offset=".6" stop-color="#a3a69d"/><stop offset="1" stop-color="#63665f"/>
+      </radialGradient>
+    </defs>
+  </svg>
+
+  <nav class="jt-nav">
+    <div class="jt-nav__in">
+      <a class="jt-brand" href="/">
+        <span class="jt-tile jt-tile--32">
+          <svg viewBox="0 0 64 64" class="jt-mark" aria-hidden="true">
+            <path d="M14.68 42 A20 20 0 1 1 49.32 42" fill="none" stroke="#ffffff" stroke-opacity=".26" stroke-width="6.4" stroke-linecap="round"/>
+            <path d="M14.68 42 A20 20 0 0 1 43.76 15.82" fill="none" stroke="#ffffff" stroke-width="6.4" stroke-linecap="round"/>
+            <g transform="rotate(-54 32 32)">
+              <path d="M14 27.7 L52 24.4 L52 39.6 L14 36.3 Z" fill="#ffffff"/>
+              <path d="M26 26.7 L27.2 26.6 L27.2 37.4 L26 37.3 Z" fill="#8d9389"/>
+              <ellipse cx="52" cy="32" rx="2.9" ry="7.6" fill="#f0a02a"/>
+            </g>
+          </svg>
+        </span>
+        <span class="jt-brand__text">JointTracker</span>
+      </a>
+      <div class="jt-nav__links">
+        <a href="/come-funziona" data-i18n="nav.how">Come funziona</a>
+        <a href="/faq" data-i18n="nav.faq">FAQ</a>
+        <a href="/blog" data-i18n="nav.blog">Blog</a>
+        <a href="/app" class="jt-btn jt-btn--sm" data-i18n="nav.openApp">Apri l'app</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="jt-hero jt-rise">
+    <p class="jt-pill" data-i18n="hero.badge">Gratis · privata · funziona offline</p>
+    <h1 class="jt-h1" data-i18n="hero.title">Traccia il tuo consumo di cannabis, senza giudizi</h1>
+    <p class="jt-lead" data-i18n="hero.lead">JointTracker è un cannabis tracker gratuito e privato: registra le sessioni, monitora tolerance break e streak, tieni sotto controllo scorte e spese. Track cannabis sessions, tolerance breaks and usage stats — funziona anche offline.</p>
+    <div class="jt-cta">
+      <a href="/app" class="jt-btn" data-i18n="hero.ctaPrimary">Inizia gratis</a>
+      <a href="/come-funziona" class="jt-btn jt-btn--ghost" data-i18n="hero.ctaSecondary">Come funziona</a>
+      <span id="installRow" style="display:none">
+        <button type="button" class="jt-btn jt-btn--ghost" id="installBtn">Installa l'app</button>
+      </span>
+    </div>
+    <p class="jt-note" id="installHint" data-i18n-html="hero.installHint">Vuoi installarla come app sul telefono? Su iPhone/Safari: icona Condividi → "Aggiungi a Home" (vedi <a href="/faq#installazione">i dettagli</a>). Su Android/Chrome, se non vedi il pulsante qui sopra, aprila da <a href="/app">/app</a> e usa "Installa app" nelle Impostazioni.</p>
+  </header>
+
+  <section class="jt-shots jt-rise jt-rise--d2" aria-label="Screenshot dell'app">
+    <figure class="jt-phone jt-phone--side">
+      <picture>
+        <source srcset="/img/screenshots/it/registro.webp" type="image/webp">
+        <img src="/img/screenshots/it/registro.png" alt="Registro delle sessioni in JointTracker" width="600" height="1200" loading="lazy" decoding="async">
+      </picture>
+    </figure>
+    <figure class="jt-phone jt-phone--center">
+      <picture>
+        <source srcset="/img/screenshots/it/home.webp" type="image/webp">
+        <img src="/img/screenshots/it/home.png" alt="Schermata Home di JointTracker" width="600" height="1200" loading="lazy" decoding="async">
+      </picture>
+    </figure>
+    <figure class="jt-phone jt-phone--side">
+      <picture>
+        <source srcset="/img/screenshots/it/statistiche.webp" type="image/webp">
+        <img src="/img/screenshots/it/statistiche.png" alt="Statistiche di JointTracker" width="600" height="1200" loading="lazy" decoding="async">
+      </picture>
+    </figure>
+  </section>
+
+  <section class="jt-section">
+    <h2 class="jt-h2" data-i18n="features.title">Tutto quello che ti serve per tenere traccia</h2>
+    <div class="jt-grid">
+      <article class="jt-card jt-rise">
+        <span class="jt-ico jt-ico--green">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3h11l3 3v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm2 6h10v2H7V9Zm0 4h10v2H7v-2Zm0 4h6v2H7v-2Z"/></svg>
+        </span>
+        <h3 data-i18n="features.log.title">Registro sessioni</h3>
+        <p data-i18n="features.log.body">Segna cosa fumi, quanto e quando in pochi secondi, con contesto e umore opzionali.</p>
+      </article>
+      <article class="jt-card jt-rise">
+        <span class="jt-ico jt-ico--purple">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10 8 8 0 0 1-10-10Z"/></svg>
+        </span>
+        <h3 data-i18n="features.break.title">Tolerance break tracker</h3>
+        <p data-i18n="features.break.body">Pianifica e monitora le tue pause, con statistiche su tolleranza e streak di astinenza.</p>
+      </article>
+      <article class="jt-card jt-rise">
+        <span class="jt-ico jt-ico--green">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 20h16v2H2V2h2v18Zm3-3V9h3v8H7Zm5 0V4h3v13h-3Zm5 0v-6h3v6h-3Z"/></svg>
+        </span>
+        <h3 data-i18n="features.stats.title">Statistiche e grafici</h3>
+        <p data-i18n="features.stats.body">Calendario dei consumi, medie giornaliere/mensili, fasce orarie e spesa nel tempo.</p>
+      </article>
+      <article class="jt-card jt-rise">
+        <span class="jt-ico jt-ico--green">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+        </span>
+        <h3 data-i18n="features.places.title">Mappa dei luoghi</h3>
+        <p data-i18n="features.places.body">Salva i tuoi posti abituali e visualizza dove e quanto consumi.</p>
+      </article>
+      <article class="jt-card jt-rise">
+        <span class="jt-ico jt-ico--amber">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4h14l-2 9H8.4L8 15h11v2H6.2L4.4 6H2V4h5Zm1 15a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm9 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/></svg>
+        </span>
+        <h3 data-i18n="features.stock.title">Gestione scorte</h3>
+        <p data-i18n="features.stock.body">Tieni traccia di acquisti, grammi rimanenti e prezzi.</p>
+      </article>
+      <article class="jt-card jt-rise">
+        <span class="jt-ico jt-ico--neutral">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a5 5 0 0 1 5 5v2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v2h6V7a3 3 0 0 0-3-3Z"/></svg>
+        </span>
+        <h3 data-i18n="features.privacy.title">Dati privati</h3>
+        <p data-i18n="features.privacy.body">Puoi anche usarla in modalità ospite, senza registrarti, con dati salvati solo sul tuo dispositivo.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="jt-section jt-section--narrow">
+    <h2 class="jt-h2" data-i18n="seo.title">Perché usare un cannabis tracker</h2>
+    <p class="jt-body" data-i18n="seo.p1">Tenere un diario di consumo aiuta a capire le proprie abitudini reali, non quelle percepite: quante sessioni al giorno, in quali momenti, con quale spesa mensile. JointTracker nasce per essere uno strumento onesto e senza giudizi, pensato sia per chi vuole solo monitorare, sia per chi sta pianificando una tolerance break o una riduzione del consumo.</p>
+    <p class="jt-body" data-i18n-html="seo.p2">È una <strong>Progressive Web App (PWA)</strong>: si installa sulla home screen come un'app nativa, ma non richiede store né aggiornamenti manuali, e funziona anche offline.</p>
+  </section>
+
+  <section class="jt-section">
+    <div class="jt-final">
+      <h2 class="jt-h2" data-i18n="final.title">Pronto a iniziare?</h2>
+      <p class="jt-lead jt-lead--sm" data-i18n="final.body">Gratis, senza pubblicità, e puoi provarla anche senza registrarti.</p>
+      <a href="/app" class="jt-btn" data-i18n="final.cta">Prova JointTracker</a>
+    </div>
+  </section>
+
+  <footer class="jt-footer">
+    <div class="jt-footer__links">
+      <a href="/come-funziona" data-i18n="nav.how">Come funziona</a>
+      <a href="/faq" data-i18n="nav.faq">FAQ</a>
+      <a href="/blog" data-i18n="nav.blog">Blog</a>
+      <a href="/app" data-i18n="nav.openApp">Apri l'app</a>
+    </div>
+    <p data-i18n="footer.tag">JointTracker — cannabis tracker gratuito e privato.</p>
+  </footer>
+</div>
+
+<script>
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+
+</body>
+</html>
