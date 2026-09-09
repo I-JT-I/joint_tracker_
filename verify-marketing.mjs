@@ -80,10 +80,17 @@ for (const { p, loc, path, html } of pages) {
 
 	// C7 nessun link interno IT nelle pagine EN (localizeLinks mancato)
 	if (loc === 'en') {
-		for (const bad of ['href="/come-funziona"', 'href="/faq"', 'href="/blog"', 'href="/"']) {
-			if (html.includes(bad)) fail(`${path}: link IT non localizzato (${bad})`);
+		for (const q of routes.pages) {
+			const itSlug = q.it.slug ? `/${q.it.slug}` : '/';
+			if (html.includes(`href="${itSlug}"`) || html.includes(`href="${itSlug}#`)) {
+				fail(`${path}: link IT non localizzato (${itSlug})`);
+			}
 		}
 	}
+
+	// C10 switcher lingua presente e punta alla controparte
+	const otherUrl = urlFor(p, loc === 'it' ? 'en' : 'it');
+	if (!html.includes(`href="${otherUrl}"`)) fail(`${path}: link switcher a ${otherUrl} mancante`);
 }
 
 // C8 reciprocita hreflang: la controparte esiste come file

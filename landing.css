@@ -144,3 +144,6 @@
   .jt-phone--side { display: none; }
   .jt-nav__links { gap: 14px; }
 }
+
+/* ========== LANGUAGE SWITCHER ========== */
+.jt-lang-link { font-weight: 700; }

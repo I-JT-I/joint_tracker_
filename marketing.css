@@ -299,3 +299,16 @@ footer.site-footer a {
 footer.site-footer a:hover { text-decoration: underline; }
 
 img { max-width: 100%; height: auto; }
+
+/* ========== LANGUAGE SWITCHER ========== */
+.nav-lang {
+	margin-left: 8px;
+	padding: 2px 8px;
+	border: 1px solid currentColor;
+	border-radius: 6px;
+	font-size: 0.85em;
+	font-weight: 600;
+	opacity: 0.75;
+}
+.nav-lang:hover { opacity: 1; }
+.footer-lang { font-weight: 600; }
