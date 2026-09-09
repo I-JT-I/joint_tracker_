@@ -3,24 +3,10 @@
 # Uso:
 #   powershell -ExecutionPolicy Bypass -File generate-pwa-assets.ps1
 #
-# --- ICONE (favicon, PWA, apple-touch, og-image): NON le genera piu' questo script ---
-# Dal redesign del marchio (2026-09) le icone sono rasterizzate direttamente dai file
-# vettoriali in img/brand/ con @resvg/resvg-js-cli (nessuna dipendenza aggiunta al repo,
-# si usa via `npx`). System.Drawing non sa leggere SVG, quindi lo script resta solo per
-# gli splash. Comandi per rigenerare le icone (da eseguire nella root del repo):
-#
-#   R() { npx --yes @resvg/resvg-js-cli --log-level error "$@"; }
-#   # "any": tile arrotondato, dettaglio pieno
-#   for s in 192 384 512 1024; do R --fit-width $s img/brand/jt-icon.svg icon-$s.png; done
-#   # maskable: tile a tutto quadro (no raggio), contenuto entro ~78% centrale
-#   #   (jt-maskable.svg = jt-icon.svg con <rect> senza rx + arte in <g transform="translate(32 32) scale(.78) translate(-32 -32)">)
-#   for s in 192 384 512 1024; do R --fit-width $s <jt-maskable.svg> icon-maskable-$s.png; done
-#   R --fit-width 16  img/brand/jt-icon-small.svg favicon-16.png
-#   R --fit-width 32  img/brand/jt-icon-small.svg favicon-32.png
-#   R --fit-width 180 <jt-fullbleed.svg>          apple-touch-icon.png   # opaco, iOS applica la sua maschera
-#   R --fit-width 1024 <jt-fullbleed.svg>         icon-master.png        # sorgente per gli splash qui sotto
-#   # favicon.svg (root) = copia di img/brand/jt-icon-small.svg senza il blocco <metadata> C2PA
-#   # og-image.png (1200x630) = render di un SVG dedicato con font Sora (vedi handoff)
+# --- ICONE (favicon, PWA, apple-touch, og-image): le genera generate-icons.ps1 ---
+# Dal 2026-09 il marchio dell'app e' un'immagine raster (img/brand/source-icon.png),
+# non piu' i vettori in img/brand/*.svg. Questo script fa solo gli splash iOS, che
+# partono da icon-master.png: quindi lancia PRIMA generate-icons.ps1, POI questo.
 
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing

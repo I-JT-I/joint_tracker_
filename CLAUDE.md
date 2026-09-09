@@ -64,10 +64,12 @@ npm run build
 # vengono serviti cosi' come sono. Basta un qualsiasi static server sulla root, es.:
 npx serve .
 
-# Rigenerare gli splash screen iOS da icon-master.png
+# Rigenerare le icone (favicon/PWA/apple-touch/og-image) dal marchio raster
+# img/brand/source-icon.png, poi gli splash screen iOS da icon-master.png:
+powershell -ExecutionPolicy Bypass -File generate-icons.ps1
 powershell -ExecutionPolicy Bypass -File generate-pwa-assets.ps1
-# Le icone (favicon/PWA/apple-touch/og-image) si rigenerano dai vettori in img/brand/
-# con @resvg/resvg-js-cli via npx — vedi il commento in testa a generate-pwa-assets.ps1
+# NB: dal 2026-09 il marchio dell'app e' un raster, non piu' i vettori img/brand/*.svg
+# (quei file restano solo per il segno inline delle pagine marketing).
 
 # Deploy: push su main del repo GitHub -> Vercel fa auto-deploy (build + dist/) da solo
 git push origin main
