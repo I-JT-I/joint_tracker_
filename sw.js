@@ -17,7 +17,7 @@ const PRECACHE_URLS = [
   '/app.js',
   '/i18n.js',
   '/manifest.json',
-  '/icon-192.png',
+  '/icon-192.png?v=2',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 
@@ -148,8 +148,8 @@ self.addEventListener('push', function (event) {
 
   const options = {
     body: data.body,
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/icon-192.png?v=2',
+    badge: '/icon-192.png?v=2',
     vibrate: [100, 50, 100],
     data: { url: data.url || '/app' }
   };
