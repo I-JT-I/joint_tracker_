@@ -1,6 +1,6 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body { margin: 0; font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: light-dark(#f4f7f6, #0c120c); }
 img { max-width: 100%; height: auto; }
 [hidden] { display: none !important; }
 
@@ -25,7 +25,7 @@ img { max-width: 100%; height: auto; }
   --jt-tile:      linear-gradient(135deg, #57bd5b, #20612a 62%, #17471f);
   position: relative;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip; /* clip (non hidden): sopprime il bleed dei glow senza creare uno scroll container, cosi' .jt-nav sticky funziona */
   background: var(--jt-bg);
   color: var(--jt-ink);
   font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -42,7 +42,8 @@ img { max-width: 100%; height: auto; }
 .jt-glow--b { bottom: -220px; right: -140px; width: 560px; height: 560px;
   background: radial-gradient(circle, light-dark(rgba(76,175,80,.12), rgba(76,175,80,.55)), transparent 70%);
   animation: jtDrift 15s ease-in-out infinite reverse; }
-.jt-page > *:not(.jt-glow) { position: relative; z-index: 1; }
+.jt-page > *:not(.jt-glow):not(.jt-nav) { position: relative; z-index: 1; }
+.jt-page > .jt-nav { position: sticky; top: 0; z-index: 20; }
 
 /* --- nav --- */
 .jt-nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(18px);
@@ -68,6 +69,7 @@ img { max-width: 100%; height: auto; }
 .jt-btn--ghost { color: var(--jt-accent); background: none; box-shadow: none;
   border: 1.5px solid rgba(76,175,80,.5); }
 .jt-btn--ghost:hover { color: var(--jt-accent); background: light-dark(rgba(76,175,80,.08), rgba(76,175,80,.14)); box-shadow: none; }
+button.jt-btn { font: inherit; cursor: pointer; }
 
 /* --- hero --- */
 .jt-hero { max-width: 1040px; margin: 0 auto; padding: 76px 22px 40px; text-align: center; }
@@ -161,7 +163,9 @@ img { max-width: 100%; height: auto; }
 /* ========== PAGINE DI CONTENUTO (articoli / FAQ / blog) ========== */
 .jt-article,
 .jt-faq { max-width: 760px; margin: 0 auto; padding: 56px 22px 76px; }
-.jt-crumb { font-size: 13px; color: var(--jt-ink-3); margin: 0 0 22px; }
+.jt-crumb,
+.jt-article .jt-crumb,
+.jt-faq .jt-crumb { font-size: 13px; color: var(--jt-ink-3); margin: 0 0 22px; }
 .jt-crumb a { color: inherit; }
 .jt-crumb a:hover { color: var(--jt-accent); }
 
@@ -199,7 +203,7 @@ p.jt-article__cta { margin: 34px 0 16px; }
 .jt-post-card { display: block; transition: transform .18s, box-shadow .18s; }
 .jt-post-card:hover { transform: translateY(-2px);
   box-shadow: 0 16px 34px light-dark(rgba(0,0,0,.10), rgba(0,0,0,.4)); }
-.jt-post-card__tag { font-size: 12px; font-weight: 700; letter-spacing: .04em;
+.jt-post-card__tag { display: block; font-size: 12px; font-weight: 700; letter-spacing: .04em;
   text-transform: uppercase; color: var(--jt-accent); }
 .jt-post-card h2 { font-size: 18px; font-weight: 700; color: var(--jt-ink); margin: 6px 0; }
 .jt-post-card p { font-size: 14px; line-height: 1.6; color: var(--jt-ink-2); margin: 0; }
@@ -216,10 +220,12 @@ p.jt-article__cta { margin: 34px 0 16px; }
 	color: #f4f7f6;
 	font-size: 0.9rem;
 	text-align: center;
+	/* stesso valore di --jt-line, in literal: .lang-hint sta fuori da .jt-page dove la var non risolve */
+	border-bottom: 1px solid light-dark(rgba(0,0,0,.08), rgba(255,255,255,.08));
 }
 .lang-hint a { color: inherit; text-decoration: underline; font-weight: 600; }
 .lang-hint button {
-	background: none; border: 0; color: inherit;
+	background: none; border: 0; color: inherit; font-family: inherit;
 	font-size: 1.2rem; line-height: 1; cursor: pointer; padding: 0 4px;
 }
 @media (prefers-color-scheme: light) {

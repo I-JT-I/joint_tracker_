@@ -33,7 +33,13 @@ function hashDir(dir) {
 	for (const f of files) { h.update(f.replace(/\\/g, '/')); h.update(readFileSync(f)); }
 	return h.digest('hex').slice(0, 10);
 }
-const mktHash = hashDir('marketing');
+// landing.css sta nella root (non sotto marketing/) ma ora fa da foglio di stile a
+// tutte le pagine marketing: lo si piega nell'hash cosi' un deploy che tocca solo
+// landing.css busta comunque CACHE_NAME del SW.
+const mktHash = createHash('sha256')
+	.update(hashDir('marketing'))
+	.update(readFileSync('landing.css'))
+	.digest('hex').slice(0, 10);
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);
