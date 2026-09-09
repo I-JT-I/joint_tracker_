@@ -1,23 +1,32 @@
-# Genera le icone PWA mancanti (standard, maskable, splash iOS) a partire da icon-512.png
-# usando System.Drawing (.NET), gia' presente su Windows: non serve installare Node/Python/ImageMagick.
+# Genera gli splash screen iOS a partire da icon-master.png.
 #
 # Uso:
 #   powershell -ExecutionPolicy Bypass -File generate-pwa-assets.ps1
 #
-# Nota: 1024x1024 e' un upscale da icon-512.png (unica sorgente disponibile), quindi sara'
-# meno nitido di un export nativo da un file vettoriale/ad alta risoluzione. Se in futuro hai
-# un master piu' grande (es. 1024 o SVG), rilancia lo script dopo aver sostituito icon-512.png
-# con una versione a risoluzione maggiore, oppure modifica $sourcePath qui sotto.
+# --- ICONE (favicon, PWA, apple-touch, og-image): NON le genera piu' questo script ---
+# Dal redesign del marchio (2026-09) le icone sono rasterizzate direttamente dai file
+# vettoriali in img/brand/ con @resvg/resvg-js-cli (nessuna dipendenza aggiunta al repo,
+# si usa via `npx`). System.Drawing non sa leggere SVG, quindi lo script resta solo per
+# gli splash. Comandi per rigenerare le icone (da eseguire nella root del repo):
+#
+#   R() { npx --yes @resvg/resvg-js-cli --log-level error "$@"; }
+#   # "any": tile arrotondato, dettaglio pieno
+#   for s in 192 384 512 1024; do R --fit-width $s img/brand/jt-icon.svg icon-$s.png; done
+#   # maskable: tile a tutto quadro (no raggio), contenuto entro ~78% centrale
+#   #   (jt-maskable.svg = jt-icon.svg con <rect> senza rx + arte in <g transform="translate(32 32) scale(.78) translate(-32 -32)">)
+#   for s in 192 384 512 1024; do R --fit-width $s <jt-maskable.svg> icon-maskable-$s.png; done
+#   R --fit-width 16  img/brand/jt-icon-small.svg favicon-16.png
+#   R --fit-width 32  img/brand/jt-icon-small.svg favicon-32.png
+#   R --fit-width 180 <jt-fullbleed.svg>          apple-touch-icon.png   # opaco, iOS applica la sua maschera
+#   R --fit-width 1024 <jt-fullbleed.svg>         icon-master.png        # sorgente per gli splash qui sotto
+#   # favicon.svg (root) = copia di img/brand/jt-icon-small.svg senza il blocco <metadata> C2PA
+#   # og-image.png (1200x630) = render di un SVG dedicato con font Sora (vedi handoff)
 
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
 $root = $PSScriptRoot
-# Master full-bleed (logo a contatto coi bordi, nessun margine): tenuto separato dagli
-# output icon-*.png perche' questi ultimi ora sono TUTTI generati con margine di sicurezza
-# (vedi sotto) — se il source coincidesse con un output, ogni rerun dello script comprimerebbe
-# il logo un po' di piu' ad ogni esecuzione.
-$sourcePath = Join-Path $root 'icon-master.png'
+$sourcePath = Join-Path $root 'icon-master.png'   # tile del marchio a tutto quadro, 1024px
 $splashDir = Join-Path $root 'splash'
 $bgColor = [System.Drawing.Color]::FromArgb(255, 0x0c, 0x12, 0x0c)  # background_color del manifest
 
@@ -35,57 +44,13 @@ function New-HQGraphics($bitmap) {
     return $g
 }
 
-# ---------- 1. Icone standard ("any", safe zone 80%, sfondo trasparente) ----------
-# Erano full-bleed (logo a contatto coi bordi): Android/Play Protect applicano comunque
-# una propria maschera adattiva anche alle icone "any" (non solo alle "maskable"), quindi
-# senza margine il fumo/banner venivano tagliati. Sfondo trasparente (non pieno) nel
-# margine, cosi' il logo non ha un riquadro colorato intorno.
-function New-PlainIcon([int]$size, [string]$outPath) {
-    $bmp = New-Object System.Drawing.Bitmap $size, $size, ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-    $g = New-HQGraphics $bmp
-    $g.Clear([System.Drawing.Color]::Transparent)
-    $inner = [int]([math]::Round($size * 0.8))
-    $offset = [int]([math]::Round(($size - $inner) / 2))
-    $g.DrawImage($source, $offset, $offset, $inner, $inner)
-    $g.Dispose()
-    $bmp.Save($outPath, [System.Drawing.Imaging.ImageFormat]::Png)
-    $bmp.Dispose()
-    Write-Host "OK  $outPath"
-}
-
-New-PlainIcon 192  (Join-Path $root 'icon-192.png')
-New-PlainIcon 384  (Join-Path $root 'icon-384.png')
-New-PlainIcon 512  (Join-Path $root 'icon-512.png')
-New-PlainIcon 1024 (Join-Path $root 'icon-1024.png')
-
-# ---------- 2. Icone maskable (safe zone 80%, sfondo pieno) ----------
-function New-MaskableIcon([int]$size, [string]$outPath) {
-    $bmp = New-Object System.Drawing.Bitmap $size, $size, ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-    $g = New-HQGraphics $bmp
-    $brush = New-Object System.Drawing.SolidBrush $bgColor
-    $g.FillRectangle($brush, 0, 0, $size, $size)
-    $inner = [int]([math]::Round($size * 0.8))
-    $offset = [int]([math]::Round(($size - $inner) / 2))
-    $g.DrawImage($source, $offset, $offset, $inner, $inner)
-    $g.Dispose()
-    $brush.Dispose()
-    $bmp.Save($outPath, [System.Drawing.Imaging.ImageFormat]::Png)
-    $bmp.Dispose()
-    Write-Host "OK  $outPath"
-}
-
-New-MaskableIcon 192  (Join-Path $root 'icon-maskable-192.png')
-New-MaskableIcon 384  (Join-Path $root 'icon-maskable-384.png')
-New-MaskableIcon 512  (Join-Path $root 'icon-maskable-512.png')
-New-MaskableIcon 1024 (Join-Path $root 'icon-maskable-1024.png')
-
-# ---------- 3. Splash screen iOS (sfondo pieno, logo centrato al 35%) ----------
+# ---------- Splash screen iOS (sfondo pieno, logo centrato al 32%) ----------
 function New-Splash([int]$w, [int]$h, [string]$outPath) {
     $bmp = New-Object System.Drawing.Bitmap $w, $h, ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $g = New-HQGraphics $bmp
     $brush = New-Object System.Drawing.SolidBrush $bgColor
     $g.FillRectangle($brush, 0, 0, $w, $h)
-    $logoSize = [int]([math]::Round([math]::Min($w, $h) * 0.35))
+    $logoSize = [int]([math]::Round([math]::Min($w, $h) * 0.32))
     $x = [int]([math]::Round(($w - $logoSize) / 2))
     $y = [int]([math]::Round(($h - $logoSize) / 2))
     $g.DrawImage($source, $x, $y, $logoSize, $logoSize)
@@ -110,5 +75,4 @@ foreach ($s in $splashSizes) {
 
 $source.Dispose()
 Write-Host ""
-Write-Host "Fatto: 2 icone standard, 4 maskable, $($splashSizes.Count) splash iOS."
-Write-Host "Ricorda: screenshot-home-narrow.png e screenshot-stats-wide.png vanno catturati a mano dall'app reale."
+Write-Host "Fatto: $($splashSizes.Count) splash iOS. Le icone si rigenerano con resvg (vedi commento in testa)."

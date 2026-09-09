@@ -19,12 +19,14 @@ mkdirSync(OUT);
 
 const STATIC_ENTRIES = [
 	'manifest.json', 'robots.txt', 'sitemap.xml',
+	'favicon.svg', 'favicon-16.png', 'favicon-32.png', 'apple-touch-icon.png',
 	'icon-192.png', 'icon-384.png', 'icon-512.png', 'icon-1024.png',
 	'icon-maskable-192.png', 'icon-maskable-384.png', 'icon-maskable-512.png', 'icon-maskable-1024.png',
-	'locales', 'splash',
+	'locales', 'splash', 'img',
 	// Pagine marketing/SEO statiche: nessun riferimento ad app.js/style.css/i18n.js,
 	// quindi non passano dalla riscrittura hash qui sotto (a differenza di app/index.html).
-	'index.html', 'come-funziona.html', 'faq.html', 'blog', 'marketing.css', 'og-image.png',
+	// landing.css è servito solo dalla landing (index.html); le altre pagine marketing usano marketing.css.
+	'index.html', 'come-funziona.html', 'faq.html', 'blog', 'marketing.css', 'landing.css', 'og-image.png',
 	'admin.html'
 ];
 
