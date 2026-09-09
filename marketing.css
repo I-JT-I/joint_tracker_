@@ -28,6 +28,8 @@
 
 * { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 html { scroll-behavior: smooth; }
 
 body {
@@ -312,3 +314,25 @@ img { max-width: 100%; height: auto; }
 }
 .nav-lang:hover { opacity: 1; }
 .footer-lang { font-weight: 600; }
+
+/* ========== LANGUAGE HINT BANNER ========== */
+.lang-hint {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	justify-content: center;
+	flex-wrap: wrap;
+	padding: 8px 16px;
+	background: #0c120c;
+	color: #f4f7f6;
+	font-size: 0.9rem;
+	text-align: center;
+}
+.lang-hint a { color: inherit; text-decoration: underline; font-weight: 600; }
+.lang-hint button {
+	background: none; border: 0; color: inherit;
+	font-size: 1.2rem; line-height: 1; cursor: pointer; padding: 0 4px;
+}
+@media (prefers-color-scheme: light) {
+	.lang-hint { background: #f4f7f6; color: #0c120c; }
+}

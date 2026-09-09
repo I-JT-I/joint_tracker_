@@ -91,6 +91,11 @@ for (const { p, loc, path, html } of pages) {
 	// C10 switcher lingua presente e punta alla controparte
 	const otherUrl = urlFor(p, loc === 'it' ? 'en' : 'it');
 	if (!html.includes(`href="${otherUrl}"`)) fail(`${path}: link switcher a ${otherUrl} mancante`);
+
+	// C11 banner solo su IT
+	const hasBanner = html.includes('id="langHint"');
+	if (loc === 'en' && hasBanner) fail(`${path}: banner lang presente su pagina EN`);
+	if (loc === 'it' && !hasBanner) fail(`${path}: banner lang mancante su pagina IT`);
 }
 
 // C8 reciprocita hreflang: la controparte esiste come file
