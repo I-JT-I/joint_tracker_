@@ -1,16 +1,7 @@
 {
 	"buildCommand": "npm run build",
 	"outputDirectory": "dist",
-	"rewrites": [
-		{ "source": "/app", "destination": "/app/index.html" },
-		{ "source": "/admin", "destination": "/admin.html" },
-		{ "source": "/come-funziona", "destination": "/come-funziona.html" },
-		{ "source": "/faq", "destination": "/faq.html" },
-		{ "source": "/blog", "destination": "/blog/index.html" },
-		{ "source": "/blog/cose-una-tolerance-break", "destination": "/blog/cose-una-tolerance-break.html" },
-		{ "source": "/blog/come-ridurre-il-consumo-di-cannabis", "destination": "/blog/come-ridurre-il-consumo-di-cannabis.html" },
-		{ "source": "/blog/perche-tenere-un-diario-di-consumo", "destination": "/blog/perche-tenere-un-diario-di-consumo.html" }
-	],
+	"cleanUrls": true,
 	"headers": [
 		{
 			"source": "/(.*)",
