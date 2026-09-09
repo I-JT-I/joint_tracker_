@@ -20,6 +20,10 @@ if (routes.pages.length !== 7) fail(`atteso 7 pages, trovato ${routes.pages.leng
 		seen.add(k);
 	}
 }
+// EN clean URLs are never a trailing-slash URL (cleanUrls 301s /en/ -> /en)
+for (const p of routes.pages) {
+	if (urlFor(p, 'en').endsWith('/')) fail(`urlFor(${p.key}, 'en') termina con "/": ${urlFor(p, 'en')}`);
+}
 
 // --- pagine renderizzate ---
 const pages = [];

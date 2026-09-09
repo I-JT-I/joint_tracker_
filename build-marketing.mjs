@@ -22,10 +22,15 @@ const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').
 const put = (tpl, token, value) => tpl.replace(token, () => value);
 const putAll = (tpl, token, value) => tpl.replaceAll(token, () => value);
 
+// EN home is a clean URL with NO trailing slash: cleanUrls (serve + Vercel)
+// 301-redirects /en/ -> /en, and canonical/hreflang/sitemap must point at the
+// final 200 URL. Non-empty EN slugs already produce /en/<slug> correctly.
+export const mkEnUrl = (slug) => routes.baseUrl + (slug ? `/en/${slug}` : '/en');
+export const mkItUrl = (slug) => routes.baseUrl + (slug ? `/${slug}` : '/');
+
 export function urlFor(page, loc) {
 	const slug = page[loc].slug;
-	if (loc === 'it') return routes.baseUrl + (slug ? `/${slug}` : '/');
-	return routes.baseUrl + (slug ? `/en/${slug}` : '/en/');
+	return loc === 'it' ? mkItUrl(slug) : mkEnUrl(slug);
 }
 
 export function outPathFor(page, loc) {
@@ -75,7 +80,7 @@ function localizeLinks(html, loc) {
 	const map = new Map();
 	for (const p of routes.pages) {
 		const it = p.it.slug ? `/${p.it.slug}` : '/';
-		const en = p.en.slug ? `/en/${p.en.slug}` : '/en/';
+		const en = p.en.slug ? `/en/${p.en.slug}` : '/en';
 		map.set(it, en);
 	}
 	return html.replace(/href="(\/[a-z0-9\-/]*)(#[^"]*)?"/gi, (mtch, path, hash = '') => {
@@ -95,8 +100,8 @@ function localizeLdJsonUrls(html, loc) {
 	if (loc === 'it') return html;
 	const map = new Map();
 	for (const p of routes.pages) {
-		const it = `"${routes.baseUrl}/${p.it.slug}"`;
-		const en = `"${routes.baseUrl}/en/${p.en.slug}"`;
+		const it = `"${mkItUrl(p.it.slug)}"`;
+		const en = `"${mkEnUrl(p.en.slug)}"`;
 		map.set(it, en);
 	}
 	return html.replace(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g, (block) => {

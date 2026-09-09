@@ -4,7 +4,7 @@
 		{
 			"name": "static",
 			"runtimeExecutable": "npx",
-			"runtimeArgs": ["-y", "serve", "-l", "3000", "-c", ".claude/serve.json", "dist"],
+			"runtimeArgs": ["-y", "serve", "-l", "3000", "-c", "../.claude/serve.json", "dist"],
 			"port": 3000
 		}
 	]
