@@ -1716,7 +1716,10 @@ async function addPlaceFromMap() {
 		to = Number(to) || 0;
 		const fmt = v => v.toFixed(decimals) + suffix;
 		const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-		if (reduce) { el.textContent = fmt(to); return; }
+		// A documento non visibile (PWA avviata in background, tab non a fuoco) i callback
+		// di requestAnimationFrame non partono: l'animazione resterebbe congelata e il
+		// contatore fermo al placeholder finché non si torna in foreground. Scrivi subito.
+		if (reduce || document.visibilityState !== 'visible') { el.textContent = fmt(to); return; }
 		const dur = 1100;
 		const t0 = performance.now();
 		const step = now => {
@@ -1949,8 +1952,14 @@ function updateMap() {
 		greetingEl.textContent = greeting;
 
 		const streakVal = calculateStreak();
-		const animateHome = homeAnimateOnce;
-		homeAnimateOnce = false;
+		// Anima i contatori solo quando i dati sono davvero caricati. Al boot showApp()
+		// disegna la Home mentre smokes è ancora [] (loadData() gira in parallelo): senza
+		// questo gate il primo render lancerebbe un count-up verso 0 che, ancora in corso
+		// quando i dati arrivano ~300ms dopo, riscrive 0 sopra i valori reali — e la Home
+		// resta a zero finché non si cambia pagina e si torna. Il flag viene consumato solo
+		// quando animiamo davvero, così il render post-caricamento fa comunque il count-up.
+		const animateHome = homeAnimateOnce && smokesLoaded;
+		if (animateHome) homeAnimateOnce = false;
 		if (animateHome) {
 			animateCount(document.getElementById('homeStreak'), streakVal, 0);
 		} else {
