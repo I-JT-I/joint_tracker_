@@ -734,7 +734,17 @@
 			<div class="stat-box"><big id="modaleFumo">0</big><small data-i18n="social.gSmoke">g Fumo</small></div>
 			<div class="stat-box"><big id="modaleErba">0</big><small data-i18n="social.gWeed">g Erba</small></div>
 		</div>
-		<p id="modaleShared" style="text-align:center; font-size:13px; color:var(--color-text-muted); margin-top:-8px; margin-bottom:15px;"></p>
+		<section id="friendTogether" class="together" hidden>
+			<div class="together-head">
+				<h4 class="together-title" data-i18n="social.togetherTitle">🤝 Insieme</h4>
+				<div class="seg-toggle together-period" id="togetherPeriodToggle" role="group" data-i18n-aria-label="social.togetherPeriodAria" aria-label="Periodo">
+					<button type="button" data-period="30d" data-i18n="stats.period30d">30 giorni</button>
+					<button type="button" data-period="year" data-i18n="stats.periodYear">Anno</button>
+					<button type="button" class="is-active" data-period="all" data-i18n="stats.periodAll">Sempre</button>
+				</div>
+			</div>
+			<div id="togetherBody" class="together-body" aria-live="polite"></div>
+		</section>
 		<button class="secondary-btn" onclick="closeFriendModal()" data-i18n="social.close">Chiudi</button>
 		<button class="action-btn" id="btnRemoveFriendModal" onclick="removeFriendFromModal()" style="width:100%; margin-top:8px; display:none; background:var(--danger); color:white;" data-i18n="social.removeFriendship">🗑️ Rimuovi amicizia</button>
 	</div>

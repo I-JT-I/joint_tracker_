@@ -1678,13 +1678,21 @@ async function addPlaceFromMap() {
 
 	// ========== STATS: filtro periodo (redesign 2026) ==========
 	// Ritorna le sessioni comprese nel periodo attivo del toggle Stats.
-	function smokesForStatsPeriod() {
-		if (statsPeriod === 'all') return smokes;
-		const now = new Date();
-		const from = new Date(now);
-		if (statsPeriod === '30d') from.setDate(from.getDate() - 30);
+	// Inizio (mezzanotte locale) di un periodo '30d' / 'year' (ultimi 12 mesi,
+	// non anno solare) / 'all' (null). Condiviso con la sezione "Insieme" del popup amico.
+	function periodStartDate(period) {
+		if (period === 'all') return null;
+		const from = new Date();
+		if (period === '30d') from.setDate(from.getDate() - 30);
 		else from.setFullYear(from.getFullYear() - 1); // 'year'
 		from.setHours(0, 0, 0, 0);
+		return from;
+	}
+
+	function smokesForStatsPeriod() {
+		const from = periodStartDate(statsPeriod);
+		if (!from) return smokes;
+		const now = new Date();
 		return smokes.filter(s => {
 			const d = new Date(s.date);
 			return !isNaN(d) && d >= from && d <= now;
@@ -4385,10 +4393,13 @@ if (ctxPie) {
 	}
 
 	let currentModalFriendId = null;
+	let currentModalFriendName = '';
 
 	async function viewFriendStats(targetId) {
 		const { data, error } = await supabaseClient.rpc('get_friend_stats', { target_user_id: targetId });
 
+		// get_friend_stats risponde 42501 per chi non e' amico (es. aperto dalla classifica mondiale)
+		if (error && error.code === '42501') return showMessage(t('social.statsFriendsOnly'));
 		if (error || !data || data.length === 0) return alert(t('social.unableToLoadStats'));
 
 		document.getElementById('modaleFumo').innerText = data[0].fumo_g.toFixed(1);
@@ -4398,19 +4409,137 @@ if (ctxPie) {
 		const avEl = document.getElementById('modalFriendAvatar');
 		if (avEl) avEl.innerHTML = avatarMarkup(data[0].avatar_url, uname, 40);
 
-		const { data: shared } = await supabaseClient.rpc('get_shared_stats', { target_user_id: targetId });
-		const sharedEl = document.getElementById('modaleShared');
-		if (sharedEl && shared && shared[0]) {
-			sharedEl.innerText = t('social.sessionsTogetherLine', { count: shared[0].sessions_together, grams: Number(shared[0].grams_together).toFixed(1) });
-		} else if (sharedEl) {
-			sharedEl.innerText = "";
-		}
-
 		currentModalFriendId = targetId;
+		currentModalFriendName = uname;
 		const removeBtn = document.getElementById('btnRemoveFriendModal');
 		if (removeBtn) removeBtn.style.display = (currentSocialTab === 'friends') ? 'block' : 'none';
 
 		document.getElementById('friendModal').style.display = 'flex';
+
+		togetherPeriod = 'all';
+		syncTogetherToggle();
+		loadFriendTogether();
+	}
+
+	// ========== POPUP AMICO: sezione "Insieme" ==========
+	// Sessioni condivise tra me e l'amico del popup: totale, contributi (quanto ha
+	// PORTATO ciascuno) e saldo, separati per Fumo/Erba. Tutto calcolato dalla RPC
+	// get_shared_balance (SECURITY DEFINER, solo amici accettati). Non compare sul
+	// proprio profilo ne' se la RPC rifiuta (non amici).
+	let togetherPeriod = 'all';
+	let togetherReqId = 0;
+	let togetherRows = null; // ultimo risultato, per ridisegnare al cambio lingua
+
+	function syncTogetherToggle() {
+		document.querySelectorAll('#togetherPeriodToggle button').forEach(b => {
+			b.classList.toggle('is-active', b.dataset.period === togetherPeriod);
+		});
+	}
+
+	document.getElementById('togetherPeriodToggle')?.addEventListener('click', e => {
+		const btn = e.target.closest('button[data-period]');
+		if (!btn || btn.dataset.period === togetherPeriod) return;
+		togetherPeriod = btn.dataset.period;
+		syncTogetherToggle();
+		loadFriendTogether();
+	});
+
+	document.addEventListener('i18n:change', () => {
+		const section = document.getElementById('friendTogether');
+		if (togetherRows && section && !section.hidden) renderFriendTogether(togetherRows);
+	});
+
+	async function loadFriendTogether() {
+		const section = document.getElementById('friendTogether');
+		const body = document.getElementById('togetherBody');
+		if (!section || !body) return;
+
+		const friendId = currentModalFriendId;
+		const reqId = ++togetherReqId;
+		togetherRows = null;
+		if (!friendId || !currentUser || friendId === currentUser.id) {
+			section.hidden = true;
+			return;
+		}
+
+		section.hidden = false;
+		body.innerHTML = '<div class="together-loading"><div class="spinner"></div></div>';
+
+		const from = periodStartDate(togetherPeriod);
+		const { data, error } = await supabaseClient.rpc('get_shared_balance', {
+			p_friend_id: friendId,
+			p_since: from ? toDateStr(from) : null,
+		});
+		if (reqId !== togetherReqId) return; // popup riaperto o periodo cambiato nel frattempo
+
+		if (error) {
+			if (error.code !== '42501') console.error('Errore get_shared_balance:', error);
+			section.hidden = true;
+			return;
+		}
+		togetherRows = data || [];
+		renderFriendTogether(togetherRows);
+	}
+
+	function renderFriendTogether(rows) {
+		const body = document.getElementById('togetherBody');
+		if (!body) return;
+		const all = rows.find(r => r.kind === 'all');
+		const count = all ? Number(all.sessions) : 0;
+		if (!count) {
+			body.innerHTML = `<p class="together-empty">${t('social.togetherNone')}</p>`;
+			return;
+		}
+		const name = escapeHtml(currentModalFriendName);
+		let html = `<p class="together-count">${tn('social.togetherSessions', count)}</p>`;
+		for (const kind of ['fumo', 'erba']) {
+			const r = rows.find(x => x.kind === kind);
+			if (r) html += togetherTypeBlock(kind, r, name);
+		}
+		body.innerHTML = html;
+	}
+
+	// `name` arriva gia' escapato.
+	function togetherTypeBlock(kind, r, name) {
+		const total = Number(r.total) || 0;
+		const mine = Number(r.mine) || 0;
+		const theirs = Number(r.theirs) || 0;
+		const balance = Number(r.balance) || 0;
+		const sum = mine + theirs;
+		const pctMine = sum > 0 ? Math.round((mine / sum) * 100) : 0;
+		const pctTheirs = sum > 0 ? 100 - pctMine : 0;
+		const g = v => v.toFixed(1);
+
+		let balanceText, balanceClass;
+		if (Math.abs(balance) < 0.05) {
+			balanceText = t('social.togetherEven');
+			balanceClass = 'is-even';
+		} else if (balance > 0) {
+			balanceText = t('social.togetherOwesYou', { name, grams: g(balance) });
+			balanceClass = 'is-pos';
+		} else {
+			balanceText = t('social.togetherYouOwe', { name, grams: g(-balance) });
+			balanceClass = 'is-neg';
+		}
+
+		return `
+			<div class="together-type">
+				<div class="together-type-head">
+					<span class="together-type-name">${t(kind === 'fumo' ? 'social.togetherSmoke' : 'social.togetherWeed')}</span>
+					<span class="together-total">${t('social.togetherTotal', { grams: g(total) })}</span>
+				</div>
+				<p class="together-split">${t('social.togetherSplit', { mine: g(mine), name, theirs: g(theirs) })}</p>
+				<div class="together-bar" role="img" aria-label="${t('social.togetherSplitAria', { mine: pctMine, name, theirs: pctTheirs })}">
+					<span class="together-bar-mine" style="width:${pctMine}%"></span>
+					<span class="together-bar-theirs" style="width:${pctTheirs}%"></span>
+				</div>
+				<div class="together-bar-legend">
+					<span><i class="together-dot together-dot-mine"></i>${t('shared.you')} ${pctMine}%</span>
+					<span>${name} ${pctTheirs}%<i class="together-dot together-dot-theirs"></i></span>
+				</div>
+				<p class="together-balance ${balanceClass}">${balanceText}</p>
+			</div>
+		`;
 	}
 
 	async function removeFriendFromModal() {

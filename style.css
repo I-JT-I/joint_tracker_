@@ -1843,6 +1843,124 @@ button.avatar-remove-btn { margin-top: 0; width: auto; padding: 6px 14px; font-s
 	font-weight: 700;
 }
 
+/* ==========================================================================
+   POPUP AMICO — sezione "Insieme" (totali, contributi, saldo)
+   ========================================================================== */
+#friendModal .modal-content {
+	max-height: calc(100dvh - 40px);
+	overflow-y: auto;
+}
+.together {
+	margin: 0 0 16px;
+	padding-top: 14px;
+	border-top: 1px solid var(--border-c);
+	text-align: left;
+}
+.together-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 10px;
+}
+.together-title {
+	margin: 0;
+	font-size: 15px;
+	color: var(--heading);
+}
+.together-period button {
+	padding: 6px 10px;
+	font-size: 12px;
+}
+.together-loading {
+	display: flex;
+	justify-content: center;
+	padding: 12px 0;
+}
+.together-count {
+	margin: 0 0 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sec);
+}
+.together-empty {
+	margin: 2px 0 0;
+	font-size: 13px;
+	color: var(--muted);
+	text-align: center;
+}
+.together-type {
+	background: var(--chip);
+	border-radius: var(--r-row);
+	padding: 12px;
+	margin-top: 8px;
+}
+.together-type-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+	flex-wrap: wrap;
+	font-size: 13px;
+}
+.together-type-name {
+	font-weight: 700;
+	color: var(--color-text);
+}
+.together-total {
+	color: var(--sec);
+	font-size: 12.5px;
+}
+.together-split {
+	margin: 6px 0 8px;
+	font-size: 12.5px;
+	color: var(--sec);
+	overflow-wrap: anywhere;
+}
+.together-bar {
+	display: flex;
+	height: 10px;
+	border-radius: var(--r-pill);
+	overflow: hidden;
+	background: var(--border-c);
+}
+.together-bar-mine { background: var(--accent); }
+.together-bar-theirs { background: var(--gray-dark); opacity: 0.55; }
+.together-bar-legend {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	margin-top: 5px;
+	font-size: 11.5px;
+	color: var(--muted);
+}
+.together-bar-legend span {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.together-dot {
+	width: 8px;
+	height: 8px;
+	flex-shrink: 0;
+	border-radius: 50%;
+}
+.together-dot-mine { background: var(--accent); }
+.together-dot-theirs { background: var(--gray-dark); opacity: 0.55; }
+.together-balance {
+	margin: 10px 0 0;
+	font-size: 13.5px;
+	font-weight: 700;
+}
+.together-balance.is-pos { color: var(--heading); }
+.together-balance.is-neg { color: var(--warn-ink); }
+.together-balance.is-even { color: var(--sec); }
+
 .stats-head-row {
 	display: flex;
 	align-items: center;
