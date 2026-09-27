@@ -4191,19 +4191,41 @@ if (ctxPie) {
 
 	// Riga della classifica (redesign 2026, handoff 2g). `rank` è il numero
 	// 1-based; il 1° posto è oro, gli altri --sec. `avatarHtml` già pronto,
-	// `name` / `sub` già escapati dal chiamante.
-	function lbRow({ rank, avatarHtml, name, sub, score, onclick, isMe }) {
+	// `name` / `sub` già escapati dal chiamante. `badge`: HTML opzionale accanto
+	// al nome (fuori dall'ellissi, quindi sempre visibile).
+	function lbRow({ rank, avatarHtml, name, sub, score, onclick, isMe, badge }) {
 		return `
 			<button type="button" class="lb-item${isMe ? ' is-me' : ''}" onclick="${onclick}">
 				<span class="lb-rank${rank === 1 ? ' is-first' : ''}">${rank}</span>
 				${avatarHtml}
 				<span class="lb-name">
-					<span class="lb-name-main">${name}</span>
+					<span class="lb-name-main"><span class="lb-name-text">${name}</span>${badge || ''}</span>
 					${sub ? `<span class="lb-name-sub">${sub}</span>` : ''}
 				</span>
 				<span class="lb-score">${score}</span>
 			</button>
 		`;
+	}
+
+	// ========== TITOLO "LO SCROCCONE" ==========
+	// L'amico che mi deve più grammi nelle sessioni condivise (Fumo + Erba, da
+	// sempre): stesso saldo della sezione "Insieme" del popup, calcolato dalla
+	// RPC get_scroccone. Badge accanto al nickname nei tab Amici / Insieme e nel popup.
+	let scroccone = null; // { friend_id, owed } oppure null se nessuno mi deve niente
+	let scrocconeLoaded = false;
+
+	async function loadScroccone() {
+		if (!currentUser || isGuestMode) return;
+		const { data, error } = await supabaseClient.rpc('get_scroccone');
+		if (error) { console.error('Errore get_scroccone:', error); return; }
+		scroccone = (data && data[0]) || null;
+		scrocconeLoaded = true;
+	}
+
+	function scrocconeBadge(userId) {
+		if (!scroccone || scroccone.friend_id !== userId) return '';
+		const hint = t('social.scrocconeHint', { grams: Number(scroccone.owed).toFixed(1) });
+		return `<span class="scroccone-badge" title="${hint}">${t('social.scrocconeBadge')}</span>`;
 	}
 
 	// Card "Il tuo rank" in cima a Social — solo nel tab Mondiale (handoff 2g).
@@ -4271,7 +4293,10 @@ if (ctxPie) {
 
 			let sharedMap = {};
 			if (!isGlobal) {
-				const { data: sharedData } = await supabaseClient.rpc('get_all_friends_shared_stats');
+				const [{ data: sharedData }] = await Promise.all([
+					supabaseClient.rpc('get_all_friends_shared_stats'),
+					loadScroccone(),
+				]);
 				if (sharedData) {
 					sharedData.forEach(s => { sharedMap[s.friend_id] = s; });
 				}
@@ -4291,6 +4316,7 @@ if (ctxPie) {
 					score: `${Number(u.total_g).toFixed(1)}g`,
 					onclick: `viewFriendStats('${u.user_id}')`,
 					isMe,
+					badge: isGlobal ? '' : scrocconeBadge(u.user_id),
 				});
 			}).join('');
 
@@ -4304,7 +4330,10 @@ if (ctxPie) {
 		const list = document.getElementById('leaderboardList');
 
 		try {
-			const { data, error } = await supabaseClient.rpc('get_friends_shared_leaderboard', { period: sharedPeriod });
+			const [{ data, error }] = await Promise.all([
+				supabaseClient.rpc('get_friends_shared_leaderboard', { period: sharedPeriod }),
+				loadScroccone(),
+			]);
 
 			if (error) {
 				console.error("Errore leaderboard condivise:", error);
@@ -4329,6 +4358,7 @@ if (ctxPie) {
 				score: String(u.sessions_together),
 				onclick: `viewFriendStats('${u.friend_id}')`,
 				isMe: false,
+				badge: scrocconeBadge(u.friend_id),
 			})).join('');
 
 		} catch (err) {
@@ -4415,6 +4445,17 @@ if (ctxPie) {
 		if (removeBtn) removeBtn.style.display = (currentSocialTab === 'friends') ? 'block' : 'none';
 
 		document.getElementById('friendModal').style.display = 'flex';
+
+		const badgeEl = document.getElementById('modalFriendBadge');
+		if (badgeEl) {
+			badgeEl.innerHTML = scrocconeBadge(targetId);
+			// popup aperto prima che la classifica amici abbia caricato il titolo
+			if (!scrocconeLoaded) {
+				loadScroccone().then(() => {
+					if (currentModalFriendId === targetId) badgeEl.innerHTML = scrocconeBadge(targetId);
+				});
+			}
+		}
 
 		togetherPeriod = 'all';
 		syncTogetherToggle();

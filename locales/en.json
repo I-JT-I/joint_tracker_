@@ -414,6 +414,8 @@
     "togetherOwesYou": "{name} owes you {grams} g",
     "togetherYouOwe": "You owe {name} {grams} g",
     "togetherEven": "You're even",
+    "scrocconeBadge": "🦝 The freeloader",
+    "scrocconeHint": "The friend who owes you the most: {grams} g",
     "confirmRemoveFriendship": "Remove this friendship? You'll no longer see each other's stats and photos.",
     "removeFriendshipError": "Error removing the friendship.",
     "friendshipRemoved": "🗑️ Friendship removed"

@@ -414,6 +414,8 @@
     "togetherOwesYou": "{name} ti dovrebbe {grams} g",
     "togetherYouOwe": "Gli dovresti {grams} g",
     "togetherEven": "Siete pari",
+    "scrocconeBadge": "🦝 Lo scroccone",
+    "scrocconeHint": "L'amico che ti deve di più: {grams} g",
     "confirmRemoveFriendship": "Rimuovere questa amicizia? Non vedrete più a vicenda le rispettive statistiche e foto.",
     "removeFriendshipError": "Errore nella rimozione dell'amicizia.",
     "friendshipRemoved": "🗑️ Amicizia rimossa"

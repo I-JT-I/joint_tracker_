@@ -842,12 +842,38 @@ hr {
 	flex-direction: column;
 	gap: 2px;
 }
+/* flex-wrap: se nome + badge non stanno su una riga, il badge va a capo sotto
+   il nome invece di schiacciarlo a "n…" */
 .lb-name-main {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 3px 6px;
+	min-width: 0;
 	font-size: 14px;
 	font-weight: 700;
+}
+.lb-name-text {
+	min-width: 0;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+/* Titolo "Lo scroccone" accanto al nickname (classifica amici/insieme + popup) */
+.scroccone-badge {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: var(--r-pill);
+	background: var(--warning-bg);
+	border: 1px solid var(--warning-border);
+	color: var(--warn-ink);
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1.4;
+	white-space: nowrap;
 }
 .lb-name-sub { font-size: 12px; color: var(--muted); }
 
