@@ -103,16 +103,28 @@ function escapeHtml(str) {
 		.replace(/'/g, '&#39;');
 }
 
+// Numero di partecipanti di una sessione: 1 + gli altri in shared_with (fissati alla creazione,
+// anche se poi qualcuno ha cancellato la propria riga). 1 per le sessioni non condivise.
+function sessionParticipantCount(s) {
+	return Array.isArray(s.shared_with) && s.shared_with.length > 0 ? s.shared_with.length + 1 : 1;
+}
+
 // Ripartizione Fumo/Erba di una sessione per le statistiche personali: UNICA fonte per tutte
 // le schermate (Home, Stats, grafici, Registro, Wrapped, pause...) e stessa regola delle RPC
-// classifiche/get_friend_stats, cosi' la stessa sessione vale ovunque gli stessi grammi.
-// Tre letture possibili della riga: my_fumo/erba_grams (piu' recente; nelle condivise e'
-// l'intera sessione, vedi CLAUDE.md), fumo/erba_grams (contributo alla scorta), grams (colonna
-// storica, l'unica valorizzata sulle sessioni piu' vecchie, ripartita secondo "type"). Vince la
-// lettura con il totale maggiore: nessuna sessione risulta a 0 solo perche' una colonna piu'
-// recente e' vuota (prima Stats/Home ignoravano "grams" e contavano 0 le righe storiche).
+// classifiche/get_friend_stats (smoke_personal_split), cosi' la stessa sessione vale ovunque
+// gli stessi grammi.
+// Sessione condivisa: my_fumo/erba_grams e' il totale dell'intera sessione (vedi CLAUDE.md) e
+// la quota personale e' totale / N partecipanti, la stessa ipotesi del saldo "Insieme" (audit
+// F-09: prima ognuno contava l'intero joint). Il contributo (fumo/erba_grams) resta solo per
+// scorte e saldo: chi ha portato tutto non ha fumato tutto.
+// Sessione non condivisa: tre letture possibili, my_fumo/erba_grams (piu' recente),
+// fumo/erba_grams (contributo alla scorta), grams (colonna storica, l'unica valorizzata sulle
+// sessioni piu' vecchie, ripartita secondo "type"). Vince la lettura con il totale maggiore:
+// nessuna sessione risulta a 0 solo perche' una colonna piu' recente e' vuota.
 function personalSplit(s) {
 	const my = { fumo: Number(s.my_fumo_grams) || 0, erba: Number(s.my_erba_grams) || 0 };
+	const n = sessionParticipantCount(s);
+	if (n > 1) return { fumo: my.fumo / n, erba: my.erba / n };
 	const contrib = { fumo: Number(s.fumo_grams) || 0, erba: Number(s.erba_grams) || 0 };
 	const g = Number(s.grams) || 0;
 	const raw = s.type === 'erba' ? { fumo: 0, erba: g }
@@ -1206,6 +1218,8 @@ async function flushPendingSessions() {
 			user_id: p.user_id,
 			fumo_grams: fumoContribs.includes(p.user_id) ? (fumoAmounts[p.user_id] || 0) : 0,
 			erba_grams: erbaContribs.includes(p.user_id) ? (erbaAmounts[p.user_id] || 0) : 0,
+			// totale della sessione, uguale per tutti: la quota personale (totale / N) la
+			// ricavano in lettura personalSplit() e smoke_personal_split()
 			my_fumo_grams: fumo_grams,
 			my_erba_grams: erba_grams,
 			not_mine: !fumoContribs.includes(p.user_id) && !erbaContribs.includes(p.user_id)
@@ -3857,6 +3871,7 @@ function updateHistory() {
     <div class="history-item">
         <div>
             <span style="font-weight: bold; color: var(--primary);">${escapeHtml(s.time)}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${fmtNum(personalGrams(s), 2, 0)}g
+            ${sessionParticipantCount(s) > 1 ? `<small style="color: var(--color-text-muted);">${t('history.sharedShare', { total: fmtNum((Number(s.my_fumo_grams) || 0) + (Number(s.my_erba_grams) || 0), 2, 0), n: sessionParticipantCount(s) })}</small>` : ''}
             ${s.not_mine ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">${t('history.notMineBadge')}</span>` : ''}
             <br><small style="color: var(--color-text-muted);">${s.location_name ? `📍 ${escapeHtml(s.location_name)}` : `📍 <em>${t('history.noLocation')}</em>`} <button type="button" onclick="openEditLocationModal(${s.ts})" style="background:none; border:none; padding:0; margin:0; font:inherit; color:var(--primary-light); cursor:pointer; text-decoration:underline;">${t('history.editLink')}</button>${s.photo_path ? ` · <button type="button" onclick="openPhotoViewer(${s.ts})" style="background:none; border:none; padding:0; margin:0; font:inherit; cursor:pointer;">📷</button>` : ''}</small>
         </div>

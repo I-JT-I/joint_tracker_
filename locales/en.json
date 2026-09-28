@@ -215,6 +215,7 @@
     "noDataYet": "No data yet.",
     "noResultsForFilters": "No results for these filters.",
     "notMineBadge": "👥 not mine",
+    "sharedShare": "(share of {total} g among {n})",
     "noLocation": "no location",
     "editLink": "edit"
   },

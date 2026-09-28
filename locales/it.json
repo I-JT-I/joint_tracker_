@@ -215,6 +215,7 @@
     "noDataYet": "Nessun dato presente.",
     "noResultsForFilters": "Nessun risultato per questi filtri.",
     "notMineBadge": "👥 non mia",
+    "sharedShare": "(quota di {total} g in {n})",
     "noLocation": "nessuna posizione",
     "editLink": "modifica"
   },
