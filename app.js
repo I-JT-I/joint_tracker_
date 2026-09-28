@@ -103,18 +103,60 @@ function escapeHtml(str) {
 		.replace(/'/g, '&#39;');
 }
 
-// Grammi personalmente consumati in una sessione (quota propria per le sessioni condivise,
-// non il totale grezzo "grams" che in passato poteva riflettere l'importo di un altro partecipante).
+// Ripartizione Fumo/Erba di una sessione per le statistiche personali: UNICA fonte per tutte
+// le schermate (Home, Stats, grafici, Registro, Wrapped, pause...) e stessa regola delle RPC
+// classifiche/get_friend_stats, cosi' la stessa sessione vale ovunque gli stessi grammi.
+// Tre letture possibili della riga: my_fumo/erba_grams (piu' recente; nelle condivise e'
+// l'intera sessione, vedi CLAUDE.md), fumo/erba_grams (contributo alla scorta), grams (colonna
+// storica, l'unica valorizzata sulle sessioni piu' vecchie, ripartita secondo "type"). Vince la
+// lettura con il totale maggiore: nessuna sessione risulta a 0 solo perche' una colonna piu'
+// recente e' vuota (prima Stats/Home ignoravano "grams" e contavano 0 le righe storiche).
+function personalSplit(s) {
+	const my = { fumo: Number(s.my_fumo_grams) || 0, erba: Number(s.my_erba_grams) || 0 };
+	const contrib = { fumo: Number(s.fumo_grams) || 0, erba: Number(s.erba_grams) || 0 };
+	const g = Number(s.grams) || 0;
+	const raw = s.type === 'erba' ? { fumo: 0, erba: g }
+		: s.type === 'fumo-erba' ? { fumo: g / 2, erba: g / 2 }
+		: { fumo: g, erba: 0 };
+	let best = my;
+	if (contrib.fumo + contrib.erba > best.fumo + best.erba) best = contrib;
+	if (raw.fumo + raw.erba > best.fumo + best.erba) best = raw;
+	return best;
+}
+
+// Grammi personali di una sessione (fumo + erba secondo personalSplit).
 function personalGrams(s) {
-	// Tre modi di leggere "quanto conta questa sessione per le mie statistiche personali":
-	// my_fumo/erba_grams (piu' recente, gestisce le condivise), fumo/erba_grams (contributo
-	// scorta), grams (colonna storica, l'unica popolata sulle sessioni piu' vecchie create
-	// prima che esistessero le altre colonne). Si prende il massimo cosi' nessuna sessione,
-	// vecchia o nuova, risulta a 0 solo perche' una colonna piu' recente non e' stata valorizzata.
-	const myTotal = (s.my_fumo_grams ?? 0) + (s.my_erba_grams ?? 0);
-	const contribTotal = (s.fumo_grams ?? 0) + (s.erba_grams ?? 0);
-	const rawTotal = s.grams ?? 0;
-	return Math.max(myTotal, contribTotal, rawTotal);
+	const p = personalSplit(s);
+	return p.fumo + p.erba;
+}
+
+// Numero progressivo del giorno di calendario di una data "YYYY-MM-DD", calcolato in UTC:
+// la differenza fra due date e' sempre un intero. new Date(str) + setHours() dava 23h/25h
+// a cavallo del cambio ora legale e spezzava streak, durate e finestre (audit F-01).
+function dayNum(dateStr) {
+	return Math.round(Date.parse(dateStr + 'T00:00:00Z') / 86400000);
+}
+
+// Giorno della settimana (0 = domenica) di una data "YYYY-MM-DD", indipendente dal fuso.
+function weekdayOf(dateStr) {
+	return new Date(Date.parse(dateStr + 'T00:00:00Z')).getUTCDay();
+}
+
+// Giorni di calendario da a a b (b − a), entrambe "YYYY-MM-DD".
+function daysBetween(a, b) {
+	return dayNum(b) - dayNum(a);
+}
+
+// Data di oggi "YYYY-MM-DD" nel fuso del dispositivo (mai toISOString(), che e' in UTC).
+function todayStr() {
+	return toDateStr(new Date());
+}
+
+// Formatta un numero per la lingua attiva (virgola decimale in italiano). Solo per testo
+// mostrato: il value di un <input type="number"> vuole sempre il punto, li' resta toFixed().
+function fmtNum(v, decimals = 1, minDecimals = decimals) {
+	const n = Number(v) || 0;
+	return new Intl.NumberFormat(localeCode(), { minimumFractionDigits: minDecimals, maximumFractionDigits: decimals }).format(n);
 }
 
 // title/desc si leggono da locales/*.json tramite achTitle()/achDesc(), non da qui,
@@ -124,9 +166,11 @@ const ACHIEVEMENTS = [
 	{ key: 'sessions_10', icon: '🔥', check: () => smokes.length >= 10 },
 	{ key: 'sessions_100', icon: '💯', check: () => smokes.length >= 100 },
 	{ key: 'sessions_500', icon: '🏆', check: () => smokes.length >= 500 },
-	{ key: 'streak_7', icon: '📅', check: () => calculateStreak() >= 7 },
-	{ key: 'streak_30', icon: '🗓️', check: () => calculateStreak() >= 30 },
-	{ key: 'streak_100', icon: '💎', check: () => calculateStreak() >= 100 },
+	// Streak record, non solo quello in corso: chi ha fatto 100 giorni di fila in passato
+	// (anche prima che esistessero i traguardi) li ha raggiunti. Solo additivo, nulla si revoca.
+	{ key: 'streak_7', icon: '📅', check: () => longestStreak() >= 7 },
+	{ key: 'streak_30', icon: '🗓️', check: () => longestStreak() >= 30 },
+	{ key: 'streak_100', icon: '💎', check: () => longestStreak() >= 100 },
 	{ key: 'first_purchase', icon: '🛒', check: () => typeof purchases !== 'undefined' && purchases.length >= 1 },
 	{ key: 'first_friend', icon: '🤝', check: () => friendsCountCache >= 1 },
 	{ key: 'first_shared', icon: '👥', check: () => smokes.some(s => Array.isArray(s.shared_with) && s.shared_with.length > 0) },
@@ -184,8 +228,8 @@ function updateDivideMessage() {
     if (hasFumo && hasErba) {
         const gVal = document.querySelector('input[name="g"]:checked').value;
         const grams = gVal === "custom" ? parseFloat(document.getElementById("customGrams").value) || 0.5 : parseFloat(gVal);
-        const fumo = (grams / 2).toFixed(1);
-        const erba = (grams / 2).toFixed(1);
+        const fumo = fmtNum(grams / 2, 1);
+        const erba = fmtNum(grams / 2, 1);
         msgDiv.style.display = "block";
         // #divideText è opzionale (non presente nel markup attuale): guardia contro il null
         const divideText = document.getElementById("divideText");
@@ -277,29 +321,37 @@ function quickAddParticipant(id) {
 }
 
 async function searchParticipant() {
-    const input = document.getElementById('participantSearch');
-    const query = input.value.trim();
-    if (!query) return;
+	const input = document.getElementById('participantSearch');
+	const query = input.value.trim();
+	if (!query) return;
 
-    const { data, error } = await supabaseClient
-        .from('profiles_public')
-        .select('id, username, avatar_url')
-        .ilike('username', query)
-        .neq('id', currentUser.id);
+	// Solo amici accettati (lo impone anche create_shared_session lato DB): confronto esatto
+	// case-insensitive, niente ILIKE dove "%"/"_" farebbero da jolly su tutti i profili.
+	let friends;
+	try {
+		friends = await getMyFriendsList();
+	} catch (e) {
+		return alert(t('shared.friendsListLoadError'));
+	}
+	friendsQuickCache = friends;
+	const match = friends.find(u => (u.username || '').toLowerCase() === query.toLowerCase());
+	if (!match) {
+		const { data: anyUser } = await supabaseClient
+			.from('profiles_public')
+			.select('id')
+			.eq('username', query)
+			.neq('id', currentUser.id)
+			.limit(1);
+		return alert(anyUser && anyUser.length ? t('shared.notAFriend') : t('shared.noUserFound'));
+	}
 
-    if (error || !data || data.length === 0) {
-        return alert(t('shared.noUserFound'));
-    }
+	if (sessionParticipants.some(p => p.user_id === match.id)) {
+		return alert(t('shared.alreadyAdded'));
+	}
 
-    const match = data.find(u => u.username.toLowerCase() === query.toLowerCase()) || data[0];
-
-    if (sessionParticipants.some(p => p.user_id === match.id)) {
-        return alert(t('shared.alreadyAdded'));
-    }
-
-    sessionParticipants.push({ user_id: match.id, username: match.username, avatar_url: match.avatar_url || null });
-    input.value = "";
-    renderParticipantChips();
+	sessionParticipants.push({ user_id: match.id, username: match.username, avatar_url: match.avatar_url || null });
+	input.value = "";
+	renderParticipantChips();
 }
 
 function removeParticipant(id) {
@@ -615,8 +667,8 @@ if (mode === 'signup') {
 			currentUser = result.data.user;
 			isGuestMode = false;
 			await initI18n();
-			await showApp();
-			await loadData();
+			// in parallelo come in checkAuth(): showApp() -> loadBreaks() aspetta le sessioni
+			await Promise.all([showApp(), loadData()]);
 			if (wasGuestWithData) {
 				await migrateGuestDataToAccount(currentUser.id);
 			}
@@ -680,6 +732,8 @@ if (mode === 'signup') {
 		// chiamante). Scrive anche il DOM Impostazioni (sempre presente, nascosto).
 		loadUserProfile()
 	]);
+	// Sessioni rimaste in coda offline da un avvio precedente: ora c'e' un utente loggato.
+	await flushPendingSessions();
 	}
 
 	function showError(msg) {
@@ -746,24 +800,34 @@ function addPendingSession(payload) {
 }
 
 async function flushPendingSessions() {
+	// Serve un utente loggato: all'avvio updateOnlineStatus() gira prima di checkAuth() e
+	// l'insert senza sessione veniva respinto dalla RLS (showApp() richiama il flush dopo il login).
+	if (!currentUser || isGuestMode) return;
 	const pending = getPendingSessions();
 	if (pending.length === 0) return;
 
 	showMessage(tn('sync.syncingSessions', pending.length));
 
 	const stillFailed = [];
+	let synced = 0;
 	for (const payload of pending) {
 		const { error } = await supabaseClient.from('smokes').insert(payload);
-		if (error) stillFailed.push(payload);
+		// 23505 = unique(user_id, ts): la sessione e' gia' sul server (flush precedente
+		// interrotto dopo l'insert), non va ritentata all'infinito.
+		if (!error || error.code === '23505') synced++;
+		else stillFailed.push(payload);
 	}
 
 	localStorage.setItem('jt_pending_sessions', JSON.stringify(stillFailed));
 
-	if (stillFailed.length === 0) {
-		showMessage(t('sync.allSynced'));
+	if (stillFailed.length === 0) showMessage(t('sync.allSynced'));
+	else showMessage(tn('sync.syncFailedRetry', stillFailed.length));
+
+	if (synced > 0) {
 		await loadData();
-	} else {
-		showMessage(tn('sync.syncFailedRetry', stillFailed.length));
+		// Una sessione arrivata dalla coda offline deve chiudere una pausa attiva come
+		// farebbe saveData() (loadBreaks() confronta la pausa con le sessioni caricate).
+		await loadBreaks();
 	}
 }
 
@@ -869,6 +933,8 @@ async function flushPendingSessions() {
 		isGuestMode = false;
 		try { localStorage.removeItem(GUEST_MODE_KEY); } catch (e) {}
 		smokes = [];
+		smokesLoaded = false;
+		smokesSettled = false;
 		purchases = [];
 		updateGuestBanner();
 		showLoginPage();
@@ -882,6 +948,11 @@ async function flushPendingSessions() {
 		await supabaseClient.auth.signOut();
 		currentUser = null;
 		smokes = [];
+		smokesLoaded = false;
+		smokesSettled = false;
+		activeBreak = null;
+		pendingBreak = null;
+		allBreaks = [];
 		showLoginPage();
 	}
 
@@ -913,7 +984,9 @@ async function flushPendingSessions() {
 		try {
 			if (guestSmokes.length > 0) {
 				const payload = guestSmokes.map(({ id, ...rest }) => ({ ...rest, user_id: userId }));
-				const { error } = await supabaseClient.from('smokes').insert(payload);
+				// ignoreDuplicates: se un tentativo precedente aveva gia' inserito le sessioni ma era
+				// fallito sugli acquisti, il retry non deve fermarsi su unique(user_id, ts) per sempre.
+				const { error } = await supabaseClient.from('smokes').upsert(payload, { onConflict: 'user_id,ts', ignoreDuplicates: true });
 				if (error) throw error;
 			}
 
@@ -940,6 +1013,7 @@ async function flushPendingSessions() {
 
 			await loadData();
 			await loadPurchases();
+			await loadBreaks(); // le sessioni migrate possono chiudere una pausa attiva dell'account
 		} catch (err) {
 			clearTimeout(loadingTimer);
 			console.error('Errore migrazione dati guest:', err);
@@ -948,32 +1022,92 @@ async function flushPendingSessions() {
 	}
 
 	// ========== CARICAMENTO DATI ==========
+	// loadBreaks() gira in parallelo a loadData() (vedi showApp): se arrivava prima, rilevava
+	// le pause e classificava il consumo su smokes = [] (niente rilevamento, elevated_since
+	// azzerato). whenSmokesSettled() lo fa aspettare finche' loadData() non ha finito.
+	let smokesSettleWaiters = [];
+	let smokesSettled = false;
+	let smokesLoadInFlight = false;
+
+	function markSmokesSettled(loaded) {
+		if (loaded) smokesLoaded = true;
+		smokesSettled = true;
+		const waiters = smokesSettleWaiters;
+		smokesSettleWaiters = [];
+		waiters.forEach(resolve => resolve());
+	}
+
+	function whenSmokesSettled() {
+		if (smokesSettled) return Promise.resolve();
+		const wait = new Promise(resolve => smokesSettleWaiters.push(resolve));
+		// Rete di sicurezza: se nessuno sta caricando le sessioni, parte il caricamento qui
+		// (altrimenti chi attende prima di chiamare loadData() resterebbe bloccato). Al tick
+		// successivo: in Promise.all([showApp(), loadData()]) loadData() parte subito dopo e
+		// non va duplicato.
+		setTimeout(() => { if (!smokesSettled && !smokesLoadInFlight) loadData(); }, 0);
+		return wait;
+	}
+
+	// Tutte le sessioni dell'utente, a pagine: PostgREST tronca una select a max-rows righe
+	// (default 1000) e oltre quella soglia totali, medie, record e Wrapped avrebbero perso le
+	// sessioni piu' vecchie. Ordine deterministico (ts e' unico per utente) per il range.
+	async function fetchAllSmokes() {
+		const PAGE = 1000;
+		const query = (from, to, withCount) => supabaseClient
+			.from('smokes')
+			.select('*', withCount ? { count: 'exact' } : undefined)
+			.order('ts', { ascending: false })
+			.order('id', { ascending: false })
+			.range(from, to);
+
+		const first = await query(0, PAGE - 1, true);
+		if (first.error) return first;
+		let rows = first.data || [];
+		const total = first.count ?? rows.length;
+		const pageSize = rows.length;
+		while (pageSize > 0 && rows.length < total) {
+			const next = await query(rows.length, rows.length + pageSize - 1, false);
+			if (next.error) return next;
+			if (!next.data || next.data.length === 0) break;
+			rows = rows.concat(next.data);
+		}
+		return { data: rows, error: null };
+	}
+
 	async function loadData() {
 		if (isGuestMode) {
 			smokes = getGuestSmokes().slice().sort((a, b) => b.ts - a.ts);
-			smokesLoaded = true;
+			markSmokesSettled(true);
 			update({ deferHeavy: true });
 			return;
 		}
-		const { data, error } = await supabaseClient
-			.from('smokes')
-			.select('*')
-			.order('ts', { ascending: false });
+		smokesLoadInFlight = true;
+		let res;
+		try {
+			res = await fetchAllSmokes();
+		} catch (e) {
+			res = { data: null, error: e };
+		} finally {
+			smokesLoadInFlight = false;
+		}
+		const { data, error } = res;
 
 		if (error) {
 			console.error('Errore caricamento dati:', error);
 			const cached = getLocalCache('smokes');
 			if (cached) {
 				smokes = cached;
-				smokesLoaded = true;
+				markSmokesSettled(true);
 				update({ deferHeavy: true });
 				showMessage(t('sync.offlineDataStale'));
+			} else {
+				markSmokesSettled(false);
 			}
 			return;
 		}
 
 		smokes = data || [];
-		smokesLoaded = true;
+		markSmokesSettled(true);
 		cacheLocalData('smokes', smokes);
 		update({ deferHeavy: true });
 	}
@@ -1630,7 +1764,8 @@ async function addPlaceFromMap() {
 
 		// Obiettivi: se c'è una pausa attiva mostra il giorno, altrimenti il numero di obiettivi attivi
 		if (activeBreak && activeBreak.start_date) {
-			const day = Math.floor((Date.now() - new Date(activeBreak.start_date).getTime()) / 86400000) + 1;
+			// giorno in corso della pausa (1 = giorno di inizio): stessa base di calendario della Home
+			const day = daysBetween(activeBreak.start_date, todayStr()) + 1;
 			setSub('moreGoalsSub', t('more.goalsBreak', { day: Math.max(1, day) }));
 		} else if (typeof activeGoal !== 'undefined' && activeGoal) {
 			setSub('moreGoalsSub', tn('more.goalsCount', 1, { count: 1 }));
@@ -1662,7 +1797,7 @@ async function addPlaceFromMap() {
 			});
 		} catch (e) { stockLeft = 0; }
 		setSub('moreStockSub', stockLeft > 0
-			? t('more.stockLeft', { grams: stockLeft.toFixed(1) })
+			? t('more.stockLeft', { grams: fmtNum(stockLeft, 1) })
 			: t('more.stockEmpty'));
 
 		// Pill conteggio notifiche non lette
@@ -1677,26 +1812,21 @@ async function addPlaceFromMap() {
 	}
 
 	// ========== STATS: filtro periodo (redesign 2026) ==========
-	// Ritorna le sessioni comprese nel periodo attivo del toggle Stats.
-	// Inizio (mezzanotte locale) di un periodo '30d' / 'year' (ultimi 12 mesi,
-	// non anno solare) / 'all' (null). Condiviso con la sezione "Insieme" del popup amico.
+	// Primo giorno ("YYYY-MM-DD", incluso) di un periodo '30d' (30 giorni di calendario, oggi
+	// compreso) / 'year' (ultimi 365 giorni, non anno solare) / 'all' (null). Condiviso con la
+	// sezione "Insieme" del popup amico. Prima era "oggi − 30" = 31 giorni (audit F-15).
 	function periodStartDate(period) {
 		if (period === 'all') return null;
-		const from = new Date();
-		if (period === '30d') from.setDate(from.getDate() - 30);
-		else from.setFullYear(from.getFullYear() - 1); // 'year'
-		from.setHours(0, 0, 0, 0);
-		return from;
+		return shiftDateStr(todayStr(), period === '30d' ? -29 : -364);
 	}
 
+	// Sessioni del periodo attivo del toggle Stats. Confronto fra stringhe di data: new Date(s.date)
+	// e' la mezzanotte UTC (01:00/02:00 a Roma) ed escludeva le sessioni di oggi fra 00:00 e 02:00.
 	function smokesForStatsPeriod() {
 		const from = periodStartDate(statsPeriod);
 		if (!from) return smokes;
-		const now = new Date();
-		return smokes.filter(s => {
-			const d = new Date(s.date);
-			return !isNaN(d) && d >= from && d <= now;
-		});
+		const today = todayStr();
+		return smokes.filter(s => s.date >= from && s.date <= today);
 	}
 
 	function setStatsPeriod(period) {
@@ -1722,7 +1852,7 @@ async function addPlaceFromMap() {
 	function animateCount(el, to, decimals = 0, suffix = '') {
 		if (!el) return;
 		to = Number(to) || 0;
-		const fmt = v => v.toFixed(decimals) + suffix;
+		const fmt = v => fmtNum(v, decimals) + suffix;
 		const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		// A documento non visibile (PWA avviata in background, tab non a fuoco) i callback
 		// di requestAnimationFrame non partono: l'animazione resterebbe congelata e il
@@ -1833,8 +1963,8 @@ function updateMap() {
     const filter = document.querySelector('input[name="mapFilter"]:checked').value;
     let filteredSmokes = smokes;
     
-    if (filter === 'fumo') filteredSmokes = smokes.filter(s => s.fumo_grams > 0);
-    else if (filter === 'erba') filteredSmokes = smokes.filter(s => s.erba_grams > 0);
+    if (filter === 'fumo') filteredSmokes = smokes.filter(s => personalSplit(s).fumo > 0);
+    else if (filter === 'erba') filteredSmokes = smokes.filter(s => personalSplit(s).erba > 0);
 
     const savedPlaceNames = userPlaces.map(p => p.name);
     
@@ -1869,15 +1999,15 @@ function updateMap() {
     Object.values(grouped).forEach(place => {
         const markerEl = L.divIcon({
             html: `<div style="background: #2e7d32; min-width: 50px; padding: 6px 10px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 2px solid white; text-align: center; white-space: nowrap;">
-                🌿 ${place.name}<br>
-                <span style="font-size: 11px; font-weight: normal;">${place.count}x · ${place.grams.toFixed(1)}g</span>
+                🌿 ${escapeHtml(place.name)}<br>
+                <span style="font-size: 11px; font-weight: normal;">${place.count}x · ${fmtNum(place.grams, 1)}g</span>
             </div>`,
             iconSize: null,
             iconAnchor: [25, 20]
         });
 
         const marker = L.marker([place.lat, place.lng], { icon: markerEl })
-            .bindPopup(`<strong>📍 ${place.name}</strong><br>${t('places.sessionsPopup', { count: place.count })}<br>${t('places.totalPopup', { grams: place.grams.toFixed(1) })}`);
+            .bindPopup(`<strong>📍 ${escapeHtml(place.name)}</strong><br>${t('places.sessionsPopup', { count: place.count })}<br>${t('places.totalPopup', { grams: fmtNum(place.grams, 1) })}`);
 
         markerClusterGroup.addLayer(marker);
         bounds.extend([place.lat, place.lng]);
@@ -1898,7 +2028,7 @@ function updateMap() {
         });
 
         const marker = L.marker([s.latitude, s.longitude], { icon: markerEl })
-            .bindPopup(`<strong>${s.location_name || t('places.locationFallback')}</strong><br>${s.date} ${s.time}<br>${parseFloat(personalGrams(s).toFixed(2))}g`);
+            .bindPopup(`<strong>${escapeHtml(s.location_name || t('places.locationFallback'))}</strong><br>${formatShortDate(s.date)} ${escapeHtml(s.time)}<br>${fmtNum(personalGrams(s), 2, 0)}g`);
 
         markerClusterGroup.addLayer(marker);
         bounds.extend([s.latitude, s.longitude]);
@@ -1912,7 +2042,7 @@ function updateMap() {
 
     document.getElementById('mapStats').innerHTML = `
         <div class="stat-box"><big>${totalCount}</big><small>${t('places.statSessions')}</small></div>
-        <div class="stat-box"><big>${totalGrams.toFixed(1)}g</big><small>${t('places.statTotal')}</small></div>
+        <div class="stat-box"><big>${fmtNum(totalGrams, 1)}g</big><small>${t('places.statTotal')}</small></div>
     `;
 }
 
@@ -1984,19 +2114,18 @@ function updateMap() {
 		const now = new Date();
 		const currentMonthKey = getMonthKey(now);
 		const monthSmokes = smokes.filter(s => getMonthKey(s.date) === currentMonthKey);
-		const monthGrams = monthSmokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
-		document.getElementById('homeMonthStat').textContent = tn('home.monthStat', monthSmokes.length, { grams: monthGrams.toFixed(1) });
+		const monthGrams = monthSmokes.reduce((sum, s) => sum + personalGrams(s), 0);
+		document.getElementById('homeMonthStat').textContent = tn('home.monthStat', monthSmokes.length, { grams: fmtNum(monthGrams, 1) });
 
-		// ---- Tessere hero: oggi / questa settimana / vs mese scorso ----
-		const todayStr = toDateStr(now);
-		const todayCount = smokes.filter(s => s.date === todayStr).length;
-		const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 6); weekAgo.setHours(0, 0, 0, 0);
+		// ---- Tessere hero: oggi / ultimi 7 giorni / vs stesso periodo del mese scorso ----
+		const today = toDateStr(now);
+		const todayCount = smokes.filter(s => s.date === today).length;
+		const weekStart = shiftDateStr(today, -6);
 		const weekGrams = smokes
-			.filter(s => { const d = new Date(s.date); return !isNaN(d) && d >= weekAgo && d <= now; })
-			.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
+			.filter(s => s.date >= weekStart && s.date <= today)
+			.reduce((sum, s) => sum + personalGrams(s), 0);
 
-		const lastMonthKey = getMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-		const lastMonthCount = smokes.filter(s => getMonthKey(s.date) === lastMonthKey).length;
+		const mtd = monthToDateComparison();
 
 		const todayEl = document.getElementById('homeTodayCount');
 		const weekEl = document.getElementById('homeWeekGrams');
@@ -2006,18 +2135,18 @@ function updateMap() {
 			animateCount(weekEl, weekGrams, 1, ' g');
 		} else {
 			if (todayEl) todayEl.textContent = todayCount;
-			if (weekEl) weekEl.textContent = weekGrams.toFixed(1) + ' g';
+			if (weekEl) weekEl.textContent = fmtNum(weekGrams, 1) + ' g';
 		}
 		if (vsEl) {
 			// La freccia è resa via CSS ::before su .is-up/.is-down/.is-flat,
 			// così il testo del valore resta breve e non va mai a capo.
 			vsEl.classList.remove('is-up', 'is-down', 'is-flat');
-			if (lastMonthCount === 0) {
-				vsEl.textContent = monthSmokes.length > 0 ? t('home.deltaNew') : '–';
+			if (mtd.prev.length === 0) {
+				vsEl.textContent = mtd.cur.length > 0 ? t('home.deltaNew') : '–';
 			} else {
-				const pct = ((monthSmokes.length - lastMonthCount) / lastMonthCount) * 100;
+				const pct = ((mtd.cur.length - mtd.prev.length) / mtd.prev.length) * 100;
 				const up = pct > 0.5, down = pct < -0.5;
-				vsEl.textContent = Math.abs(pct).toFixed(0) + '%';
+				vsEl.textContent = fmtNum(Math.abs(pct), 0) + '%';
 				vsEl.classList.add(up ? 'is-up' : down ? 'is-down' : 'is-flat');
 			}
 		}
@@ -2049,6 +2178,17 @@ function updateMap() {
 // rilevamento, notifiche e card statistiche — nessuna logica duplicata.
 const BREAK_MILESTONES = [2, 7, 14, 28];
 
+// Giorni PIENI di pausa trascorsi (0 il giorno di inizio), su date di calendario: il vecchio
+// floor((adesso - mezzanotte UTC di start_date)/24h) segnava un giorno in meno fra 00:00 e 02:00.
+function breakDaysElapsed(brk) {
+	return Math.max(0, daysBetween(brk.start_date, todayStr()));
+}
+
+// Durata di una pausa conclusa: giorni da start_date (incluso) a end_date (escluso).
+function breakDurationDays(brk) {
+	return Math.max(0, daysBetween(brk.start_date, brk.end_date));
+}
+
 function renderHomeBreakState() {
 	const normalCard = document.getElementById('homeHeroCard');
 	const breakCardEl = document.getElementById('homeBreakHero');
@@ -2063,9 +2203,7 @@ function renderHomeBreakState() {
 	normalCard.style.display = 'none';
 	breakCardEl.style.display = '';
 
-	const start = new Date(activeBreak.start_date);
-	const today = new Date();
-	const days = Math.max(0, Math.floor((today - start) / (1000 * 60 * 60 * 24)));
+	const days = breakDaysElapsed(activeBreak);
 
 	document.getElementById('homeBreakDays').textContent = days;
 
@@ -2094,14 +2232,17 @@ function renderHomeBreakState() {
 	const recordEl = document.getElementById('homeBreakRecord');
 	const pastDurations = allBreaks
 		.filter(b => b.id !== activeBreak.id && !b.attempted && b.end_date)
-		.map(b => Math.ceil((new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24)));
+		.map(breakDurationDays);
 	const record = pastDurations.length ? Math.max(...pastDurations) : null;
 
 	if (record !== null) {
 		recordEl.style.display = 'block';
+		// Per SUPERARE un record di N giorni ne servono N+1: con N giorni fatti mancava
+		// "0 giorni" (audit F-12).
+		const toBeat = record - days + 1;
 		recordEl.textContent = days > record
 			? t('breaks.homeNewRecord', { days: record })
-			: t('breaks.homeRecordGap', { days: record - days });
+			: tn('breaks.homeRecordGap', toBeat, { days: toBeat });
 	} else {
 		recordEl.style.display = 'none';
 	}
@@ -2117,40 +2258,64 @@ function renderHomeBreakState() {
 // vedi CLAUDE.md) perché la RLS di "notifications" non concede INSERT diretto agli utenti.
 const BREAK_CHECKIN_KEYS = ['breaks.checkin1', 'breaks.checkin2', 'breaks.checkin3'];
 
+// Guard contro esecuzioni concorrenti (loadBreaks() puo' partire da showApp e da un salvataggio
+// quasi insieme): due giri paralleli leggevano lo stesso notified_milestones e duplicavano le
+// notifiche. In piu' la RPC salva chiave + parametri (con break_id) e il DB ha un indice unico
+// su quella combinazione, quindi la stessa milestone della stessa pausa non puo' ripetersi.
+let breakNotificationsRunning = false;
+
 async function checkBreakNotifications(brk) {
-	if (!brk) return;
+	if (!brk || breakNotificationsRunning) return;
+	breakNotificationsRunning = true;
+	try {
+		const days = breakDaysElapsed(brk);
+		const notified = brk.notified_milestones || [];
+		// Tutti i milestone raggiunti e non ancora notificati, non solo il primo: se l'utente
+		// non apre l'app per un po' e "salta" piu' traguardi, li recupera tutti in un colpo solo
+		// invece di riceverli uno per volta nei prossimi accessi.
+		const dueMilestones = BREAK_MILESTONES.filter(m => days >= m && !notified.includes(m));
 
-	const days = Math.max(0, Math.floor((new Date() - new Date(brk.start_date)) / (1000 * 60 * 60 * 24)));
-	const notified = brk.notified_milestones || [];
-	// Tutti i milestone raggiunti e non ancora notificati, non solo il primo: se l'utente
-	// non apre l'app per un po' e "salta" più traguardi, li recupera tutti in un colpo solo
-	// invece di riceverli uno per volta nei prossimi accessi.
-	const dueMilestones = BREAK_MILESTONES.filter(m => days >= m && !notified.includes(m));
-
-	if (dueMilestones.length > 0) {
-		for (const milestone of dueMilestones) {
-			await insertBreakNotification(t(`breaks.milestone${milestone}`) + ' ' + t('breaks.milestoneDisclaimer'));
+		if (dueMilestones.length > 0) {
+			for (const milestone of dueMilestones) {
+				const ok = await insertBreakNotification(
+					t(`breaks.milestone${milestone}`) + ' ' + t('breaks.milestoneDisclaimer'),
+					'tolerance_break_milestone',
+					`breaks.milestone${milestone}`,
+					{ break_id: brk.id, milestone, disclaimer: true }
+				);
+				if (!ok) return; // riprova al prossimo accesso, senza segnare il milestone come notificato
+			}
+			const updatedNotified = [...notified, ...dueMilestones];
+			const { error } = await supabaseClient.from('tolerance_breaks')
+				.update({ notified_milestones: updatedNotified })
+				.eq('id', brk.id);
+			if (!error) brk.notified_milestones = updatedNotified;
+			return; // priorita' ai messaggi scientifici: niente check-in lo stesso giorno
 		}
-		const updatedNotified = [...notified, ...dueMilestones];
-		await supabaseClient.from('tolerance_breaks')
-			.update({ notified_milestones: updatedNotified })
-			.eq('id', brk.id);
-		brk.notified_milestones = updatedNotified;
-		return; // priorità ai messaggi scientifici: niente check-in lo stesso giorno
-	}
 
-	if (days > 0 && days % 3 === 0 && !BREAK_MILESTONES.includes(days) && brk.last_checkin_notified_day !== days) {
-		const key = BREAK_CHECKIN_KEYS[(days / 3) % BREAK_CHECKIN_KEYS.length];
-		await insertBreakNotification(t(key, { days }));
-		await supabaseClient.from('tolerance_breaks')
-			.update({ last_checkin_notified_day: days })
-			.eq('id', brk.id);
-		brk.last_checkin_notified_day = days;
+		if (days > 0 && days % 3 === 0 && !BREAK_MILESTONES.includes(days) && brk.last_checkin_notified_day !== days) {
+			const variant = (days / 3) % BREAK_CHECKIN_KEYS.length;
+			const key = BREAK_CHECKIN_KEYS[variant];
+			const ok = await insertBreakNotification(t(key, { days }), 'tolerance_break_milestone', key, { break_id: brk.id, days });
+			if (!ok) return;
+			const { error } = await supabaseClient.from('tolerance_breaks')
+				.update({ last_checkin_notified_day: days })
+				.eq('id', brk.id);
+			if (!error) brk.last_checkin_notified_day = days;
+		}
+	} finally {
+		breakNotificationsRunning = false;
 	}
 }
 
-async function insertBreakNotification(message, type = 'tolerance_break_milestone') {
-	await supabaseClient.rpc('insert_own_notification', { p_type: type, p_message: message });
+// message: testo gia' tradotto (fallback per client vecchi); key/params: la notifica viene
+// ritradotta al render nella lingua attiva (notifText) invece di restare in quella di oggi.
+async function insertBreakNotification(message, type, key, params) {
+	const { error } = await supabaseClient.rpc('insert_own_notification', {
+		p_type: type, p_message: message, p_key: key, p_params: params || {}
+	});
+	if (error) console.error('insert_own_notification:', error);
+	return !error;
 }
 
 // ========== TOLERANCE BREAK: suggerimento proattivo di pausa ==========
@@ -2189,7 +2354,7 @@ async function checkBreakSuggestion() {
 		return; // primo giorno rilevato sopra soglia: aspettiamo che diventi "sostenuto"
 	}
 
-	const daysSustained = Math.floor((new Date(today) - new Date(stats.elevated_since)) / (1000 * 60 * 60 * 24));
+	const daysSustained = daysBetween(stats.elevated_since, today);
 	if (daysSustained < BREAK_SUGGESTION_MIN_DAYS) return;
 
 	const daysSinceLastSuggestion = stats.last_break_suggestion_at
@@ -2198,7 +2363,7 @@ async function checkBreakSuggestion() {
 	if (daysSinceLastSuggestion < BREAK_SUGGESTION_REPEAT_DAYS) return;
 
 	const key = level === 'heavy' ? 'breaks.suggestionHeavy' : 'breaks.suggestionModerate';
-	await insertBreakNotification(t(key), 'break_suggestion');
+	if (!(await insertBreakNotification(t(key), 'break_suggestion', key, {}))) return;
 	await supabaseClient.from('user_stats')
 		.upsert({ user_id: currentUser.id, last_break_suggestion_at: new Date().toISOString() }, { onConflict: 'user_id' });
 }
@@ -2918,7 +3083,7 @@ async function loadGallery() {
 						<img class="gallery-feed-img" src="${signed}" data-path="${s.photo_path}" onerror="fallbackPlainPhoto(this)" loading="lazy" alt="">
 					</button>
 					<div class="gallery-feed-meta">
-						<span class="gallery-feed-pill">${typeLabel} · ${parseFloat(personalGrams(s).toFixed(2))}g</span>
+						<span class="gallery-feed-pill">${typeLabel} · ${fmtNum(personalGrams(s), 2, 0)}g</span>
 						${s.context_tag ? `<span class="gallery-feed-pill">${escapeHtml(s.context_tag)}</span>` : ''}
 					</div>
 				</article>
@@ -2965,8 +3130,8 @@ async function openPhotoViewer(ts) {
 	document.getElementById('photoViewerInfo').innerHTML = `
 		<strong>${formatShortDate(session.date)} · ${session.time}</strong><br>
 		<span style="color:var(--color-text-muted); font-size:13px;">
-			${session.type === 'fumo' ? t('common.smoke') : session.type === 'erba' ? t('common.weed') : t('common.smokeWeed')} · ${parseFloat(personalGrams(session).toFixed(2))}g
-			${session.location_name ? ' · 📍 ' + session.location_name : ''}
+			${session.type === 'fumo' ? t('common.smoke') : session.type === 'erba' ? t('common.weed') : t('common.smokeWeed')} · ${fmtNum(personalGrams(session), 2, 0)}g
+			${session.location_name ? ' · 📍 ' + escapeHtml(session.location_name) : ''}
 		</span>
 	`;
 }
@@ -3058,11 +3223,19 @@ function renderFeed() {
 	bindFeedDelegation(el);
 }
 
+// Istante della sessione (data + ora scelte dall'utente, ora locale), non quello del
+// salvataggio (ts): una sessione registrata a posteriori con foto risultava "Adesso".
+function sessionMoment(date, time) {
+	const m = /^(\d{1,2}):(\d{2})/.exec(time || '');
+	const hm = m ? `${m[1].padStart(2, '0')}:${m[2]}` : '00:00';
+	return new Date(`${date}T${hm}:00`);
+}
+
 function feedCardHtml(it, index) {
 	const mine = it.user_id === currentUser.id;
 	const name = mine ? t('feed.you') : escapeHtml(it.username || '?');
 	const avatar = avatarMarkup(it.avatar_url, it.username, 30);
-	const when = formatNotifTime(Number(it.ts));
+	const when = formatNotifTime(sessionMoment(it.date, it.time));
 	const counts = reactionCountsHtml(it.reaction_summary);
 	const img = it.signedUrl
 		? `<img class="feed-img" src="${it.signedUrl}" data-path="${it.photo_path}" onerror="fallbackPlainPhoto(this)" loading="lazy" alt="">`
@@ -3406,11 +3579,11 @@ async function openSnapshotViewer(index) {
 	viewerImg.dataset.fallbackDone = '';
 	viewerImg.onerror = () => fallbackPlainPhoto(viewerImg);
 	viewerImg.src = data.signedUrl;
-	const grams = (s.my_fumo_grams || 0) + (s.my_erba_grams || 0);
+	const grams = personalGrams(s); // stessa formula della Galleria (prima my_f+my_e: 0g sulle righe storiche)
 	document.getElementById('photoViewerInfo').innerHTML = `
 		<strong>${isMe ? t('shared.you') : escapeHtml(s.username)}</strong> · ${formatShortDate(s.date)} · ${s.time}<br>
 		<span style="color:var(--color-text-muted); font-size:13px;">
-			${s.type === 'fumo' ? t('common.smoke') : s.type === 'erba' ? t('common.weed') : t('common.smokeWeed')} · ${grams.toFixed(2)}g
+			${s.type === 'fumo' ? t('common.smoke') : s.type === 'erba' ? t('common.weed') : t('common.smokeWeed')} · ${fmtNum(grams, 2, 0)}g
 			${s.location_name ? ' · 📍 ' + escapeHtml(s.location_name) : ''}
 		</span>
 	`;
@@ -3486,7 +3659,7 @@ function openEditLocationModal(ts) {
 				${userPlaces.map(p => `
 					<button type="button" onclick="pickSavedPlaceForEdit(${p.id})"
 						style="background:rgba(76,175,80,0.12); border:1px solid rgba(76,175,80,0.3); color:var(--heading); border-radius:20px; padding:6px 12px; font-size:13px; cursor:pointer;">
-						📍 ${p.name}
+						📍 ${escapeHtml(p.name)}
 					</button>
 				`).join('')}
 			</div>
@@ -3636,9 +3809,9 @@ function updateHistory() {
 		const byYear = {};
 
 		visibleSmokes.forEach(s => {
-			const d = new Date(s.date);
-			const year = d.getFullYear();
-			const monthIndex = d.getMonth();
+			// anno/mese letti dalla stringa "YYYY-MM-DD" (new Date(str) e' la mezzanotte UTC)
+			const year = Number(s.date.slice(0, 4));
+			const monthIndex = Number(s.date.slice(5, 7)) - 1;
 			const monthName = months[monthIndex];
 			const mKey = `${monthName} ${year}`;
 			
@@ -3657,7 +3830,7 @@ function updateHistory() {
 
 			// MESI DECRESCENTI (più recente primo)
 			const monthKeysWithDates = Object.keys(byYear[year]).map(mKey => {
-				const firstDateOfMonth = Math.max(...Object.keys(byYear[year][mKey]).map(d => new Date(d).getTime()));
+				const firstDateOfMonth = Math.max(...Object.keys(byYear[year][mKey]).map(dayNum));
 				return { mKey, firstDateOfMonth };
 			});
 			const monthKeys = monthKeysWithDates.sort((a, b) => b.firstDateOfMonth - a.firstDateOfMonth).map(x => x.mKey);
@@ -3667,7 +3840,7 @@ function updateHistory() {
 				let daysHtml = "";
 
 				// GIORNI DECRESCENTI (più recente primo)
-				const dayKeys = Object.keys(byYear[year][mKey]).sort((a, b) => new Date(b) - new Date(a));
+				const dayKeys = Object.keys(byYear[year][mKey]).sort((a, b) => b.localeCompare(a));
 				
 				dayKeys.forEach(dKey => {
 					const daySmokes = byYear[year][mKey][dKey];
@@ -3683,9 +3856,9 @@ function updateHistory() {
 					let itemsHtml = sortedSmokes.map(s => `
     <div class="history-item">
         <div>
-            <span style="font-weight: bold; color: var(--primary);">${s.time}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${parseFloat(personalGrams(s).toFixed(2))}g
+            <span style="font-weight: bold; color: var(--primary);">${escapeHtml(s.time)}</span> - <b>${s.type === 'fumo' ? '🍫' : s.type === 'erba' ? '🍃' : '🍫🍃'}</b> ${fmtNum(personalGrams(s), 2, 0)}g
             ${s.not_mine ? `<span style="background:var(--warning-bg); color:var(--warning-text); font-size:11px; padding:1px 7px; border-radius:20px; margin-left:4px; font-weight:600;">${t('history.notMineBadge')}</span>` : ''}
-            <br><small style="color: var(--color-text-muted);">${s.location_name ? `📍 ${s.location_name}` : `📍 <em>${t('history.noLocation')}</em>`} <button type="button" onclick="openEditLocationModal(${s.ts})" style="background:none; border:none; padding:0; margin:0; font:inherit; color:var(--primary-light); cursor:pointer; text-decoration:underline;">${t('history.editLink')}</button>${s.photo_path ? ` · <button type="button" onclick="openPhotoViewer(${s.ts})" style="background:none; border:none; padding:0; margin:0; font:inherit; cursor:pointer;">📷</button>` : ''}</small>
+            <br><small style="color: var(--color-text-muted);">${s.location_name ? `📍 ${escapeHtml(s.location_name)}` : `📍 <em>${t('history.noLocation')}</em>`} <button type="button" onclick="openEditLocationModal(${s.ts})" style="background:none; border:none; padding:0; margin:0; font:inherit; color:var(--primary-light); cursor:pointer; text-decoration:underline;">${t('history.editLink')}</button>${s.photo_path ? ` · <button type="button" onclick="openPhotoViewer(${s.ts})" style="background:none; border:none; padding:0; margin:0; font:inherit; cursor:pointer;">📷</button>` : ''}</small>
         </div>
         <button class="del-btn" onclick="deleteItem(${s.ts})">🗑️</button>
     </div>
@@ -3696,7 +3869,7 @@ function updateHistory() {
 						<div class="day-group">
 							<div class="day-header" onclick="toggleAccordion(this)">
 								<span>📅 ${dDisplay}</span>
-								<span>${dayWeight.toFixed(1)}g <span class="chevron">▼</span></span>
+								<span>${fmtNum(dayWeight, 1)}g <span class="chevron">▼</span></span>
 							</div>
 							<div class="day-content" style="display: none;">${itemsHtml}</div>
 						</div>`;
@@ -3707,7 +3880,7 @@ function updateHistory() {
 					<div class="month-group">
 						<div class="month-header" onclick="toggleAccordion(this)">
 							<span>📂 ${mKey}</span>
-							<span>${mGrams.toFixed(1)}g <span class="chevron">▼</span></span>
+							<span>${fmtNum(mGrams, 1)}g <span class="chevron">▼</span></span>
 						</div>
 						<div class="month-content" style="display: none;">${daysHtml}</div>
 					</div>`;
@@ -3718,7 +3891,7 @@ function updateHistory() {
 				<div class="year-group">
 					<div class="year-header" onclick="toggleAccordion(this)">
 						<span>📅 ${year}</span>
-						<span>${yearGrams.toFixed(1)}g <span class="chevron">▼</span></span>
+						<span>${fmtNum(yearGrams, 1)}g <span class="chevron">▼</span></span>
 					</div>
 					<div class="year-content" style="display: none;">${monthsHtml}</div>
 				</div>`;
@@ -3731,10 +3904,11 @@ function updateHistory() {
 		// le "Medie Reali" e lo streak restano su tutto lo storico (come da etichetta).
 		const periodSmokes = smokesForStatsPeriod();
 		let totF = 0, totE = 0;
-periodSmokes.forEach(s => {
-	totF += (s.my_fumo_grams ?? s.fumo_grams ?? 0);
-	totE += (s.my_erba_grams ?? s.erba_grams ?? 0);
-});
+		periodSmokes.forEach(s => {
+			const p = personalSplit(s);
+			totF += p.fumo;
+			totE += p.erba;
+		});
 
 		const animate = statsAnimateOnce;
 		statsAnimateOnce = false;
@@ -3744,25 +3918,31 @@ periodSmokes.forEach(s => {
 			animateCount(document.getElementById("sJTot"), periodSmokes.length, 0);
 			animateCount(document.getElementById("sGTot"), totF + totE, 2);
 		} else {
-			document.getElementById("sFumo").innerText = totF.toFixed(2);
-			document.getElementById("sErba").innerText = totE.toFixed(2);
-			document.getElementById("sJTot").innerText = periodSmokes.length;
-			document.getElementById("sGTot").innerText = (totF + totE).toFixed(2);
+			document.getElementById("sFumo").innerText = fmtNum(totF, 2);
+			document.getElementById("sErba").innerText = fmtNum(totE, 2);
+			document.getElementById("sJTot").innerText = fmtNum(periodSmokes.length, 0);
+			document.getElementById("sGTot").innerText = fmtNum(totF + totE, 2);
 		}
 
-		let diffDays = 1;
+		// Giorni di calendario dalla prima sessione a oggi: "daysSinceFirst" per il testo
+		// ("N giorni fa", prima mostrava N+1), "diffDays" (oggi incluso) come divisore delle medie.
+		let daysSinceFirst = 0;
 		if (smokes.length > 0) {
-			const sortedSmokes = [...smokes].sort((a,b) => new Date(a.date) - new Date(b.date));
-			const firstJ = new Date(sortedSmokes[0].date);
-			const today = new Date();
-			diffDays = Math.ceil(Math.abs(today - firstJ) / (1000 * 60 * 60 * 24)) || 1;
+			const firstDate = smokes.reduce((min, s) => (s.date < min ? s.date : min), smokes[0].date);
+			daysSinceFirst = Math.max(0, daysBetween(firstDate, todayStr()));
 		}
-		document.getElementById("streakFootnoteText").textContent = tn('stats.streakFootnote', diffDays, { days: diffDays });
+		const diffDays = daysSinceFirst + 1;
+		document.getElementById("streakFootnoteText").textContent = daysSinceFirst === 0
+			? t('stats.streakFootnoteToday')
+			: tn('stats.streakFootnote', daysSinceFirst, { days: daysSinceFirst });
 
-		document.getElementById("avgDaily").innerText = (smokes.length / diffDays).toFixed(2);
-		document.getElementById("avgMonthly").innerText = ((smokes.length / diffDays) * 30.44).toFixed(1);
-		document.getElementById("avgYearly").innerText = ((smokes.length / diffDays) * 365.25).toFixed(1);
-		document.getElementById("avgGrams").innerText = ((totF + totE) / diffDays).toFixed(2) + "g";
+		// Medie su TUTTO lo storico, numeratore e denominatore (prima i grammi seguivano il
+		// filtro periodo mentre i giorni no: 1 g/giorno fisso mostrava 0,11 g col filtro 30gg).
+		const allGrams = smokes.reduce((sum, s) => sum + personalGrams(s), 0);
+		document.getElementById("avgDaily").innerText = fmtNum(smokes.length / diffDays, 2);
+		document.getElementById("avgMonthly").innerText = fmtNum((smokes.length / diffDays) * 30.44, 1);
+		document.getElementById("avgYearly").innerText = fmtNum((smokes.length / diffDays) * 365.25, 1);
+		document.getElementById("avgGrams").innerText = fmtNum(allGrams / diffDays, 2) + "g";
 
 		const streak = calculateStreak();
 		const box = document.getElementById("streakBox");
@@ -3779,48 +3959,44 @@ periodSmokes.forEach(s => {
 		updateStatsPlaces();
 	}
 
+	// Giorni di calendario distinti con almeno una sessione, ordinati e convertiti in dayNum()
+	// (interi senza scarti DST: prima 29->30/03 valeva 0,958 giorni e spezzava la serie).
+	function sessionDayNums() {
+		return [...new Set(smokes.map(s => s.date))].sort().map(dayNum);
+	}
+
 	function calculateStreak() {
 		if (smokes.length === 0) return 0;
 
-		const days = [...new Set(smokes.map(s => s.date))].sort();
-		let streak = 1;
+		const days = sessionDayNums();
+		// la serie e' "viva" se l'ultima sessione e' di oggi o di ieri
+		if (dayNum(todayStr()) - days[days.length - 1] > 1) return 0;
 
+		let streak = 1;
 		for (let i = days.length - 1; i > 0; i--) {
-			const today = new Date(days[i]);
-			const yesterday = new Date(days[i - 1]);
-			today.setHours(0,0,0,0);
-			yesterday.setHours(0,0,0,0);
-			const diff = (today - yesterday) / (1000 * 60 * 60 * 24);
-			if (diff === 1) streak++;
+			if (days[i] - days[i - 1] === 1) streak++;
 			else break;
 		}
-
-		const last = new Date(days[days.length - 1]);
-		const now = new Date();
-		last.setHours(0,0,0,0);
-		now.setHours(0,0,0,0);
-		const diffFromToday = (now - last) / (1000 * 60 * 60 * 24);
-		if (diffFromToday > 1) return 0;
-
 		return streak;
 	}
 
 	// Miglior streak calcolato in locale dallo storico (nessuna scrittura DB, a
-	// differenza di updateBestStreak): la Home lo usa solo per la sotto-riga "record N".
+	// differenza di updateBestStreak): Home "record N" e traguardi streak_*.
 	function longestStreak() {
 		if (smokes.length === 0) return 0;
-		const days = [...new Set(smokes.map(s => s.date))].sort();
+		const days = sessionDayNums();
 		let best = 1, run = 1;
 		for (let i = 1; i < days.length; i++) {
-			const a = new Date(days[i - 1]), b = new Date(days[i]);
-			a.setHours(0, 0, 0, 0); b.setHours(0, 0, 0, 0);
-			if ((b - a) / 86400000 === 1) { run++; if (run > best) best = run; }
+			if (days[i] - days[i - 1] === 1) { run++; if (run > best) best = run; }
 			else run = 1;
 		}
 		return best;
 	}
 
 	async function updateBestStreak(currentStreak) {
+		// Il record reale dallo storico (longestStreak) prevale su un best_streak salvato piu'
+		// basso: prima si aggiornava solo dallo streak corrente e restava indietro (44 vs 108).
+		currentStreak = Math.max(currentStreak, longestStreak());
 		if (isGuestMode) {
 			let best = 0;
 			try { best = parseInt(localStorage.getItem('jt_guest_best_streak') || '0', 10) || 0; } catch (e) {}
@@ -3853,9 +4029,10 @@ periodSmokes.forEach(s => {
     smokes.forEach(s => {
         const name = s.location_name || t('stats.unknownPlace');
         if (!grouped[name]) grouped[name] = { j: 0, fumo: 0, erba: 0 };
+        const p = personalSplit(s);
         grouped[name].j++;
-        grouped[name].fumo += (s.my_fumo_grams ?? s.fumo_grams ?? 0);
-        grouped[name].erba += (s.my_erba_grams ?? s.erba_grams ?? 0);
+        grouped[name].fumo += p.fumo;
+        grouped[name].erba += p.erba;
     });
 
     if (Object.keys(grouped).length === 0) {
@@ -3879,8 +4056,8 @@ periodSmokes.forEach(s => {
                     background: ${isSaved ? 'rgba(76,175,80,0.08)' : 'rgba(var(--overlay-rgb),0.05)'};
                     border: 1px solid ${isSaved ? 'rgba(76,175,80,0.2)' : 'rgba(var(--overlay-rgb),0.07)'};">
             <div>
-                <span style="font-weight:600; font-size:14px;">${isSaved ? '📍' : '🌍'} ${name}</span><br>
-                <small style="color:var(--color-text-muted);">🍫 ${data.fumo.toFixed(1)}g &nbsp; 🍃 ${data.erba.toFixed(1)}g</small>
+                <span style="font-weight:600; font-size:14px;">${isSaved ? '📍' : '🌍'} ${escapeHtml(name)}</span><br>
+                <small style="color:var(--color-text-muted);">🍫 ${fmtNum(data.fumo, 1)}g &nbsp; 🍃 ${fmtNum(data.erba, 1)}g</small>
             </div>
             <div style="text-align:right;">
                 <span style="font-size:18px; font-weight:700; color:var(--primary);">${data.j}</span><br>
@@ -3962,8 +4139,8 @@ periodSmokes.forEach(s => {
 		Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
 		charts = {};
 
-		let gramsFumo = smokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0), 0);
-let gramsErba = smokes.reduce((sum, s) => sum + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
+		let gramsFumo = 0, gramsErba = 0;
+		smokes.forEach(s => { const p = personalSplit(s); gramsFumo += p.fumo; gramsErba += p.erba; });
 
 // Grafico a ciambella
 const ctxPie = document.getElementById("cPie");
@@ -4018,7 +4195,7 @@ if (ctxPie) {
 					plugins: {
 						tooltip: {
 							callbacks: {
-								label: (ctx) => `€${ctx.parsed.y.toFixed(2)}`
+								label: (ctx) => `€${fmtNum(ctx.parsed.y, 2)}`
 							}
 						}
 					}
@@ -4026,8 +4203,10 @@ if (ctxPie) {
 			});
 		}
 
-		// Grafico ultimi 7 giorni
-		const last7 = [...Array(7)].map((_,i) => { let d = new Date(); d.setDate(d.getDate()-i); return d.toISOString().split('T')[0]; }).reverse();
+		// Grafico ultimi 7 giorni (date locali: toISOString() e' UTC e fra 00:00 e 02:00
+		// spostava la finestra a ieri, escludendo le sessioni di oggi)
+		const today = todayStr();
+		const last7 = [...Array(7)].map((_, i) => shiftDateStr(today, -i)).reverse();
 		const weightData = last7.map(d => smokes.filter(s => s.date === d).reduce((acc, curr) => acc + personalGrams(curr), 0));
 
 		const ctxWeight = document.getElementById("cWeight");
@@ -4048,11 +4227,17 @@ if (ctxPie) {
 			});
 		}
 
-		// Grafico completo giornaliero
+		// Grafico completo giornaliero: tutti i giorni dalla prima sessione a oggi, anche quelli
+		// a zero (prima la linea saltava i giorni vuoti e univa sessioni lontane settimane).
 		const dailyMap = {};
 		smokes.forEach(s => { if (!dailyMap[s.date]) dailyMap[s.date] = 0; dailyMap[s.date]++; });
-		const sortedDates = Object.keys(dailyMap).sort();
-		const dailyCounts = sortedDates.map(d => dailyMap[d]);
+		const sortedDates = [];
+		const firstDay = Object.keys(dailyMap).sort()[0];
+		if (firstDay) {
+			const lastDay = [today, ...Object.keys(dailyMap)].sort().pop();
+			for (let d = firstDay; d <= lastDay; d = shiftDateStr(d, 1)) sortedDates.push(d);
+		}
+		const dailyCounts = sortedDates.map(d => dailyMap[d] || 0);
 
 		const ctxDaily = document.getElementById("cDailyAll");
 		if (ctxDaily) {
@@ -4074,12 +4259,8 @@ if (ctxPie) {
 
 		// Grafico giorni della settimana
 		const weekDays = { "Domenica": 0, "Lunedì": 0, "Martedì": 0, "Mercoledì": 0, "Giovedì": 0, "Venerdì": 0, "Sabato": 0 };
-		smokes.forEach(s => { 
-			const d = new Date(s.date); 
-			const dayIndex = d.getDay(); 
-			const names = Object.keys(weekDays); 
-			weekDays[names[dayIndex]]++; 
-		});
+		const weekDayNames = Object.keys(weekDays);
+		smokes.forEach(s => { weekDays[weekDayNames[weekdayOf(s.date)]]++; });
 
 		const ctxWeek = document.getElementById("cWeekDays");
 		if (ctxWeek) {
@@ -4102,6 +4283,7 @@ if (ctxPie) {
 		smokes.forEach(s => { 
 			if (!s.time || typeof s.time !== "string") return; 
 			const h = parseInt(s.time.split(':')[0]); 
+			if (isNaN(h)) return; // orario non valido: prima finiva in "Sera"
 			if(h >= 0 && h < 6) hours.Notte++;
 			else if(h >= 6 && h < 12) hours.Mattina++;
 			else if(h >= 12 && h < 18) hours.Pomeriggio++;
@@ -4224,7 +4406,7 @@ if (ctxPie) {
 
 	function scrocconeBadge(userId) {
 		if (!scroccone || scroccone.friend_id !== userId) return '';
-		const hint = t('social.scrocconeHint', { grams: Number(scroccone.owed).toFixed(1) });
+		const hint = t('social.scrocconeHint', { grams: fmtNum(scroccone.owed, 1) });
 		return `<span class="scroccone-badge" title="${hint}">${t('social.scrocconeBadge')}</span>`;
 	}
 
@@ -4313,7 +4495,7 @@ if (ctxPie) {
 					avatarHtml: avatarMarkup(u.avatar_url, u.username, 38),
 					name: escapeHtml(u.username) + (isMe ? ` ${t('social.youSuffix')}` : ''),
 					sub,
-					score: `${Number(u.total_g).toFixed(1)}g`,
+					score: `${fmtNum(u.total_g, 1)}g`,
 					onclick: `viewFriendStats('${u.user_id}')`,
 					isMe,
 					badge: isGlobal ? '' : scrocconeBadge(u.user_id),
@@ -4354,7 +4536,7 @@ if (ctxPie) {
 				rank: i + 1,
 				avatarHtml: avatarMarkup(u.avatar_url, u.username, 38),
 				name: `🤝 ${escapeHtml(u.username)}`,
-				sub: t('social.gramsTogetherSuffix', { grams: Number(u.grams_together).toFixed(1) }),
+				sub: t('social.gramsTogetherSuffix', { grams: fmtNum(u.grams_together, 1) }),
 				score: String(u.sessions_together),
 				onclick: `viewFriendStats('${u.friend_id}')`,
 				isMe: false,
@@ -4403,7 +4585,7 @@ if (ctxPie) {
 			<h3 style="margin-top:0;">${t('social.friendRequestsTitle')}</h3>
 			${data.map(r => `
 				<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(76,175,80,0.08); border-radius:10px; margin-bottom:8px;">
-					<span style="font-weight:600; font-size:14px;">👤 ${r.username}</span>
+					<span style="font-weight:600; font-size:14px;">👤 ${escapeHtml(r.username)}</span>
 					<div style="display:flex; gap:8px;">
 						<button class="action-btn" onclick="respondFriendRequest('${r.requester_id}', true)" style="margin-top:0; padding:8px 14px;">${t('social.accept')}</button>
 						<button class="secondary-btn" onclick="respondFriendRequest('${r.requester_id}', false)" style="margin-top:0; padding:8px 14px;">${t('social.reject')}</button>
@@ -4420,6 +4602,7 @@ if (ctxPie) {
 		showMessage(accept ? t('social.friendshipAccepted') : t('social.requestRejected'));
 		await loadFriendRequests();
 		if (currentSocialTab === 'friends') loadSocial();
+		if (accept) { await refreshFriendsCount(); await checkAchievements(); }
 	}
 
 	let currentModalFriendId = null;
@@ -4432,8 +4615,8 @@ if (ctxPie) {
 		if (error && error.code === '42501') return showMessage(t('social.statsFriendsOnly'));
 		if (error || !data || data.length === 0) return alert(t('social.unableToLoadStats'));
 
-		document.getElementById('modaleFumo').innerText = data[0].fumo_g.toFixed(1);
-		document.getElementById('modaleErba').innerText = data[0].erba_g.toFixed(1);
+		document.getElementById('modaleFumo').innerText = fmtNum(data[0].fumo_g, 1);
+		document.getElementById('modaleErba').innerText = fmtNum(data[0].erba_g, 1);
 		const uname = (data[0].username) || '';
 		document.getElementById('modalFriendName').innerText = uname ? t('social.statsOf', { username: uname }) : t('social.stats');
 		const avEl = document.getElementById('modalFriendAvatar');
@@ -4533,10 +4716,13 @@ if (ctxPie) {
 		}
 		const name = escapeHtml(currentModalFriendName);
 		let html = `<p class="together-count">${tn('social.togetherSessions', count)}</p>`;
+		let blocks = 0;
 		for (const kind of ['fumo', 'erba']) {
 			const r = rows.find(x => x.kind === kind);
-			if (r) html += togetherTypeBlock(kind, r, name);
+			if (r) { html += togetherTypeBlock(kind, r, name); blocks++; }
 		}
+		// sessioni insieme tutte a 0 g: niente blocchi Fumo/Erba, lo si dice invece di lasciare vuoto
+		if (blocks === 0) html += `<p class="together-empty">${t('social.togetherNoGrams')}</p>`;
 		body.innerHTML = html;
 	}
 
@@ -4549,7 +4735,7 @@ if (ctxPie) {
 		const sum = mine + theirs;
 		const pctMine = sum > 0 ? Math.round((mine / sum) * 100) : 0;
 		const pctTheirs = sum > 0 ? 100 - pctMine : 0;
-		const g = v => v.toFixed(1);
+		const g = v => fmtNum(v, 1);
 
 		let balanceText, balanceClass;
 		if (Math.abs(balance) < 0.05) {
@@ -4593,6 +4779,7 @@ if (ctxPie) {
 		showMessage(t('social.friendshipRemoved'));
 		closeFriendModal();
 		loadSocial();
+		refreshFriendsCount();
 	}
 
 	function closeFriendModal() {
@@ -4640,23 +4827,34 @@ if (ctxPie) {
 
 
     async function loadAchievements() {
+	// Ordinati per data di sblocco: la Home mostra l'ultimo elemento come "Ultimo traguardo"
+	// (senza ORDER BY l'ordine restituito dal DB non era garantito).
 	const { data, error } = await supabaseClient
 		.from('achievements_unlocked')
-		.select('achievement_key');
+		.select('achievement_key')
+		.order('unlocked_at', { ascending: true });
 
 	if (!error) {
 		unlockedAchievements = (data || []).map(a => a.achievement_key);
 	}
 
-	const { count } = await supabaseClient
-		.from('friendships')
-		.select('id', { count: 'exact', head: true })
-		.eq('user_id', currentUser.id);
-	friendsCountCache = count || 0;
+	await refreshFriendsCount();
 
 	achievementsLoaded = true;
 	await checkAchievements();
 	renderAchievements();
+}
+
+// Amici ACCETTATI (non le richieste inviate ancora in attesa: sbloccavano "Non Più Solo"
+// prima che l'altro accettasse, audit F-05). Richiamata anche dopo accettazione/rimozione.
+async function refreshFriendsCount() {
+	if (!currentUser || isGuestMode) return;
+	const { count, error } = await supabaseClient
+		.from('friendships')
+		.select('id', { count: 'exact', head: true })
+		.eq('user_id', currentUser.id)
+		.eq('status', 'accepted');
+	if (!error) friendsCountCache = count || 0;
 }
 
 async function checkAchievements() {
@@ -4699,8 +4897,12 @@ function renderAchievements() {
 	}).join('');
 }
 
-async function loadBreaks(skipDetection) {
+async function loadBreaks(skipDetection, depth = 0) {
 	if (isGuestMode) return; // tolerance break non disponibile in modalità ospite
+
+	// Rilevamento, chiusura e suggerimento ragionano sulle sessioni: loadBreaks() parte in
+	// parallelo a loadData() (showApp) e, se arrivava prima, lavorava su smokes = [].
+	await whenSmokesSettled();
 
 	const { data, error } = await supabaseClient
 		.from('tolerance_breaks')
@@ -4713,18 +4915,56 @@ async function loadBreaks(skipDetection) {
 	activeBreak = allBreaks.find(b => b.is_active) || null;
 	pendingBreak = allBreaks.find(b => b.origin === 'planned' && !b.confirmed_at && !b.attempted) || null;
 
-	if (!skipDetection) {
-		const changed = await runBreakDetection();
-		if (changed) { await loadBreaks(true); return; }
+	// depth: al massimo qualche ricarica dopo una scrittura, mai un ciclo se il DB rifiuta.
+	if (smokesLoaded && depth < 3) {
+		// Sessioni arrivate senza passare da saveData() (sessione condivisa creata da un amico,
+		// coda offline, migrazione guest) non chiamavano handleSessionLoggedForBreaks(): la pausa
+		// restava "attiva" per sempre pur avendo fumato (audit F-02). La pausa attiva inizia per
+		// costruzione il giorno dopo l'ultima sessione, quindi ogni sessione con data >= inizio
+		// e' una ripresa: si chiude alla prima di esse.
+		if (activeBreak) {
+			const relapse = firstSessionOnOrAfter(activeBreak.start_date);
+			if (relapse) {
+				const result = await closeOrDiscardBreak(activeBreak, relapse);
+				if (!result.error) { await loadBreaks(skipDetection, depth + 1); return; }
+			}
+		} else if (pendingBreak) {
+			// Pausa pianificata: conta solo una sessione dal giorno DOPO il tasto "Inizia" (una
+			// dello stesso giorno puo' essere stata fumata prima di premerlo).
+			const plannedStart = pendingBreak.planned_start_date || pendingBreak.start_date;
+			const relapse = firstSessionOnOrAfter(shiftDateStr(plannedStart, 1));
+			if (relapse) {
+				const { error: attErr } = await supabaseClient
+					.from('tolerance_breaks')
+					.update({ attempted: true, end_date: relapse })
+					.eq('id', pendingBreak.id);
+				if (!attErr) { await loadBreaks(skipDetection, depth + 1); return; }
+			}
+		}
+
+		if (!skipDetection) {
+			const changed = await runBreakDetection();
+			if (changed) { await loadBreaks(true, depth + 1); return; }
+		}
 	}
 
 	renderBreakCard();
 	renderHomeBreakState();
+	if (!smokesLoaded) return; // niente notifiche/suggerimenti calcolati su dati mancanti
 	if (activeBreak) {
 		await checkBreakNotifications(activeBreak);
 	} else if (!pendingBreak) {
 		await checkBreakSuggestion();
 	}
+}
+
+// Prima data di sessione >= dateStr, o null.
+function firstSessionOnOrAfter(dateStr) {
+	let first = null;
+	for (const s of smokes) {
+		if (s.date >= dateStr && (first === null || s.date < first)) first = s.date;
+	}
+	return first;
 }
 
 // ========== TOLERANCE BREAK: soglia scalata e retrodatazione (single source of truth) ==========
@@ -4791,7 +5031,7 @@ async function runBreakDetection() {
 	if (!lastSession) return false;
 
 	const todayStr = toDateStr(new Date());
-	const gapDays = Math.floor((new Date(todayStr) - new Date(lastSession)) / (1000 * 60 * 60 * 24));
+	const gapDays = daysBetween(lastSession, todayStr);
 	const threshold = getBreakThresholdForBreakStart(shiftDateStr(lastSession, 1));
 
 	if (gapDays < threshold) return false;
@@ -4830,9 +5070,14 @@ async function runBreakDetection() {
 // invece di lasciarla come voce fantasma nello storico.
 async function handleSessionLoggedForBreaks(date) {
 	if (activeBreak) {
+		// Una sessione retroattiva precedente all'inizio della pausa non la interrompe: prima la
+		// durata risultava 0, la pausa veniva cancellata e subito ricreata dal rilevamento, con
+		// i milestone rinotificati e le modifiche manuali perse (audit F-11).
+		if (date < activeBreak.start_date) return;
 		const result = await closeOrDiscardBreak(activeBreak, date);
 		if (result.discarded && !result.error) showMessage(t('breaks.discardedTooShort'));
 	} else if (pendingBreak) {
+		if (date < (pendingBreak.planned_start_date || pendingBreak.start_date)) return;
 		await supabaseClient
 			.from('tolerance_breaks')
 			.update({ attempted: true, end_date: date })
@@ -4848,7 +5093,7 @@ async function handleSessionLoggedForBreaks(date) {
 // dimenticata e aggiunta in ritardo — vedi sopra), la elimina invece di salvarla. Usata sia
 // dalla chiusura automatica su nuova sessione sia dal tasto manuale "Interrompi pausa".
 async function closeOrDiscardBreak(brk, endDate) {
-	const durationDays = Math.max(0, Math.ceil((new Date(endDate) - new Date(brk.start_date)) / (1000 * 60 * 60 * 24)));
+	const durationDays = breakDurationDays({ start_date: brk.start_date, end_date: endDate });
 	const threshold = getBreakThresholdForBreakStart(brk.start_date);
 
 	if (durationDays < threshold) {
@@ -4871,11 +5116,9 @@ function getAvgPricePerGram() {
 function getAvgDailyGramsBeforeBreak(breakStartDate) {
 	const before = smokes.filter(s => s.date < breakStartDate && !s.not_mine);
 	if (before.length === 0) return 0;
-	const totalGrams = before.reduce((s, x) => s + (x.my_fumo_grams ?? x.fumo_grams ?? 0) + (x.my_erba_grams ?? x.erba_grams ?? 0), 0);
-	const dates = [...new Set(before.map(s => s.date))].sort();
-	const firstDate = new Date(dates[0]);
-	const lastDate = new Date(breakStartDate);
-	const diffDays = Math.max(1, Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24)));
+	const totalGrams = before.reduce((sum, x) => sum + personalGrams(x), 0);
+	const firstDate = before.reduce((min, x) => (x.date < min ? x.date : min), before[0].date);
+	const diffDays = Math.max(1, daysBetween(firstDate, breakStartDate));
 	return totalGrams / diffDays;
 }
 
@@ -4885,14 +5128,14 @@ function getAvgDailyGramsBeforeBreak(breakStartDate) {
 // clampata tra 7 e 30 giorni. Stessa finestra usata sia per "prima" che per "dopo",
 // per rendere il confronto simmetrico.
 function getBreakComparisonWindowDays(startDate, endDate) {
-	const durationDays = Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)));
+	const durationDays = Math.max(1, daysBetween(startDate, endDate));
 	return Math.min(30, Math.max(7, durationDays));
 }
 
+// Aritmetica su date "YYYY-MM-DD" in UTC puro: indipendente dal fuso del dispositivo (prima
+// new Date(str) + setDate() + toDateStr() sbagliava di un giorno nei fusi a ovest di UTC).
 function shiftDateStr(dateStr, deltaDays) {
-	const d = new Date(dateStr);
-	d.setDate(d.getDate() + deltaDays);
-	return toDateStr(d);
+	return new Date(Date.parse(dateStr + 'T00:00:00Z') + deltaDays * 86400000).toISOString().slice(0, 10);
 }
 
 function getEarliestSmokeDate() {
@@ -4905,8 +5148,8 @@ function getEarliestSmokeDate() {
 // incluso per i giorni senza sessioni registrate. Stesso metodo della card "Real Averages".
 function getPeriodAverage(startStr, endStr) {
 	const inRange = smokes.filter(s => !s.not_mine && s.date >= startStr && s.date <= endStr);
-	const totalGrams = inRange.reduce((s, x) => s + (x.my_fumo_grams ?? x.fumo_grams ?? 0) + (x.my_erba_grams ?? x.erba_grams ?? 0), 0);
-	const totalDays = Math.round((new Date(endStr) - new Date(startStr)) / (1000 * 60 * 60 * 24)) + 1;
+	const totalGrams = inRange.reduce((sum, x) => sum + personalGrams(x), 0);
+	const totalDays = daysBetween(startStr, endStr) + 1;
 	return {
 		gramsPerDay: totalGrams / totalDays,
 		jointsPerDay: inRange.length / totalDays
@@ -4927,12 +5170,15 @@ function getBreakComparison(brk) {
 	const windowDays = getBreakComparisonWindowDays(brk.start_date, brk.end_date);
 	const beforeEnd = shiftDateStr(brk.start_date, -1);
 	const beforeStart = shiftDateStr(brk.start_date, -windowDays);
-	const afterStart = shiftDateStr(brk.end_date, 1);
-	const afterEnd = shiftDateStr(brk.end_date, windowDays);
+	// La finestra "dopo" parte dal giorno di fine pausa (end_date = giorno della ripresa):
+	// prima partiva dal giorno dopo, quel giorno non contava in nessuna delle due finestre e
+	// una pausa di 10 giorni mostrava "Torna tra 11 giorni" (audit F-13).
+	const afterStart = brk.end_date;
+	const afterEnd = shiftDateStr(brk.end_date, windowDays - 1);
 
 	const todayStr = toDateStr(new Date());
 	if (todayStr <= afterEnd) {
-		const daysRemaining = Math.ceil((new Date(afterEnd) - new Date(todayStr)) / (1000 * 60 * 60 * 24)) + 1;
+		const daysRemaining = daysBetween(todayStr, afterEnd) + 1;
 		return { status: 'pending', daysRemaining };
 	}
 
@@ -4971,7 +5217,7 @@ function renderBreakComparisonHtml(brk) {
 		const isUp = pct > 0;
 		const color = isSame ? 'var(--color-text-muted)' : (isUp ? '#FF9800' : '#2196F3');
 		const arrow = isSame ? '→' : (isUp ? '▲' : '▼');
-		return `<span style="color:${color}; font-weight:600;">${arrow} ${Math.abs(pct).toFixed(0)}%</span>`;
+		return `<span style="color:${color}; font-weight:600;">${arrow} ${fmtNum(Math.abs(pct), 0)}%</span>`;
 	}
 
 	const { before, after, gramsChangePct, jointsChangePct } = cmp;
@@ -4984,14 +5230,14 @@ function renderBreakComparisonHtml(brk) {
 				<span>${t('breaks.comparisonAfter')}</span>
 			</div>
 			<div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; font-weight:700; font-size:14px;">
-				<span style="text-align:left;">${before.gramsPerDay.toFixed(2)}${t('breaks.comparisonGramsPerDay')}</span>
+				<span style="text-align:left;">${fmtNum(before.gramsPerDay, 2)}${t('breaks.comparisonGramsPerDay')}</span>
 				<span style="text-align:center; font-size:12px;">${pctBadge(gramsChangePct)}</span>
-				<span style="text-align:right;">${after.gramsPerDay.toFixed(2)}${t('breaks.comparisonGramsPerDay')}</span>
+				<span style="text-align:right;">${fmtNum(after.gramsPerDay, 2)}${t('breaks.comparisonGramsPerDay')}</span>
 			</div>
 			<div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; margin-top:4px; color:var(--color-text-secondary);">
-				<span style="text-align:left;">${before.jointsPerDay.toFixed(2)}${t('breaks.comparisonJointsPerDay')}</span>
+				<span style="text-align:left;">${fmtNum(before.jointsPerDay, 2)}${t('breaks.comparisonJointsPerDay')}</span>
 				<span style="text-align:center; font-size:12px;">${pctBadge(jointsChangePct)}</span>
-				<span style="text-align:right;">${after.jointsPerDay.toFixed(2)}${t('breaks.comparisonJointsPerDay')}</span>
+				<span style="text-align:right;">${fmtNum(after.jointsPerDay, 2)}${t('breaks.comparisonJointsPerDay')}</span>
 			</div>
 		</div>
 	`;
@@ -5005,9 +5251,7 @@ function renderBreakCard() {
 		// Redesign 2026 (handoff 2f): hero pausa con anello 170px. Il progresso
 		// dell'anello segue lo stesso modello a traguardi scientifici della Home.
 		el.className = 'card goals-break-hero';
-		const start = new Date(activeBreak.start_date);
-		const today = new Date();
-		const days = Math.max(0, Math.floor((today - start) / (1000 * 60 * 60 * 24)));
+		const days = breakDaysElapsed(activeBreak);
 
 		const avgDaily = getAvgDailyGramsBeforeBreak(activeBreak.start_date);
 		const pricePerGram = getAvgPricePerGram();
@@ -5037,8 +5281,8 @@ function renderBreakCard() {
 			</div>
 			<p class="goals-break-micro">${micro}</p>
 			<div class="goals-break-tiles">
-				<div class="goals-break-tile"><b>${savedMoney !== null ? '€' + savedMoney.toFixed(0) : '–'}</b><small>${t('breaks.tileSaved')}</small></div>
-				<div class="goals-break-tile"><b>${savedGrams.toFixed(1)}g</b><small>${t('breaks.tileGrams')}</small></div>
+				<div class="goals-break-tile"><b>${savedMoney !== null ? '€' + fmtNum(savedMoney, 0) : '–'}</b><small>${t('breaks.tileSaved')}</small></div>
+				<div class="goals-break-tile"><b>${fmtNum(savedGrams, 1)}g</b><small>${t('breaks.tileGrams')}</small></div>
 				<div class="goals-break-tile"><b>${toGo !== null ? toGo : '✓'}</b><small>${t('breaks.tileToGo')}</small></div>
 			</div>
 			<button class="secondary-btn goals-break-slip" onclick="showPage('add')">${t('breaks.homeLogSession')}</button>
@@ -5086,7 +5330,7 @@ function renderBreakHistory() {
 					</div>
 				</div>`;
 			}
-			const days = Math.ceil((new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24));
+			const days = breakDurationDays(b);
 			return `<div style="padding:8px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06); font-size:13px;">
 				<div style="display:flex; justify-content:space-between; align-items:center;">
 					<span>${formatShortDate(b.start_date)} <a href="javascript:void(0)" onclick="editBreakStartDate(${b.id})" title="${t('breaks.editStartDate')}" style="opacity:0.55; text-decoration:none;">✏️</a> → ${formatShortDate(b.end_date)}</span>
@@ -5264,7 +5508,8 @@ function renderGoalCard() {
 	}
 	const periodStartStr = toDateStr(periodStart);
 
-	const periodSmokes = smokes.filter(s => s.date >= periodStartStr && !s.not_mine);
+	const today = toDateStr(now);
+	const periodSmokes = smokes.filter(s => s.date >= periodStartStr && s.date <= today && !s.not_mine);
 	const isSessions = activeGoal.metric === 'sessions';
 	const current = isSessions
 		? periodSmokes.length
@@ -5281,7 +5526,7 @@ function renderGoalCard() {
 	el.innerHTML = `
 		<div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
 			<span style="font-size:13px; color:var(--color-text-secondary);">${metricLabel} ${periodLabel}</span>
-			<span style="font-weight:700; color:${barColor};">${current.toFixed(decimals)}${unit} / ${target.toFixed(decimals)}${unit}</span>
+			<span style="font-weight:700; color:${barColor};">${fmtNum(current, decimals)}${unit} / ${fmtNum(target, decimals)}${unit}</span>
 		</div>
 		<div style="background:rgba(var(--overlay-rgb),0.12); border-radius:8px; height:10px; overflow:hidden;">
 			<div style="height:100%; width:100%; background:${barColor}; border-radius:8px; transition: transform 0.5s ease; transform:scaleX(${pct / 100}); transform-origin:left;"></div>
@@ -5326,13 +5571,32 @@ async function removeGoal() {
 }
 
 function getMonthKey(date) {
-	const d = new Date(date);
-	return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+	// Da una stringa "YYYY-MM-DD" il mese si legge direttamente (new Date(str) sarebbe la
+	// mezzanotte UTC); da un oggetto Date si usano i componenti locali.
+	if (typeof date === 'string') return date.slice(0, 7);
+	return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+}
+
+// Mese in corso fino a oggi contro lo STESSO intervallo del mese precedente (giorni 1..N, con
+// N limitato alla lunghezza del mese precedente). Confrontare il mese parziale con il mese
+// scorso intero dava sempre un calo: -90% il 3 del mese a consumo costante (audit F-08).
+function monthToDateComparison() {
+	const today = todayStr();
+	const [y, m, d] = today.split('-').map(Number);
+	const curStart = today.slice(0, 8) + '01';
+	const prevStart = toDateStr(new Date(y, m - 2, 1));
+	const day = Math.min(d, new Date(y, m - 1, 0).getDate());
+	const prevEnd = prevStart.slice(0, 8) + String(day).padStart(2, '0');
+	return {
+		day,
+		cur: smokes.filter(s => s.date >= curStart && s.date <= today),
+		prev: smokes.filter(s => s.date >= prevStart && s.date <= prevEnd),
+	};
 }
 
 // ========== RIEPILOGO ANNUALE ("WRAPPED") ==========
 function openWrapped(year) {
-	const years = [...new Set(smokes.map(s => new Date(s.date).getFullYear()))].sort((a, b) => b - a);
+	const years = [...new Set(smokes.map(s => Number(s.date.slice(0, 4))))].sort((a, b) => b - a);
 	if (years.length === 0) return alert(t('wrapped.noData'));
 	const targetYear = year || years[0];
 	renderWrapped(targetYear, years);
@@ -5344,7 +5608,7 @@ function closeWrapped() {
 }
 
 function renderWrapped(year, years) {
-	const yearSmokes = smokes.filter(s => new Date(s.date).getFullYear() === year);
+	const yearSmokes = smokes.filter(s => Number(s.date.slice(0, 4)) === year);
 	document.getElementById('wrappedTitle').textContent = t('wrapped.title', { year });
 
 	const selector = years.length > 1 ? `
@@ -5364,7 +5628,7 @@ function renderWrapped(year, years) {
 
 	const dayNames = t('common.weekdays');
 	const dayCounts = [0, 0, 0, 0, 0, 0, 0];
-	yearSmokes.forEach(s => dayCounts[new Date(s.date).getDay()]++);
+	yearSmokes.forEach(s => dayCounts[weekdayOf(s.date)]++);
 	const topDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
 
 	const placeCounts = {};
@@ -5373,27 +5637,27 @@ function renderWrapped(year, years) {
 
 	const monthNames = t('common.months');
 	const monthCounts = Array(12).fill(0);
-	yearSmokes.forEach(s => monthCounts[new Date(s.date).getMonth()]++);
+	yearSmokes.forEach(s => monthCounts[Number(s.date.slice(5, 7)) - 1]++);
 	const topMonthIdx = monthCounts.indexOf(Math.max(...monthCounts));
 
 	const sharedCount = yearSmokes.filter(s => Array.isArray(s.shared_with) && s.shared_with.length > 0).length;
 
-	const yearPurchases = purchases.filter(p => p.date && new Date(p.date).getFullYear() === year && p.price);
+	const yearPurchases = purchases.filter(p => p.date && Number(p.date.slice(0, 4)) === year && p.price);
 	const totalSpent = yearPurchases.reduce((sum, p) => sum + parseFloat(p.price), 0);
 
 	document.getElementById('wrappedContent').innerHTML = `
 		${selector}
 		<div class="stat-grid" style="margin-bottom:15px;">
 			<div class="stat-box"><big>${totalSessions}</big><small>${t('wrapped.statSessions')}</small></div>
-			<div class="stat-box"><big>${totalGrams.toFixed(1)}</big><small>${t('wrapped.statGrams')}</small></div>
+			<div class="stat-box"><big>${fmtNum(totalGrams, 1)}</big><small>${t('wrapped.statGrams')}</small></div>
 			<div class="stat-box"><big>${uniqueDays}</big><small>${t('wrapped.statActiveDays')}</small></div>
 			<div class="stat-box"><big>${sharedCount}</big><small>${t('wrapped.statShared')}</small></div>
 		</div>
 		<div style="font-size:13px; line-height:2;">
 			<div>${t('wrapped.favoriteDay', { day: `<strong>${dayNames[topDayIdx]}</strong>` })}</div>
-			<div>${t('wrapped.mostActiveMonth', { month: `<strong>${monthNames[topMonthIdx]}</strong>`, count: monthCounts[topMonthIdx] })}</div>
-			${topPlace ? `<div>${t('wrapped.favoritePlace', { place: `<strong>${topPlace[0]}</strong>`, count: topPlace[1] })}</div>` : ''}
-			${totalSpent > 0 ? `<div>${t('wrapped.totalSpent', { amount: `<strong>${totalSpent.toFixed(2)}</strong>` })}</div>` : ''}
+			<div>${tn('wrapped.mostActiveMonth', monthCounts[topMonthIdx], { month: `<strong>${monthNames[topMonthIdx]}</strong>` })}</div>
+			${topPlace ? `<div>${t('wrapped.favoritePlace', { place: `<strong>${escapeHtml(topPlace[0])}</strong>`, count: topPlace[1] })}</div>` : ''}
+			${totalSpent > 0 ? `<div>${t('wrapped.totalSpent', { amount: `<strong>${fmtNum(totalSpent, 2)}</strong>` })}</div>` : ''}
 		</div>
 	`;
 }
@@ -5415,11 +5679,12 @@ function renderInsights() {
 	const placeCounts = {};
 
 	smokes.forEach(s => {
-		const d = new Date(s.date);
-		dayCounts[d.getDay()]++;
+		dayCounts[weekdayOf(s.date)]++;
 		if (s.time && typeof s.time === 'string') {
 			const h = parseInt(s.time.split(':')[0]);
-			if (h >= 0 && h < 6) hourSlots.Notte++;
+			if (isNaN(h)) {
+				// orario non valido: non finisce in nessuna fascia
+			} else if (h >= 0 && h < 6) hourSlots.Notte++;
 			else if (h < 12) hourSlots.Mattina++;
 			else if (h < 18) hourSlots.Pomeriggio++;
 			else hourSlots.Sera++;
@@ -5442,17 +5707,14 @@ function renderInsights() {
 
 	const topPlace = Object.entries(placeCounts).sort((a, b) => b[1] - a[1])[0];
 	if (topPlace) {
-		insights.push(t('insights.topPlace', { place: topPlace[0], count: topPlace[1] }));
+		// location_name puo' arrivare da un amico (sessioni condivise): escape prima di innerHTML
+		insights.push(tn('insights.topPlace', topPlace[1], { place: escapeHtml(topPlace[0]) }));
 	}
 
-	const now = new Date();
-	const currentMonthKey = getMonthKey(now);
-	const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-	const lastMonthKey = getMonthKey(lastMonthDate);
-	const currentCount = smokes.filter(s => getMonthKey(s.date) === currentMonthKey).length;
-	const lastCount = smokes.filter(s => getMonthKey(s.date) === lastMonthKey).length;
-	if (lastCount > 0) {
-		const diffPct = Math.round(((currentCount - lastCount) / lastCount) * 100);
+	// Stesso periodo del mese scorso (giorni 1..N), non il mese scorso intero
+	const mtd = monthToDateComparison();
+	if (mtd.prev.length > 0) {
+		const diffPct = Math.round(((mtd.cur.length - mtd.prev.length) / mtd.prev.length) * 100);
 		if (Math.abs(diffPct) >= 10) {
 			insights.push(diffPct > 0
 				? t('insights.moreThisMonth', { pct: diffPct })
@@ -5462,7 +5724,7 @@ function renderInsights() {
 
 	const totalGrams = smokes.reduce((sum, s) => sum + personalGrams(s), 0);
 	const avgPerSession = totalGrams / smokes.length;
-	insights.push(t('insights.avgPerSession', { grams: avgPerSession.toFixed(2) }));
+	insights.push(t('insights.avgPerSession', { grams: fmtNum(avgPerSession, 2) }));
 
 	el.innerHTML = insights.map(i => `
 		<div style="padding:10px 12px; margin-bottom:8px; border-radius:10px; background:rgba(var(--overlay-rgb),0.05); font-size:13px; line-height:1.5;">${i}</div>
@@ -5496,11 +5758,11 @@ function renderContextStats() {
 	});
 
 	el.innerHTML = Object.entries(grouped).sort((a, b) => b[1].count - a[1].count).map(([tag, data]) => {
-		const avgMood = data.moodCount > 0 ? (data.moodSum / data.moodCount).toFixed(1) : null;
+		const avgMood = data.moodCount > 0 ? fmtNum(data.moodSum / data.moodCount, 1) : null;
 		return `
 			<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(var(--overlay-rgb),0.05); border-radius:10px; margin-bottom:6px;">
-				<span style="font-size:13px; font-weight:600;">${contextTagLabel(tag)}</span>
-				<span style="font-size:12px; color:var(--color-text-muted);">${t('context.sessionsLabel', { count: data.count })}${avgMood ? t('context.avgMoodSuffix', { avg: avgMood }) : ''}</span>
+				<span style="font-size:13px; font-weight:600;">${escapeHtml(contextTagLabel(tag))}</span>
+				<span style="font-size:12px; color:var(--color-text-muted);">${tn('context.sessionsLabel', data.count)}${avgMood ? t('context.avgMoodSuffix', { avg: avgMood }) : ''}</span>
 			</div>
 		`;
 	}).join('');
@@ -5510,19 +5772,12 @@ function renderPeriodComparison() {
 	const el = document.getElementById('periodComparison');
 	if (!el) return;
 
-	const now = new Date();
-	const currentMonthKey = getMonthKey(now);
-	const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-	const lastMonthKey = getMonthKey(lastMonthDate);
-
-	const currentSmokes = smokes.filter(s => getMonthKey(s.date) === currentMonthKey);
-	const lastSmokes = smokes.filter(s => getMonthKey(s.date) === lastMonthKey);
-
-	const currentCount = currentSmokes.length;
-	const lastCount = lastSmokes.length;
-
-	const currentGrams = currentSmokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
-	const lastGrams = lastSmokes.reduce((sum, s) => sum + (s.my_fumo_grams ?? s.fumo_grams ?? 0) + (s.my_erba_grams ?? s.erba_grams ?? 0), 0);
+	// Mese in corso fino a oggi contro gli stessi giorni del mese scorso (audit F-08)
+	const mtd = monthToDateComparison();
+	const currentCount = mtd.cur.length;
+	const lastCount = mtd.prev.length;
+	const currentGrams = mtd.cur.reduce((sum, s) => sum + personalGrams(s), 0);
+	const lastGrams = mtd.prev.reduce((sum, s) => sum + personalGrams(s), 0);
 
 	function renderDiff(current, last) {
 		if (last === 0 && current === 0) return `<span style="color:var(--color-text-muted); font-size:12px;">${t('period.noData')}</span>`;
@@ -5532,11 +5787,11 @@ function renderPeriodComparison() {
 		const isUp = pct > 0;
 		const color = isSame ? 'var(--color-text-muted)' : (isUp ? '#FF9800' : '#2196F3');
 		const arrow = isSame ? '→' : (isUp ? '▲' : '▼');
-		return `<span style="color:${color}; font-size:12px; font-weight:600;">${arrow} ${Math.abs(pct).toFixed(0)}%</span>`;
+		return `<span style="color:${color}; font-size:12px; font-weight:600;">${arrow} ${fmtNum(Math.abs(pct), 0)}%</span>`;
 	}
 
 	function renderRow(label, current, last, suffix) {
-		const displayVal = suffix === 'g' ? current.toFixed(1) : current;
+		const displayVal = suffix === 'g' ? fmtNum(current, 1) : fmtNum(current, 0);
 		return `
 			<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(var(--overlay-rgb),0.06);">
 				<span style="font-size:13px; color:var(--color-text-secondary);">${label}</span>
@@ -5551,7 +5806,7 @@ function renderPeriodComparison() {
 	el.innerHTML = `
 		${renderRow(t('period.sessions'), currentCount, lastCount, '')}
 		${renderRow(t('period.totalGrams'), currentGrams, lastGrams, 'g')}
-		<p style="font-size:11px; color:var(--color-text-muted); margin-top:8px; text-align:center;">${t('period.lastMonthSummary', { count: lastCount, grams: lastGrams.toFixed(1) })}</p>
+		<p style="font-size:11px; color:var(--color-text-muted); margin-top:8px; text-align:center;">${tn('period.lastMonthSummary', lastCount, { day: mtd.day, grams: fmtNum(lastGrams, 1) })}</p>
 	`;
 }
 
@@ -5608,7 +5863,7 @@ function checkReminderBanner() {
 		return;
 	}
 
-	const today = new Date().toISOString().split('T')[0];
+	const today = todayStr(); // data locale: toISOString() e' UTC e fra 00:00 e 02:00 era ieri
 	const hasToday = smokes.some(s => s.date === today);
 
 	if (hasToday) {
@@ -5648,6 +5903,16 @@ async function loadNotifications() {
 function notifText(n) {
 	if (n.type === 'snapshot_reaction') return tn('notif.snapshotReactions', n.event_count || 1);
 	if (n.type === 'snapshot_comment') return tn('notif.snapshotComments', n.event_count || 1);
+	// Notifiche salvate come chiave i18n + parametri: tradotte nella lingua attiva invece di
+	// restare nella lingua in cui erano state create. "message" resta come fallback (righe
+	// vecchie o chiave sconosciuta).
+	if (n.msg_key) {
+		const params = n.msg_params || {};
+		const txt = t(n.msg_key, params);
+		if (typeof txt === 'string' && txt !== n.msg_key) {
+			return params.disclaimer ? `${txt} ${t('breaks.milestoneDisclaimer')}` : txt;
+		}
+	}
 	return n.message || '';
 }
 
@@ -6096,12 +6361,13 @@ function computeMonthlySpending(monthKeys) {
 }
 
 function computeDailyRate(type, daysWindow = 14) {
-	const cutoff = new Date();
-	cutoff.setDate(cutoff.getDate() - daysWindow);
-	const cutoffStr = cutoff.toISOString().split('T')[0];
+	// Esattamente daysWindow giorni di calendario, oggi incluso, in data locale (prima: cutoff
+	// in UTC e finestra di daysWindow+1 giorni divisa per daysWindow).
+	const today = todayStr();
+	const cutoffStr = shiftDateStr(today, -(daysWindow - 1));
 
 	const recentGrams = smokes
-		.filter(s => !s.not_mine && s.date >= cutoffStr)
+		.filter(s => !s.not_mine && s.date >= cutoffStr && s.date <= today)
 		.reduce((sum, s) => sum + (type === 'fumo' ? (s.fumo_grams || 0) : (s.erba_grams || 0)), 0);
 
 	return recentGrams / daysWindow;
@@ -6162,9 +6428,12 @@ function renderStockCard(type, stock) {
         runsOutStr = d.toLocaleDateString(localeCode(), { day: 'numeric', month: 'short' });
     }
 
+    // Media PESATA (€ totali / grammi totali), la stessa di getAvgPricePerGram usata per i
+    // "Risparmiati" della pausa: la media semplice dei €/g dava un altro numero (7,50 vs 5,45).
     const pricedOfType = purchases.filter(p => p.type === type && p.price && p.grams);
-    const avgPrice = pricedOfType.length
-        ? pricedOfType.reduce((a, p) => a + parseFloat(p.price) / parseFloat(p.grams), 0) / pricedOfType.length
+    const pricedGrams = pricedOfType.reduce((a, p) => a + parseFloat(p.grams), 0);
+    const avgPrice = pricedGrams > 0
+        ? pricedOfType.reduce((a, p) => a + parseFloat(p.price), 0) / pricedGrams
         : null;
 
     let html = `
@@ -6173,13 +6442,13 @@ function renderStockCard(type, stock) {
                 <span class="stock-hero-kicker">${emoji} ${t('stock.remainingLabel')}</span>
                 ${sessionsLeft !== null ? `<span class="stock-hero-sessions">${t('stock.heroSessionsLeft', { n: sessionsLeft })}</span>` : ''}
             </div>
-            <div class="stock-hero-value">${totalRemaining.toFixed(1)}<span>g</span></div>
+            <div class="stock-hero-value">${fmtNum(totalRemaining, 1)}<span>g</span></div>
             <div class="stock-hero-bar"><div class="stock-hero-bar-fill" style="width:${heroPct}%;"></div></div>
             ${runsOutStr ? `<div class="stock-hero-caption">${t('stock.heroRunsOut', { date: runsOutStr })}</div>` : ''}
         </div>
         <div class="stock-metrics">
-            <div class="stock-metric"><b>${avgPrice !== null ? '€' + avgPrice.toFixed(1) : '–'}</b><small>${t('stock.metricAvgPrice')}</small></div>
-            <div class="stock-metric"><b>${dailyRate > 0 ? dailyRate.toFixed(2) + 'g' : '–'}</b><small>${t('stock.metricPace')}</small></div>
+            <div class="stock-metric"><b>${avgPrice !== null ? '€' + fmtNum(avgPrice, 2) : '–'}</b><small>${t('stock.metricAvgPrice')}</small></div>
+            <div class="stock-metric"><b>${dailyRate > 0 ? fmtNum(dailyRate, 2) + 'g' : '–'}</b><small>${t('stock.metricPace')}</small></div>
         </div>
         <div class="stock-fifo">`;
 
@@ -6188,7 +6457,7 @@ function renderStockCard(type, stock) {
         const consumed = gramsConsumedForPurchase(p);
         const remaining = gramsRemainingForPurchase(p);
         const pct = Math.min(100, Math.max(0, (remaining / parseFloat(p.grams)) * 100));
-        const priceStr = p.price ? ` · €${p.price}` : '';
+        const priceStr = p.price ? ` · €${fmtNum(p.price, 2, 0)}` : '';
         const barColor = pct > 50 ? '#4CAF50' : pct > 20 ? '#FF9800' : '#f44336';
 
         const oldestLabel = isOldest && openPurchases.length > 1
@@ -6201,21 +6470,21 @@ function renderStockCard(type, stock) {
                     <span style="font-size:13px; color:var(--color-text-secondary);">
                         ${emoji} ${t('stock.purchaseOfDate', { date: formatShortDate(p.date) })}${oldestLabel}
                     </span>
-                    <span style="font-weight:700; color:${color};">${p.grams}g${priceStr}</span>
+                    <span style="font-weight:700; color:${color};">${fmtNum(p.grams, 2, 0)}g${priceStr}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                     <span style="font-size:13px; color:var(--color-text-secondary);">${t('stock.consumedLabel')}</span>
-                    <span style="font-weight:600; color:var(--color-text-secondary);">${consumed.toFixed(2)}g</span>
+                    <span style="font-weight:600; color:var(--color-text-secondary);">${fmtNum(consumed, 2)}g</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <span style="font-size:14px; font-weight:700; color:${color};">${t('stock.remainingLabel')}</span>
-                    <span style="font-size:18px; font-weight:800; color:${color};">${remaining.toFixed(2)}g</span>
+                    <span style="font-size:18px; font-weight:800; color:${color};">${fmtNum(remaining, 2)}g</span>
                 </div>
                 <div style="background:rgba(var(--overlay-rgb),0.12); border-radius:8px; height:10px; overflow:hidden;">
                     <div style="height:100%; width:100%; background:${barColor}; border-radius:8px; transition: transform 0.5s ease; transform:scaleX(${pct / 100}); transform-origin:left;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                    <span style="font-size:11px; color:var(--color-text-muted);">${t('stock.percentRemaining', { pct: pct.toFixed(0) })}</span>
+                    <span style="font-size:11px; color:var(--color-text-muted);">${t('stock.percentRemaining', { pct: fmtNum(pct, 0) })}</span>
                     ${isOldest ? `<button onclick="closeStock('${type}', ${p.id})" style="background:none; border:none; color:var(--danger); font-size:12px; font-weight:bold; cursor:pointer; text-decoration:underline; padding:0;">${t('stock.outOfThisStock')}</button>` : ''}
                 </div>
             </div>
@@ -6256,36 +6525,27 @@ function renderMiniWidget() {
     widget.style.display = 'block';
     if (noStockMsg) noStockMsg.style.display = 'none';
 
+    // Rimanente TOTALE per tipo (somma degli acquisti aperti) e barra su quanto acquistato:
+    // mostrare solo l'acquisto piu' vecchio dava "0.00g" anche con altre scorte disponibili.
     let totalRemaining = 0;
-
-    // FUMO — scala dal più vecchio
-    if (openFumo.length > 0) {
-        const oldest = openFumo[0];
-        const remaining = gramsRemainingForPurchase(oldest);
-        totalRemaining += openFumo.reduce((s, p) => s + gramsRemainingForPurchase(p), 0);
-        const pct = Math.min(100, (remaining / parseFloat(oldest.grams)) * 100);
-        document.getElementById('miniFumoGrams').textContent = remaining.toFixed(2) + 'g';
-        document.getElementById('miniFumoBar').style.transform = 'scaleX(' + (pct / 100) + ')';
-    } else {
-        document.getElementById('miniFumoGrams').textContent = '–';
-        document.getElementById('miniFumoBar').style.transform = 'scaleX(0)';
-    }
-
-    // ERBA — scala dal più vecchio
-    if (openErba.length > 0) {
-        const oldest = openErba[0];
-        const remaining = gramsRemainingForPurchase(oldest);
-        totalRemaining += openErba.reduce((s, p) => s + gramsRemainingForPurchase(p), 0);
-        const pct = Math.min(100, (remaining / parseFloat(oldest.grams)) * 100);
-        document.getElementById('miniErbaGrams').textContent = remaining.toFixed(2) + 'g';
-        document.getElementById('miniErbaBar').style.transform = 'scaleX(' + (pct / 100) + ')';
-    } else {
-        document.getElementById('miniErbaGrams').textContent = '–';
-        document.getElementById('miniErbaBar').style.transform = 'scaleX(0)';
-    }
+    const renderMini = (open, gramsId, barId) => {
+        if (open.length === 0) {
+            document.getElementById(gramsId).textContent = '–';
+            document.getElementById(barId).style.transform = 'scaleX(0)';
+            return;
+        }
+        const remaining = open.reduce((sum, p) => sum + gramsRemainingForPurchase(p), 0);
+        const bought = open.reduce((sum, p) => sum + parseFloat(p.grams), 0);
+        totalRemaining += remaining;
+        const pct = bought > 0 ? Math.min(100, (remaining / bought) * 100) : 0;
+        document.getElementById(gramsId).textContent = fmtNum(remaining, 2) + 'g';
+        document.getElementById(barId).style.transform = 'scaleX(' + (pct / 100) + ')';
+    };
+    renderMini(openFumo, 'miniFumoGrams', 'miniFumoBar');
+    renderMini(openErba, 'miniErbaGrams', 'miniErbaBar');
 
     const hintEl = document.getElementById('homeStockHint');
-    if (hintEl) hintEl.textContent = t('home.stockTotalLeft', { grams: totalRemaining.toFixed(1) });
+    if (hintEl) hintEl.textContent = t('home.stockTotalLeft', { grams: fmtNum(totalRemaining, 1) });
 }
 
 // ========== STORICO ACQUISTI ==========
@@ -6301,7 +6561,7 @@ function renderPurchaseHistory() {
     el.innerHTML = purchases.map(p => {
         const emoji = p.type === 'fumo' ? '🍫' : '🍃';
         const label = p.type === 'fumo' ? t('charts.labelSmoke') : t('charts.labelWeed');
-        const priceStr = p.price ? ` · <span style="color:var(--warning);">€${p.price}</span>` : '';
+        const priceStr = p.price ? ` · <span style="color:var(--warning);">€${fmtNum(p.price, 2, 0)}</span>` : '';
 
         const statusStr = p.is_closed
             ? `<span style="background:rgba(var(--overlay-rgb),0.08); color:var(--color-text-muted); font-size:11px; padding:2px 8px; border-radius:20px;">${t('stock.closedBadge')}</span>`
@@ -6315,14 +6575,14 @@ function renderPurchaseHistory() {
             const remaining = gramsRemainingForPurchase(p);
             const pct = Math.min(100, Math.max(0, (remaining / parseFloat(p.grams)) * 100));
             const barColor = pct > 50 ? '#4CAF50' : pct > 20 ? '#FF9800' : '#f44336';
-            consumedStr = t('stock.consumedRemainingLine', { consumed: consumed.toFixed(2), remaining: remaining.toFixed(2) });
+            consumedStr = t('stock.consumedRemainingLine', { consumed: fmtNum(consumed, 2), remaining: fmtNum(remaining, 2) });
             barHtml = `
                 <div style="background:rgba(var(--overlay-rgb),0.12); border-radius:6px; height:6px; overflow:hidden; margin-top:6px;">
                     <div style="height:100%; width:100%; background:${barColor}; border-radius:6px; transition: transform 0.5s ease; transform:scaleX(${pct / 100}); transform-origin:left;"></div>
                 </div>
             `;
         } else if (p.closed_at) {
-            const days = Math.max(0, Math.round((new Date(p.closed_at) - new Date(p.date)) / 86400000));
+            const days = Math.max(0, daysBetween(p.date, p.closed_at));
             consumedStr = tn('stock.closedOnDuration', days, { date: formatShortDate(p.closed_at), days });
         }
 
@@ -6332,7 +6592,7 @@ function renderPurchaseHistory() {
                     <div>
                         <span style="font-weight:700;">${emoji} ${label}</span>
                         ${statusStr}<br>
-                        <small style="color:var(--color-text-muted);">${formatShortDate(p.date)} · ${p.grams}g${priceStr}</small><br>
+                        <small style="color:var(--color-text-muted);">${formatShortDate(p.date)} · ${fmtNum(p.grams, 2, 0)}g${priceStr}</small><br>
                         <small style="color:var(--color-text-muted);">${consumedStr}</small>
                     </div>
                     <button onclick="deletePurchase(${p.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:18px;">🗑️</button>
@@ -6350,7 +6610,7 @@ function openBuyModal(type) {
         t('stock.buyModalTitleFor', { type: type === 'fumo' ? t('add.smoke') : t('add.weed') });
     document.getElementById('buyGrams').value = '';
     document.getElementById('buyPrice').value = '';
-    document.getElementById('buyDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('buyDate').value = todayStr(); // data locale, non UTC
     document.getElementById('buyModal').style.display = 'flex';
 }
 
@@ -6434,9 +6694,9 @@ function closeStock(type, purchaseId) {
     const typeLabel = type === 'fumo' ? t('stock.typeSmoke') : t('stock.typeWeed');
     let msg = '';
     if (diff > 0) {
-        msg = t('stock.discrepancyExcess', { consumed: consumed.toFixed(2), type: typeLabel, grams: stock.grams, diff: absDiff.toFixed(2) });
+        msg = t('stock.discrepancyExcess', { consumed: fmtNum(consumed, 2), type: typeLabel, grams: fmtNum(stock.grams, 2, 0), diff: fmtNum(absDiff, 2) });
     } else {
-        msg = t('stock.discrepancyShortfall', { consumed: consumed.toFixed(2), type: typeLabel, grams: stock.grams, diff: absDiff.toFixed(2) });
+        msg = t('stock.discrepancyShortfall', { consumed: fmtNum(consumed, 2), type: typeLabel, grams: fmtNum(stock.grams, 2, 0), diff: fmtNum(absDiff, 2) });
     }
 
     document.getElementById('discrepancyText').innerHTML = msg;
@@ -6450,6 +6710,23 @@ function closeDiscrepancyModal() {
     sessionsToFix = [];
 }
 
+// Campi da aggiornare per correggere i grammi di "type" di una sessione da oldGram a newGram.
+// Sessione NON condivisa: il consumo personale (my_*) e' lo stesso valore del contributo, quindi
+// si corregge anche quello, altrimenti Stats/Home/classifiche restavano sul valore sbagliato.
+// Sessione condivisa: my_* e' il totale dell'intera sessione (vedi CLAUDE.md), non si tocca;
+// cambia solo il contributo (scorta + saldo "Insieme").
+function buildGramsFix(s, type, oldGram, newGram, oldTotal) {
+    const newTotal = parseFloat(((Number(oldTotal) || 0) - oldGram + newGram).toFixed(2));
+    const upd = type === 'fumo' ? { fumo_grams: newGram, grams: newTotal } : { erba_grams: newGram, grams: newTotal };
+    const isShared = Array.isArray(s.shared_with) && s.shared_with.length > 0;
+    if (!isShared) {
+        const myKey = type === 'fumo' ? 'my_fumo_grams' : 'my_erba_grams';
+        const myOld = s[myKey];
+        if (myOld === null || myOld === undefined || Math.abs(Number(myOld) - oldGram) < 0.005) upd[myKey] = newGram;
+    }
+    return upd;
+}
+
 // Scala tutte le sessioni proporzionalmente
 async function fixProportional() {
     if (!pendingCloseStock) return;
@@ -6460,25 +6737,24 @@ async function fixProportional() {
     const factor = stock.grams / consumed; // es. 0.85 se hai segnato troppo
 
     const guestSmokes = isGuestMode ? getGuestSmokes() : null;
+    let failed = 0;
 
     for (const s of sessionsToFix) {
         const oldGram = type === 'fumo' ? (s.fumo_grams || 0) : (s.erba_grams || 0);
         const newGram = parseFloat((oldGram * factor).toFixed(2));
-        const newTotal = parseFloat(((s.grams || 0) - oldGram + newGram).toFixed(2));
-
-        const updateObj = type === 'fumo'
-            ? { fumo_grams: newGram, grams: newTotal }
-            : { erba_grams: newGram, grams: newTotal };
+        const updateObj = buildGramsFix(s, type, oldGram, newGram, s.grams);
 
         if (isGuestMode) {
             const rec = guestSmokes.find(g => g.id === s.id);
             if (rec) Object.assign(rec, updateObj);
         } else {
-            await supabaseClient.from('smokes').update(updateObj).eq('id', s.id);
+            const { error } = await supabaseClient.from('smokes').update(updateObj).eq('id', s.id);
+            if (error) failed++;
         }
     }
 
     if (isGuestMode) setGuestSmokes(guestSmokes);
+    if (failed > 0) { alert(t('stock.saveError')); await loadData(); return; } // la scorta resta aperta
 
     document.getElementById('discrepancyModal').style.display = 'none';
     showMessage(t('stock.sessionsRecalculated'));
@@ -6503,7 +6779,7 @@ function fixManual() {
                 <div>
                     <span style="font-weight:600;">${formatShortDate(s.date)}</span>
                     <span style="color:var(--color-text-muted); font-size:12px;"> ${s.time}</span><br>
-                    <small style="color:var(--color-text-muted);">${t('stock.sessionTotal', { grams: s.grams })}</small>
+                    <small style="color:var(--color-text-muted);">${t('stock.sessionTotal', { grams: fmtNum(s.grams, 2, 0) })}</small>
                 </div>
                 <input type="number" step="0.01" min="0"
                        data-id="${s.id}"
@@ -6522,6 +6798,7 @@ function fixManual() {
 async function saveManualFix() {
     const inputs = document.querySelectorAll('#manualFixList input[data-id]');
     const guestSmokes = isGuestMode ? getGuestSmokes() : null;
+    let failed = 0;
 
     for (const input of inputs) {
         const id = input.dataset.id;
@@ -6529,21 +6806,20 @@ async function saveManualFix() {
         const oldTotal = parseFloat(input.dataset.total);
         const oldGram = parseFloat(input.dataset.old);
         const newGram = parseFloat(input.value) || 0;
-        const newTotal = parseFloat((oldTotal - oldGram + newGram).toFixed(2));
-
-        const updateObj = type === 'fumo'
-            ? { fumo_grams: newGram, grams: newTotal }
-            : { erba_grams: newGram, grams: newTotal };
+        const session = smokes.find(s => String(s.id) === String(id)) || {};
+        const updateObj = buildGramsFix(session, type, oldGram, newGram, oldTotal);
 
         if (isGuestMode) {
             const rec = guestSmokes.find(g => g.id === Number(id));
             if (rec) Object.assign(rec, updateObj);
         } else {
-            await supabaseClient.from('smokes').update(updateObj).eq('id', id);
+            const { error } = await supabaseClient.from('smokes').update(updateObj).eq('id', id);
+            if (error) failed++;
         }
     }
 
     if (isGuestMode) setGuestSmokes(guestSmokes);
+    if (failed > 0) { alert(t('stock.saveError')); closeManualFix(); await loadData(); return; } // la scorta resta aperta
 
     closeManualFix();
     showMessage(t('stock.sessionsFixed'));
@@ -6561,7 +6837,7 @@ async function confirmCloseStock() {
     if (!pendingCloseStock) return;
 
     const { stock } = pendingCloseStock;
-    const closedAt = new Date().toISOString().split('T')[0];
+    const closedAt = todayStr(); // data locale, non UTC
 
     if (isGuestMode) {
         const guestPurchases = getGuestPurchases();
