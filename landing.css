@@ -46,7 +46,8 @@
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .jt-nav__links { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 .jt-nav__links > a { font-size: 14px; font-weight: 600; color: var(--jt-ink-2); }
-.jt-nav__links > a.jt-btn { color: #fff; }
+.jt-nav__links > a.jt-btn,
+.jt-page a.jt-btn:not(.jt-btn--ghost) { color: #fff; } /* .jt-page a (0,1,1) batterebbe .jt-btn: testo verde su verde */
 .jt-brand { display: flex; align-items: center; gap: 10px; }
 .jt-brand__text { font-size: 17px; font-weight: 700; letter-spacing: -.02em; color: var(--jt-ink); }
 .jt-tile { display: block; background: var(--jt-tile); flex: 0 0 auto;
@@ -111,6 +112,37 @@
 .jt-ico--amber   { background: light-dark(rgba(255,152,0,.12), rgba(255,152,0,.16)); color: light-dark(#b35309, #ffb74d); }
 .jt-ico--neutral { background: light-dark(rgba(0,0,0,.05), rgba(255,255,255,.06)); color: var(--jt-ink); }
 
+/* --- lingua (nav) --- */
+.jt-lang { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--jt-ink-3); }
+.jt-lang a { color: var(--jt-ink-2); }
+.jt-lang a[aria-current="page"] { color: var(--jt-ink); }
+
+/* --- social --- */
+.jt-h2--tight { margin-bottom: 12px; }
+.jt-social__intro { max-width: 620px; margin-bottom: 28px; }
+.jt-social { display: grid; gap: 28px; align-items: start; }
+.jt-social__cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.jt-social__shots { display: flex; gap: 18px; justify-content: center; align-items: flex-start; }
+/* Gli screenshot sono in tema scuro: la cornice (stesso trattamento di .jt-phone)
+   evita l'effetto "blocco nero incollato" quando la landing è in tema chiaro. */
+.jt-frame { margin: 0; flex: 1 1 0; min-width: 0; max-width: 280px; box-sizing: border-box; padding: 8px;
+  border-radius: 30px; background: light-dark(#dfe5e0, #1c241c); border: 1px solid var(--jt-line);
+  box-shadow: 0 24px 56px rgba(0,0,0,.22); }
+.jt-frame img { display: block; width: 100%; height: auto; border-radius: 22px; }
+.jt-social__meta { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 34px; text-align: center; }
+.jt-counter { display: inline-flex; align-items: center; gap: 10px; margin: 0; padding: 8px 16px;
+  border-radius: 999px; background: light-dark(rgba(76,175,80,.14), rgba(76,175,80,.18));
+  border: 1px solid rgba(76,175,80,.3); font-size: 15px; font-weight: 700; color: var(--jt-accent);
+  font-variant-numeric: tabular-nums; visibility: hidden; opacity: 0; transition: opacity .4s; }
+.jt-counter.is-ready { visibility: visible; opacity: 1; }
+.jt-counter__dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50;
+  box-shadow: 0 0 0 4px rgba(76,175,80,.22); }
+.jt-tiktok { font-size: 14px; font-weight: 600; }
+
+@media (min-width: 880px) {
+  .jt-social { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+}
+
 /* --- chiusura --- */
 .jt-final { background: linear-gradient(150deg, light-dark(rgba(76,175,80,.16), rgba(76,175,80,.2)), var(--jt-surface) 70%);
   border: 1px solid var(--jt-line); border-radius: 28px; padding: 46px 26px; text-align: center; }
@@ -143,4 +175,6 @@
   .jt-shots { gap: 16px; }
   .jt-phone--side { display: none; }
   .jt-nav__links { gap: 14px; }
+  .jt-social__shots { flex-direction: column; align-items: center; }
+  .jt-frame { flex: 0 0 auto; width: 100%; max-width: 340px; }
 }

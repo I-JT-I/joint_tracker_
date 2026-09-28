@@ -25,8 +25,8 @@ const STATIC_ENTRIES = [
 	'locales', 'splash', 'img',
 	// Pagine marketing/SEO statiche: nessun riferimento ad app.js/style.css/i18n.js,
 	// quindi non passano dalla riscrittura hash qui sotto (a differenza di app/index.html).
-	// landing.css è servito solo dalla landing (index.html); le altre pagine marketing usano marketing.css.
-	'index.html', 'come-funziona.html', 'faq.html', 'blog', 'marketing.css', 'landing.css', 'og-image.png',
+	// landing.css è servito solo dalla landing (index.html e la versione inglese en.html); le altre pagine marketing usano marketing.css.
+	'index.html', 'en.html', 'come-funziona.html', 'faq.html', 'blog', 'marketing.css', 'landing.css', 'og-image.png',
 	'admin.html'
 ];
 
