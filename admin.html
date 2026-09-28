@@ -333,7 +333,8 @@ function aggregateByGrid(points, cell) {
 		let c = m.get(k);
 		if (!c) { c = { n: 0, latSum: 0, lngSum: 0, grams: 0, users: new Set(), names: {} }; m.set(k, c); }
 		c.n++; c.latSum += lat; c.lngSum += lng;
-		c.grams += (Number(p.fumo_grams) || 0) + (Number(p.erba_grams) || 0);
+		// grammi dell'intera sessione (session_grams dalla RPC; le condivise arrivano una volta sola)
+		c.grams += p.session_grams != null ? Number(p.session_grams) || 0 : (Number(p.fumo_grams) || 0) + (Number(p.erba_grams) || 0);
 		c.users.add(p.user_id);
 		const nm = p.location_name || '';
 		if (nm) c.names[nm] = (c.names[nm] || 0) + 1;
@@ -480,7 +481,7 @@ function render(data) {
 
 	// --- Crescita ---
 	el('sec-growth').querySelector('.sec-body').innerHTML = `
-		<div style="font-size:11px;color:var(--color-text-muted);margin-bottom:10px">Dati aggiornati: ${new Date(data.generated_at).toLocaleString('it-IT')}</div>
+		<div style="font-size:11px;color:var(--color-text-muted);margin-bottom:10px">Dati aggiornati: ${new Date(data.generated_at).toLocaleString('it-IT')} · account di test esclusi · date "di oggi" in ora di Roma</div>
 		<div class="grid">
 			<div class="stat"><div class="label">Utenti totali</div><div class="big">${g.total_users}</div><div class="sub">oggi +${g.new_users.today}</div></div>
 			<div class="stat"><div class="label">Nuovi 7gg</div><div class="big">${g.new_users.d7}</div><div class="sub">${trendChip(g.new_users.d7, g.new_users_prev.d7)} vs 7gg prec.</div></div>
@@ -491,10 +492,10 @@ function render(data) {
 	// --- Utilizzo ---
 	el('sec-usage').querySelector('.sec-body').innerHTML = `
 		<div class="grid">
-			<div class="stat"><div class="label">Sessioni totali</div><div class="big">${u.total_sessions}</div></div>
-			<div class="stat"><div class="label">Media / utente</div><div class="big">${u.avg_sessions_per_user}</div></div>
+			<div class="stat"><div class="label">Sessioni totali</div><div class="big">${u.total_sessions}</div><div class="sub">condivise contate 1 volta</div></div>
+			<div class="stat"><div class="label">Media / utente attivo</div><div class="big">${u.avg_sessions_per_user}</div><div class="sub">utenti con ≥1 sessione</div></div>
 			<div class="stat"><div class="label">DAU (24h)</div><div class="big">${u.dau}</div></div>
-			<div class="stat"><div class="label">MAU (30gg)</div><div class="big">${u.mau}</div><div class="sub">DAU/MAU ${u.dau_mau_pct}%</div></div>
+			<div class="stat"><div class="label">MAU (30gg)</div><div class="big">${u.mau}</div><div class="sub">DAU/MAU ${u.dau_mau_pct}% · chi ha registrato lui una sessione</div></div>
 		</div>
 		<div style="margin-top:12px"><div class="label" style="font-size:11px;color:var(--color-text-muted)">Sessioni / giorno (30gg) — ultimi 7gg: ${u.sessions_7}</div>${renderBarChart(u.sessions_by_day_30, { label: 'Sessioni per giorno, ultimi 30 giorni', noun: 'sessioni' })}</div>`;
 
@@ -511,7 +512,7 @@ function render(data) {
 	el('sec-adoption').querySelector('.sec-body').innerHTML = `
 		<div class="grid">
 			${pctRow('Shared session', a.pct_shared_session)}
-			${pctRow('Tolerance break', a.pct_tolerance_break)}
+			${pctRow('Tolerance break (anche solo pianificata)', a.pct_tolerance_break)}
 			${pctRow('In classifica', a.pct_in_leaderboard)}
 		</div>
 		<div style="margin-top:14px"><div class="label" style="font-size:11px;color:var(--color-text-muted)">Distribuzione streak</div>

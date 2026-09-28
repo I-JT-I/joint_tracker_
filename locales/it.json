@@ -130,6 +130,7 @@
     "friendsListLoadError": "Errore nel caricamento amici, riprova.",
     "noUserFound": "Nessun utente trovato con questo nickname.",
     "alreadyAdded": "Già aggiunto alla sessione.",
+    "notAFriend": "Puoi aggiungere solo i tuoi amici.",
     "whoBroughtIt": "Chi ha portato la roba, e quanto? Puoi modificare i grammi a mano.",
     "smokeBroughtBy": "🍫 Fumo portato da:",
     "weedBroughtBy": "🍃 Erba portata da:",
@@ -236,7 +237,10 @@
     "snapshotReactions_one": "{count} reazione alla tua istantanea",
     "snapshotReactions_other": "{count} reazioni alla tua istantanea",
     "snapshotComments_one": "{count} commento alla tua istantanea",
-    "snapshotComments_other": "{count} commenti alla tua istantanea"
+    "snapshotComments_other": "{count} commenti alla tua istantanea",
+    "sharedSessionAdded": "{username} ti ha aggiunto a una sessione condivisa 🌿",
+    "friendRequest": "{username} ti ha inviato una richiesta di amicizia 👥",
+    "friendAccepted": "{username} ha accettato la tua richiesta di amicizia 🤝"
   },
   "gallery": {
     "title": "📷 Galleria",
@@ -263,7 +267,7 @@
     "periodLabel30d": "Ultimi 30 giorni",
     "periodLabelYear": "Ultimo anno",
     "periodLabelAll": "Da sempre",
-    "monthVsMonth": "📊 Questo Mese vs Mese Scorso",
+    "monthVsMonth": "📊 Questo mese vs stesso periodo del mese scorso",
     "realAverages": "Medie Reali (tutti i giorni)",
     "jPerDay": "J / Giorno",
     "jPerMonth": "J / Mese",
@@ -274,6 +278,7 @@
     "bestStreak": "🏆 Miglior streak",
     "streakFootnote_one": "*Il calcolo parte dalla tua prima J inserita. ({days} giorno fa)",
     "streakFootnote_other": "*Il calcolo parte dalla tua prima J inserita. ({days} giorni fa)",
+    "streakFootnoteToday": "*Il calcolo parte dalla tua prima J inserita (oggi).",
     "yearlyRecap": "🎉 Riepilogo Annuale",
     "insight": "💡 Insight",
     "contextAndMood": "🏷️ Contesto & Umore",
@@ -406,13 +411,14 @@
     "togetherSessions_one": "{count} sessione insieme",
     "togetherSessions_other": "{count} sessioni insieme",
     "togetherNone": "Nessuna sessione insieme",
+    "togetherNoGrams": "Nessuna quantità registrata in queste sessioni.",
     "togetherSmoke": "🍫 Fumo",
     "togetherWeed": "🍃 Erba",
     "togetherTotal": "Totale fumato insieme: {grams} g",
     "togetherSplit": "Tu: {mine} g · {name}: {theirs} g",
     "togetherSplitAria": "Ripartizione di quanto avete portato: tu {mine}%, {name} {theirs}%",
     "togetherOwesYou": "{name} ti dovrebbe {grams} g",
-    "togetherYouOwe": "Gli dovresti {grams} g",
+    "togetherYouOwe": "Dovresti {grams} g a {name}",
     "togetherEven": "Siete pari",
     "scrocconeBadge": "🦝 Lo scroccone",
     "scrocconeHint": "L'amico che ti deve di più: {grams} g",
@@ -501,7 +507,8 @@
     "statActiveDays": "Giorni attivi",
     "statShared": "Condivise",
     "favoriteDay": "📅 Giorno preferito: {day}",
-    "mostActiveMonth": "🌟 Mese più attivo: {month} ({count} sessioni)",
+    "mostActiveMonth_one": "🌟 Mese più attivo: {month} ({count} sessione)",
+    "mostActiveMonth_other": "🌟 Mese più attivo: {month} ({count} sessioni)",
     "favoritePlace": "📍 Posto preferito: {place} ({count}x)",
     "totalSpent": "💰 Speso (registrato): €{amount}"
   },
@@ -513,14 +520,16 @@
     "slotMorning": "di mattina ☀️",
     "slotAfternoon": "nel pomeriggio 🌤️",
     "slotEvening": "di sera 🌆",
-    "topPlace": "📍 Il posto dove fumi più spesso è <strong>{place}</strong> ({count} sessioni).",
-    "moreThisMonth": "📈 Questo mese hai fumato il <strong>{pct}% in più</strong> rispetto al mese scorso.",
-    "lessThisMonth": "📉 Questo mese hai fumato il <strong>{pct}% in meno</strong> rispetto al mese scorso.",
+    "topPlace_one": "📍 Il posto dove fumi più spesso è <strong>{place}</strong> ({count} sessione).",
+    "topPlace_other": "📍 Il posto dove fumi più spesso è <strong>{place}</strong> ({count} sessioni).",
+    "moreThisMonth": "📈 Questo mese hai fumato il <strong>{pct}% in più</strong> rispetto allo stesso periodo del mese scorso.",
+    "lessThisMonth": "📉 Questo mese hai fumato il <strong>{pct}% in meno</strong> rispetto allo stesso periodo del mese scorso.",
     "avgPerSession": "⚖️ In media consumi <strong>{grams}g</strong> a sessione."
   },
   "context": {
     "noTaggedYet": "Nessuna sessione taggata ancora. Scegli un contesto quando registri una sessione.",
-    "sessionsLabel": "{count} sessioni",
+    "sessionsLabel_one": "{count} sessione",
+    "sessionsLabel_other": "{count} sessioni",
     "avgMoodSuffix": " · umore medio {avg}/5"
   },
   "period": {
@@ -528,7 +537,8 @@
     "newThisMonth": "▲ Nuovo questo mese",
     "sessions": "Sessioni",
     "totalGrams": "Grammi totali",
-    "lastMonthSummary": "Mese scorso: {count} sessioni · {grams}g"
+    "lastMonthSummary_one": "Mese scorso, giorni 1–{day}: {count} sessione · {grams}g",
+    "lastMonthSummary_other": "Mese scorso, giorni 1–{day}: {count} sessioni · {grams}g"
   },
   "modals": {
     "wrappedTitle": "🎉 Il tuo anno",
@@ -631,7 +641,8 @@
     "homeMilestonesComplete": "Hai raggiunto tutti i traguardi scientifici 🎉",
     "homeJustStarted": "Hai appena iniziato — ogni giorno conta 💪",
     "homeNewRecord": "🏆 Nuovo record personale! (precedente: {days} giorni)",
-    "homeRecordGap": "Record personale: {days} giorni ancora per superarlo",
+    "homeRecordGap_one": "Record personale: ancora {days} giorno per superarlo",
+    "homeRecordGap_other": "Record personale: ancora {days} giorni per superarlo",
     "homeLogSession": "hai fumato? segna qui",
     "goalsKicker": "Pausa in corso",
     "tileSaved": "Risparmiati",

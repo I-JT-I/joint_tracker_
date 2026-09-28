@@ -130,6 +130,7 @@
     "friendsListLoadError": "Couldn't load your friends list, try again.",
     "noUserFound": "No user found with that nickname.",
     "alreadyAdded": "Already added to the session.",
+    "notAFriend": "You can only add your friends.",
     "whoBroughtIt": "Who brought the stuff, and how much? You can edit the grams by hand.",
     "smokeBroughtBy": "🍫 Hash brought by:",
     "weedBroughtBy": "🍃 Weed brought by:",
@@ -236,7 +237,10 @@
     "snapshotReactions_one": "{count} reaction on your snapshot",
     "snapshotReactions_other": "{count} reactions on your snapshot",
     "snapshotComments_one": "{count} comment on your snapshot",
-    "snapshotComments_other": "{count} comments on your snapshot"
+    "snapshotComments_other": "{count} comments on your snapshot",
+    "sharedSessionAdded": "{username} added you to a shared session 🌿",
+    "friendRequest": "{username} sent you a friend request 👥",
+    "friendAccepted": "{username} accepted your friend request 🤝"
   },
   "gallery": {
     "title": "📷 Gallery",
@@ -263,7 +267,7 @@
     "periodLabel30d": "Last 30 days",
     "periodLabelYear": "Last year",
     "periodLabelAll": "All time",
-    "monthVsMonth": "📊 This Month vs Last Month",
+    "monthVsMonth": "📊 This month vs same period last month",
     "realAverages": "Real Averages (all days)",
     "jPerDay": "J / Day",
     "jPerMonth": "J / Month",
@@ -274,6 +278,7 @@
     "bestStreak": "🏆 Best streak",
     "streakFootnote_one": "*Calculated from your first logged J. ({days} day ago)",
     "streakFootnote_other": "*Calculated from your first logged J. ({days} days ago)",
+    "streakFootnoteToday": "*Calculated from your first logged J (today).",
     "yearlyRecap": "🎉 Yearly Recap",
     "insight": "💡 Insight",
     "contextAndMood": "🏷️ Context & Mood",
@@ -405,6 +410,7 @@
     "togetherPeriodAria": "Period",
     "togetherSessions_one": "{count} session together",
     "togetherSessions_other": "{count} sessions together",
+    "togetherNoGrams": "No amounts recorded in these sessions.",
     "togetherNone": "No sessions together",
     "togetherSmoke": "🍫 Hash",
     "togetherWeed": "🍃 Weed",
@@ -501,7 +507,8 @@
     "statActiveDays": "Active days",
     "statShared": "Shared",
     "favoriteDay": "📅 Favorite day: {day}",
-    "mostActiveMonth": "🌟 Most active month: {month} ({count} sessions)",
+    "mostActiveMonth_one": "🌟 Most active month: {month} ({count} session)",
+    "mostActiveMonth_other": "🌟 Most active month: {month} ({count} sessions)",
     "favoritePlace": "📍 Favorite place: {place} ({count}x)",
     "totalSpent": "💰 Spent (logged): €{amount}"
   },
@@ -513,14 +520,16 @@
     "slotMorning": "in the morning ☀️",
     "slotAfternoon": "in the afternoon 🌤️",
     "slotEvening": "in the evening 🌆",
-    "topPlace": "📍 The place you smoke at most is <strong>{place}</strong> ({count} sessions).",
-    "moreThisMonth": "📈 This month you smoked <strong>{pct}% more</strong> than last month.",
-    "lessThisMonth": "📉 This month you smoked <strong>{pct}% less</strong> than last month.",
+    "topPlace_one": "📍 The place you smoke at most is <strong>{place}</strong> ({count} session).",
+    "topPlace_other": "📍 The place you smoke at most is <strong>{place}</strong> ({count} sessions).",
+    "moreThisMonth": "📈 This month you smoked <strong>{pct}% more</strong> than the same period last month.",
+    "lessThisMonth": "📉 This month you smoked <strong>{pct}% less</strong> than the same period last month.",
     "avgPerSession": "⚖️ On average you consume <strong>{grams}g</strong> per session."
   },
   "context": {
     "noTaggedYet": "No tagged sessions yet. Choose a context when logging a session.",
-    "sessionsLabel": "{count} sessions",
+    "sessionsLabel_one": "{count} session",
+    "sessionsLabel_other": "{count} sessions",
     "avgMoodSuffix": " · avg mood {avg}/5"
   },
   "period": {
@@ -528,7 +537,8 @@
     "newThisMonth": "▲ New this month",
     "sessions": "Sessions",
     "totalGrams": "Total grams",
-    "lastMonthSummary": "Last month: {count} sessions · {grams}g"
+    "lastMonthSummary_one": "Last month, days 1–{day}: {count} session · {grams}g",
+    "lastMonthSummary_other": "Last month, days 1–{day}: {count} sessions · {grams}g"
   },
   "modals": {
     "wrappedTitle": "🎉 Your year",
@@ -631,7 +641,8 @@
     "homeMilestonesComplete": "You've hit every scientific milestone 🎉",
     "homeJustStarted": "Just getting started — every day counts 💪",
     "homeNewRecord": "🏆 New personal record! (previous: {days} days)",
-    "homeRecordGap": "Personal record: {days} more days to beat it",
+    "homeRecordGap_one": "Personal record: {days} more day to beat it",
+    "homeRecordGap_other": "Personal record: {days} more days to beat it",
     "homeLogSession": "smoked? log it here",
     "goalsKicker": "Break in progress",
     "tileSaved": "Saved",

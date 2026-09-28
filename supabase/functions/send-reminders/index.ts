@@ -46,26 +46,42 @@ function floor15(hh: number, mm: number) {
   return Math.floor(total / 15) * 15;
 }
 
-// Calcola lo streak "ancora vivo" considerando che oggi non ha ancora segnato:
-// conta i giorni consecutivi terminanti ieri.
-function computeStreakAsOfYesterday(dates: string[]): number {
-  if (dates.length === 0) return 0;
-  const uniqueSorted = [...new Set(dates)].sort();
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toISOString().split("T")[0];
+// Giorno precedente/successivo di una data "YYYY-MM-DD", in aritmetica UTC pura.
+function shiftDate(dateStr: string, deltaDays: number): string {
+  return new Date(Date.parse(dateStr + "T00:00:00Z") + deltaDays * 86400000).toISOString().slice(0, 10);
+}
 
-  if (uniqueSorted[uniqueSorted.length - 1] !== yStr) return 0;
-
-  let streak = 1;
-  for (let i = uniqueSorted.length - 1; i > 0; i--) {
-    const a = new Date(uniqueSorted[i]);
-    const b = new Date(uniqueSorted[i - 1]);
-    const diff = (a.getTime() - b.getTime()) / 86400000;
-    if (diff === 1) streak++;
-    else break;
+// Streak "ancora vivo" considerando che oggi non ha ancora segnato: giorni consecutivi con
+// almeno una sessione che terminano IERI (ieri calcolato dalla data di oggi a Roma, non in
+// UTC). Le date si leggono in ordine decrescente a pagine e ci si ferma al primo buco:
+// una select senza limite veniva troncata a max-rows (1000) righe e non era ordinata.
+async function fetchStreakAsOfYesterday(userId: string, today: string): Promise<number> {
+  const PAGE = 1000;
+  const yesterday = shiftDate(today, -1);
+  let expected = yesterday;
+  let streak = 0;
+  let from = 0;
+  for (;;) {
+    // filtro fisso (<= ieri) + offset: con un filtro che cambia a ogni pagina l'offset salterebbe righe
+    const { data, error } = await supabase
+      .from("smokes")
+      .select("date")
+      .eq("user_id", userId)
+      .lte("date", yesterday)
+      .order("date", { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error || !data || data.length === 0) return streak;
+    for (const row of data) {
+      if (row.date === expected) {
+        streak++;
+        expected = shiftDate(expected, -1);
+      } else if (row.date < expected) {
+        return streak; // buco: la serie finisce qui
+      } // row.date > expected: altra sessione dello stesso giorno gia' contato
+    }
+    if (data.length < PAGE) return streak;
+    from += data.length;
   }
-  return streak;
 }
 
 Deno.serve(async (req) => {
@@ -115,13 +131,7 @@ Deno.serve(async (req) => {
 
       if (activeBreaks && activeBreaks.length > 0) continue;
 
-      // recupera date per calcolo streak
-      const { data: allDates } = await supabase
-        .from("smokes")
-        .select("date")
-        .eq("user_id", profile.id);
-
-      const streak = computeStreakAsOfYesterday((allDates ?? []).map((d) => d.date));
+      const streak = await fetchStreakAsOfYesterday(profile.id, today);
 
       const body =
         streak >= 1
