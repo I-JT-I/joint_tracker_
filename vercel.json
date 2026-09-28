@@ -3,6 +3,7 @@
 	"outputDirectory": "dist",
 	"rewrites": [
 		{ "source": "/app", "destination": "/app/index.html" },
+		{ "source": "/en", "destination": "/en.html" },
 		{ "source": "/admin", "destination": "/admin.html" },
 		{ "source": "/come-funziona", "destination": "/come-funziona.html" },
 		{ "source": "/faq", "destination": "/faq.html" },
@@ -26,6 +27,12 @@
 		},
 		{
 			"source": "/marketing.css",
+			"headers": [
+				{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }
+			]
+		},
+		{
+			"source": "/landing.css",
 			"headers": [
 				{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }
 			]

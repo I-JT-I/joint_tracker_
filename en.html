@@ -1,28 +1,27 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
-<meta name="google-site-verification" content="FjvZpRN13XyjFacmmelH4SajsY6uXV7nhszCzV2g5FA" />
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JointTracker – Traccia la cannabis con i tuoi amici</title>
-<meta name="description" content="Cannabis tracker gratuito: registra le sessioni da solo o con gli amici, sfidali in classifica, monitora tolerance break e spese. Funziona offline.">
-<link rel="canonical" href="https://joint-tracker.vercel.app/">
+<title>JointTracker – Cannabis Tracker with Friends &amp; Tolerance Breaks</title>
+<meta name="description" content="Free cannabis tracker: log sessions solo or with friends, compete on leaderboards, track tolerance breaks and spending. Works offline.">
+<link rel="canonical" href="https://joint-tracker.vercel.app/en">
 <link rel="alternate" hreflang="it" href="https://joint-tracker.vercel.app/">
 <link rel="alternate" hreflang="en" href="https://joint-tracker.vercel.app/en">
 <link rel="alternate" hreflang="x-default" href="https://joint-tracker.vercel.app/">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0c120c">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f7f6">
 
-<meta property="og:title" content="JointTracker – Traccia la cannabis con i tuoi amici">
-<meta property="og:description" content="Cannabis tracker gratuito: registra le sessioni da solo o con gli amici, sfidali in classifica, monitora tolerance break e spese. Funziona offline.">
+<meta property="og:title" content="JointTracker – Cannabis Tracker with Friends &amp; Tolerance Breaks">
+<meta property="og:description" content="Free cannabis tracker: log sessions solo or with friends, compete on leaderboards, track tolerance breaks and spending. Works offline.">
 <meta property="og:image" content="https://joint-tracker.vercel.app/og-image.png">
-<meta property="og:url" content="https://joint-tracker.vercel.app/">
+<meta property="og:url" content="https://joint-tracker.vercel.app/en">
 <meta property="og:type" content="website">
-<meta property="og:locale" content="it_IT">
+<meta property="og:locale" content="en_US">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="JointTracker – Traccia la cannabis con i tuoi amici">
-<meta name="twitter:description" content="Cannabis tracker gratuito: registra le sessioni da solo o con gli amici, sfidali in classifica, monitora tolerance break e spese. Funziona offline.">
+<meta name="twitter:title" content="JointTracker – Cannabis Tracker with Friends &amp; Tolerance Breaks">
+<meta name="twitter:description" content="Free cannabis tracker: log sessions solo or with friends, compete on leaderboards, track tolerance breaks and spending. Works offline.">
 <meta name="twitter:image" content="https://joint-tracker.vercel.app/og-image.png">
 
 <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
@@ -55,8 +54,8 @@
 	"@context": "https://schema.org",
 	"@type": "WebApplication",
 	"name": "JointTracker",
-	"url": "https://joint-tracker.vercel.app/",
-	"description": "App gratuita per tracciare le sessioni di consumo cannabis, da solo o con gli amici, gestire tolerance break e visualizzare statistiche dettagliate. Funziona offline.",
+	"url": "https://joint-tracker.vercel.app/en",
+	"description": "Free app to track cannabis sessions, solo or with friends, manage tolerance breaks and see detailed stats. Works offline.",
 	"applicationCategory": "HealthApplication",
 	"operatingSystem": "Any (PWA)",
 	"offers": {
@@ -65,7 +64,7 @@
 		"priceCurrency": "EUR"
 	},
 	"inLanguage": ["it", "en"],
-	"browserRequirements": "Richiede un browser moderno con supporto Service Worker"
+	"browserRequirements": "Requires a modern browser with Service Worker support"
 }
 </script>
 
@@ -141,7 +140,7 @@
 
   <nav class="jt-nav">
     <div class="jt-nav__in">
-      <a class="jt-brand" href="/">
+      <a class="jt-brand" href="/en">
         <span class="jt-tile jt-tile--32">
           <svg viewBox="0 0 64 64" class="jt-mark" aria-hidden="true">
             <path d="M14.68 42 A20 20 0 1 1 49.32 42" fill="none" stroke="#ffffff" stroke-opacity=".26" stroke-width="6.4" stroke-linecap="round"/>
@@ -156,177 +155,175 @@
         <span class="jt-brand__text">JointTracker</span>
       </a>
       <div class="jt-nav__links">
-        <a href="/come-funziona" data-i18n="nav.how">Come funziona</a>
-        <a href="/faq" data-i18n="nav.faq">FAQ</a>
-        <a href="/blog" data-i18n="nav.blog">Blog</a>
-        <a href="/app" class="jt-btn jt-btn--sm" data-i18n="nav.openApp">Apri l'app</a>
-        <span class="jt-lang" role="group" aria-label="Lingua">
-          <a href="/" hreflang="it" lang="it" aria-current="page">IT</a>
+        <a href="#friends">Friends</a>
+        <a href="#features">Features</a>
+        <a href="/app" class="jt-btn jt-btn--sm">Open the app</a>
+        <span class="jt-lang" role="group" aria-label="Language">
+          <a href="/" hreflang="it" lang="it">IT</a>
           <span aria-hidden="true">/</span>
-          <a href="/en" hreflang="en" lang="en">EN</a>
+          <a href="/en" hreflang="en" lang="en" aria-current="page">EN</a>
         </span>
       </div>
     </div>
   </nav>
 
   <header class="jt-hero jt-rise">
-    <p class="jt-pill" data-i18n="hero.badge">Gratis · privata · funziona offline</p>
-    <h1 class="jt-h1" data-i18n="hero.title">Traccia il tuo consumo di cannabis, senza giudizi</h1>
-    <p class="jt-lead" data-i18n="hero.lead">JointTracker è un cannabis tracker gratuito: registra le sessioni da solo o con gli amici, sfidali in classifica e monitora tolerance break, scorte e spese. Funziona anche offline.</p>
+    <p class="jt-pill">Free · private · works offline</p>
+    <h1 class="jt-h1">Track your cannabis use, no judgment</h1>
+    <p class="jt-lead">JointTracker is a free cannabis tracker: log sessions solo or with friends, take them on in the leaderboard and keep tabs on tolerance breaks, stash and spending. Works offline, too.</p>
     <div class="jt-cta">
-      <a href="/app" class="jt-btn" data-i18n="hero.ctaPrimary">Inizia gratis</a>
-      <a href="/come-funziona" class="jt-btn jt-btn--ghost" data-i18n="hero.ctaSecondary">Come funziona</a>
+      <a href="/app" class="jt-btn">Get started free</a>
+      <a href="#friends" class="jt-btn jt-btn--ghost">See what it does</a>
       <span id="installRow" style="display:none">
-        <button type="button" class="jt-btn jt-btn--ghost" id="installBtn">Installa l'app</button>
+        <button type="button" class="jt-btn jt-btn--ghost" id="installBtn">Install the app</button>
       </span>
     </div>
-    <p class="jt-note" id="installHint" data-i18n-html="hero.installHint">Vuoi installarla come app sul telefono? Su iPhone/Safari: icona Condividi → "Aggiungi a Home" (vedi <a href="/faq#installazione">i dettagli</a>). Su Android/Chrome, se non vedi il pulsante qui sopra, aprila da <a href="/app">/app</a> e usa "Installa app" nelle Impostazioni.</p>
+    <p class="jt-note" id="installHint">Want it as an app on your phone? On iPhone/Safari: tap Share → "Add to Home Screen". On Android/Chrome, if you don't see the button above, open <a href="/app">/app</a> and use "Install app" in Settings.</p>
   </header>
 
-  <section class="jt-shots jt-rise jt-rise--d2" aria-label="Screenshot dell'app">
+  <section class="jt-shots jt-rise jt-rise--d2" aria-label="App screenshots">
     <figure class="jt-phone jt-phone--side">
       <picture>
         <source srcset="/img/screenshots/it/registro.webp" type="image/webp">
-        <img src="/img/screenshots/it/registro.png" alt="Registro delle sessioni in JointTracker" width="600" height="1200" loading="lazy" decoding="async">
+        <img src="/img/screenshots/it/registro.png" alt="JointTracker session log" width="600" height="1200" loading="lazy" decoding="async">
       </picture>
     </figure>
     <figure class="jt-phone jt-phone--center">
       <picture>
         <source srcset="/img/screenshots/it/home.webp" type="image/webp">
-        <img src="/img/screenshots/it/home.png" alt="Schermata Home di JointTracker" width="600" height="1200" loading="lazy" decoding="async">
+        <img src="/img/screenshots/it/home.png" alt="JointTracker home screen" width="600" height="1200" loading="lazy" decoding="async">
       </picture>
     </figure>
     <figure class="jt-phone jt-phone--side">
       <picture>
         <source srcset="/img/screenshots/it/statistiche.webp" type="image/webp">
-        <img src="/img/screenshots/it/statistiche.png" alt="Statistiche di JointTracker" width="600" height="1200" loading="lazy" decoding="async">
+        <img src="/img/screenshots/it/statistiche.png" alt="JointTracker stats" width="600" height="1200" loading="lazy" decoding="async">
       </picture>
     </figure>
   </section>
 
-  <section class="jt-section" aria-labelledby="socialTitle">
-    <h2 class="jt-h2 jt-h2--tight" id="socialTitle">Più bello con gli amici</h2>
-    <p class="jt-body jt-social__intro">JointTracker non è solo un diario. Aggiungi i tuoi amici e ogni sessione diventa condivisa.</p>
+  <section class="jt-section" id="friends" aria-labelledby="socialTitle">
+    <h2 class="jt-h2 jt-h2--tight" id="socialTitle">Better with friends</h2>
+    <p class="jt-body jt-social__intro">JointTracker isn't just a diary. Add your friends and every session becomes one you share.</p>
     <div class="jt-social">
       <div class="jt-social__cards">
         <article class="jt-card">
           <span class="jt-ico jt-ico--green">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM1 20c0-3.3 3.6-6 8-6s8 2.7 8 6v1H1v-1Zm17.5 1v-1c0-1.9-.8-3.6-2.1-4.9 3.7.3 6.6 2.5 6.6 4.9v1h-4.5Z"/></svg>
           </span>
-          <h3>Sessioni condivise</h3>
-          <p>Registra una sessione insieme: ognuno vede la sua parte, nessuno deve segnarla due volte.</p>
+          <h3>Shared sessions</h3>
+          <p>Log a session together: everyone sees their share, and nobody has to log it twice.</p>
         </article>
         <article class="jt-card">
           <span class="jt-ico jt-ico--amber">
             <svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="M7 3h10v2h4v3a5 5 0 0 1-4.6 5A5 5 0 0 1 13 16.9V19h4v2H7v-2h4v-2.1A5 5 0 0 1 7.6 13 5 5 0 0 1 3 8V5h4V3ZM5 7v1a3 3 0 0 0 2 2.8V7H5Zm12 0v3.8A3 3 0 0 0 19 8V7h-2Z"/></svg>
           </span>
-          <h3>Classifica amici</h3>
-          <p>Chi ha fumato di più? Ora lo sapete.</p>
+          <h3>Friends leaderboard</h3>
+          <p>Who smokes the most in your crew? Now you know.</p>
         </article>
         <article class="jt-card">
           <span class="jt-ico jt-ico--green">
             <svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="M9 5a7 7 0 1 1 0 14A7 7 0 0 1 9 5Zm6 0a7 7 0 1 1 0 14 7 7 0 0 1 0-14Z"/></svg>
           </span>
-          <h3>Insieme</h3>
-          <p>Con chi fumi di più, e chi è lo scroccone del gruppo.</p>
+          <h3>Together</h3>
+          <p>Who you smoke with the most, and who's the group freeloader.</p>
         </article>
         <article class="jt-card">
           <span class="jt-ico jt-ico--purple">
             <svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="M9 3h6l1.8 2H20a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3.2L9 3Zm3 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg>
           </span>
-          <h3>Istantanee</h3>
-          <p>Le foto delle sessioni dei tuoi amici, in un feed.</p>
+          <h3>Snapshots</h3>
+          <p>Your friends' session pics, all in one feed.</p>
         </article>
       </div>
       <div class="jt-social__shots">
         <figure class="jt-frame">
-          <img src="/img/screenshots/it/classifica.webp" alt="Classifica mondiale di JointTracker con i grammi e i joint di ogni utente" width="1080" height="1702" loading="lazy" decoding="async">
+          <img src="/img/screenshots/en/classifica.webp" alt="JointTracker global leaderboard showing each user's grams and joints" width="1080" height="1702" loading="lazy" decoding="async">
         </figure>
         <figure class="jt-frame">
-          <img src="/img/screenshots/it/insieme.webp" alt="Classifica Insieme di JointTracker con il badge Lo scroccone" width="1080" height="1081" loading="lazy" decoding="async">
+          <img src="/img/screenshots/en/insieme.webp" alt="JointTracker Together leaderboard with The freeloader badge" width="1080" height="1081" loading="lazy" decoding="async">
         </figure>
       </div>
     </div>
     <!-- Contatore live: lo spazio della riga è sempre riservato (visibility, non display)
          così quando compare non sposta niente (CLS 0). Popolato dallo script in fondo. -->
     <div class="jt-social__meta">
-      <p class="jt-counter" id="sessionCounter" aria-hidden="true"><span class="jt-counter__dot" aria-hidden="true"></span><span class="jt-counter__text">0.000+ sessioni tracciate</span></p>
-      <a class="jt-tiktok" href="https://www.tiktok.com/@joint_tracker" rel="noopener" target="_blank">Seguici su TikTok · @joint_tracker</a>
+      <p class="jt-counter" id="sessionCounter" aria-hidden="true"><span class="jt-counter__dot" aria-hidden="true"></span><span class="jt-counter__text">0,000+ sessions tracked</span></p>
+      <a class="jt-tiktok" href="https://www.tiktok.com/@joint_tracker" rel="noopener" target="_blank">Follow us on TikTok · @joint_tracker</a>
     </div>
   </section>
 
-  <section class="jt-section">
-    <h2 class="jt-h2" data-i18n="features.title">Tutto quello che ti serve per tenere traccia</h2>
+  <section class="jt-section" id="features">
+    <h2 class="jt-h2">Everything you need to keep track</h2>
     <div class="jt-grid">
       <article class="jt-card jt-rise">
         <span class="jt-ico jt-ico--green">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3h11l3 3v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm2 6h10v2H7V9Zm0 4h10v2H7v-2Zm0 4h6v2H7v-2Z"/></svg>
         </span>
-        <h3 data-i18n="features.log.title">Registro sessioni</h3>
-        <p data-i18n="features.log.body">Segna cosa fumi, quanto e quando in pochi secondi, con contesto e umore opzionali.</p>
+        <h3>Session log</h3>
+        <p>Log what you smoke, how much and when in a few seconds, with optional context and mood.</p>
       </article>
       <article class="jt-card jt-rise">
         <span class="jt-ico jt-ico--purple">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10 8 8 0 0 1-10-10Z"/></svg>
         </span>
-        <h3 data-i18n="features.break.title">Tolerance break tracker</h3>
-        <p data-i18n="features.break.body">Pianifica e monitora le tue pause, con statistiche su tolleranza e streak di astinenza.</p>
+        <h3>Tolerance break tracker</h3>
+        <p>Plan and follow your breaks, with stats on tolerance and how long your streak is.</p>
       </article>
       <article class="jt-card jt-rise">
         <span class="jt-ico jt-ico--green">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 20h16v2H2V2h2v18Zm3-3V9h3v8H7Zm5 0V4h3v13h-3Zm5 0v-6h3v6h-3Z"/></svg>
         </span>
-        <h3 data-i18n="features.stats.title">Statistiche e grafici</h3>
-        <p data-i18n="features.stats.body">Calendario dei consumi, medie giornaliere/mensili, fasce orarie e spesa nel tempo.</p>
+        <h3>Stats and charts</h3>
+        <p>A usage calendar, daily and monthly averages, time-of-day patterns and spending over time.</p>
       </article>
       <article class="jt-card jt-rise">
         <span class="jt-ico jt-ico--green">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
         </span>
-        <h3 data-i18n="features.places.title">Mappa dei luoghi</h3>
-        <p data-i18n="features.places.body">Salva i tuoi posti abituali e visualizza dove e quanto consumi.</p>
+        <h3>Places map</h3>
+        <p>Save your usual spots and see where you smoke, and how much.</p>
       </article>
       <article class="jt-card jt-rise">
         <span class="jt-ico jt-ico--amber">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4h14l-2 9H8.4L8 15h11v2H6.2L4.4 6H2V4h5Zm1 15a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm9 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/></svg>
         </span>
-        <h3 data-i18n="features.stock.title">Gestione scorte</h3>
-        <p data-i18n="features.stock.body">Tieni traccia di acquisti, grammi rimanenti e prezzi.</p>
+        <h3>Stash tracking</h3>
+        <p>Keep track of what you buy, how many grams are left and what you paid.</p>
       </article>
       <article class="jt-card jt-rise">
         <span class="jt-ico jt-ico--neutral">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a5 5 0 0 1 5 5v2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v2h6V7a3 3 0 0 0-3-3Z"/></svg>
         </span>
-        <h3 data-i18n="features.privacy.title">Dati privati</h3>
-        <p data-i18n="features.privacy.body">Puoi anche usarla in modalità ospite, senza registrarti, con dati salvati solo sul tuo dispositivo.</p>
+        <h3>Your data stays private</h3>
+        <p>You can also use it in guest mode, no sign-up needed, with your data stored only on your device.</p>
       </article>
     </div>
   </section>
 
   <section class="jt-section jt-section--narrow">
-    <h2 class="jt-h2" data-i18n="seo.title">Perché usare un cannabis tracker</h2>
-    <p class="jt-body" data-i18n="seo.p1">Tenere un diario di consumo aiuta a capire le proprie abitudini reali, non quelle percepite: quante sessioni al giorno, in quali momenti, con quale spesa mensile. JointTracker nasce per essere uno strumento onesto e senza giudizi, pensato sia per chi vuole solo monitorare, sia per chi sta pianificando una tolerance break o una riduzione del consumo.</p>
-    <p class="jt-body" data-i18n-html="seo.p2">È una <strong>Progressive Web App (PWA)</strong>: si installa sulla home screen come un'app nativa, ma non richiede store né aggiornamenti manuali, e funziona anche offline.</p>
+    <h2 class="jt-h2">Why use a cannabis tracker</h2>
+    <p class="jt-body">Keeping a log shows you your real habits, not the ones you think you have: how many sessions a day, at what times, and how much you spend each month. JointTracker is built to be honest and judgment-free, whether you just want to keep an eye on things or you're planning a tolerance break or cutting down.</p>
+    <p class="jt-body">It's a <strong>Progressive Web App (PWA)</strong>: it goes on your home screen like a native app, but there's no app store and no manual updates, and it works offline too.</p>
   </section>
 
   <section class="jt-section">
     <div class="jt-final">
-      <h2 class="jt-h2" data-i18n="final.title">Pronto a iniziare?</h2>
-      <p class="jt-lead jt-lead--sm" data-i18n="final.body">Gratis, senza pubblicità, e puoi provarla anche senza registrarti.</p>
-      <a href="/app" class="jt-btn" data-i18n="final.cta">Prova JointTracker</a>
+      <h2 class="jt-h2">Ready to start?</h2>
+      <p class="jt-lead jt-lead--sm">Free, no ads, and you can try it without signing up.</p>
+      <a href="/app" class="jt-btn">Try JointTracker</a>
     </div>
   </section>
 
   <footer class="jt-footer">
     <div class="jt-footer__links">
-      <a href="/come-funziona" data-i18n="nav.how">Come funziona</a>
-      <a href="/faq" data-i18n="nav.faq">FAQ</a>
-      <a href="/blog" data-i18n="nav.blog">Blog</a>
-      <a href="/app" data-i18n="nav.openApp">Apri l'app</a>
+      <a href="/app">Open the app</a>
       <a href="https://www.tiktok.com/@joint_tracker" rel="noopener" target="_blank">TikTok</a>
-      <a href="/en" hreflang="en" lang="en">English</a>
+      <a href="/faq" hreflang="it">FAQ (Italian)</a>
+      <a href="/blog" hreflang="it">Blog (Italian)</a>
+      <a href="/" hreflang="it" lang="it">Italiano</a>
     </div>
-    <p data-i18n="footer.tag">JointTracker — cannabis tracker gratuito e privato.</p>
+    <p>JointTracker — a free, private cannabis tracker.</p>
   </footer>
 </div>
 
